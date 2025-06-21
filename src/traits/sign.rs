@@ -2,8 +2,8 @@
 //!
 //! 定义了用于数字签名创建和验证的 trait。
 
-use thiserror::Error;
 use crate::errors::Error;
+use thiserror::Error;
 
 /// Represents a digital signature.
 ///
@@ -79,4 +79,4 @@ pub trait Verifier {
         message: &[u8],
         signature: &Self::Signature,
     ) -> Result<(), Error>;
-} 
+}

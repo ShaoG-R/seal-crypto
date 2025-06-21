@@ -4,14 +4,13 @@
 
 use crate::errors::{Error, Error as CryptoError};
 use crate::traits::symmetric::{
-    AssociatedData, SymmetricCipher, SymmetricDecryptor, SymmetricEncryptor, SymmetricKey,
-    SymmetricKeyGenerator, SymmetricError,
+    AssociatedData, SymmetricCipher, SymmetricDecryptor, SymmetricEncryptor, SymmetricError,
+    SymmetricKey, SymmetricKeyGenerator,
 };
-use aes_gcm::aead::{Aead, KeyInit, OsRng, Payload};
 use aes_gcm::aead::rand_core::RngCore;
+use aes_gcm::aead::{Aead, KeyInit, OsRng, Payload};
 use aes_gcm::{Aes128Gcm, Aes256Gcm, Nonce};
 use std::marker::PhantomData;
-
 
 // ------------------- Marker Structs and Trait for AES-GCM Parameters -------------------
 // ------------------- 用于 AES-GCM 参数的标记结构体和 Trait -------------------
@@ -86,6 +85,7 @@ impl<P: AesGcmParams> SymmetricCipher for AesGcmScheme<P> {
 }
 
 impl<P: AesGcmParams> SymmetricKeyGenerator for AesGcmScheme<P> {
+    type Key = SymmetricKey;
     const KEY_SIZE: usize = P::KEY_SIZE;
 
     fn generate_key() -> Result<SymmetricKey, Error> {
@@ -168,7 +168,7 @@ mod tests {
     where
         S: SymmetricEncryptor<Key = SymmetricKey>
             + SymmetricDecryptor<Key = SymmetricKey>
-            + SymmetricKeyGenerator,
+            + SymmetricKeyGenerator<Key = Zeroizing<Vec<u8>>>,
     {
         let key = S::generate_key().unwrap();
         let plaintext = b"this is a secret message".to_vec();
@@ -192,7 +192,8 @@ mod tests {
         // Empty Plaintext with AAD
         // 空明文和 AAD
         let ciphertext_empty_pt = S::encrypt(&key, &nonce, &empty_vec, Some(&aad)).unwrap();
-        let decrypted_empty_pt = S::decrypt(&key, &nonce, &ciphertext_empty_pt, Some(&aad)).unwrap();
+        let decrypted_empty_pt =
+            S::decrypt(&key, &nonce, &ciphertext_empty_pt, Some(&aad)).unwrap();
         assert_eq!(empty_vec, decrypted_empty_pt);
 
         // Plaintext with Empty AAD
@@ -204,8 +205,7 @@ mod tests {
 
         // Empty Plaintext and Empty AAD
         // 空明文和空 AAD
-        let ciphertext_all_empty =
-            S::encrypt(&key, &nonce, &empty_vec, Some(&empty_vec)).unwrap();
+        let ciphertext_all_empty = S::encrypt(&key, &nonce, &empty_vec, Some(&empty_vec)).unwrap();
         let decrypted_all_empty =
             S::decrypt(&key, &nonce, &ciphertext_all_empty, Some(&empty_vec)).unwrap();
         assert_eq!(empty_vec, decrypted_all_empty);
@@ -249,7 +249,7 @@ mod tests {
     where
         S: SymmetricEncryptor<Key = SymmetricKey>
             + SymmetricDecryptor<Key = SymmetricKey>
-            + SymmetricKeyGenerator,
+            + SymmetricKeyGenerator<Key = SymmetricKey>,
     {
         let key = S::generate_key().unwrap();
         let mut wrong_key = key.clone();
@@ -262,7 +262,7 @@ mod tests {
 
         let plaintext = b"some data";
         let aad = b"some aad";
-        
+
         let ciphertext = S::encrypt(&key, &nonce, plaintext, Some(aad)).unwrap();
 
         // Wrong key
@@ -276,7 +276,7 @@ mod tests {
         // Wrong nonce
         // 错误 Nonce
         let res = S::decrypt(&key, &wrong_nonce, &ciphertext, Some(aad));
-         assert!(matches!(
+        assert!(matches!(
             res.unwrap_err(),
             Error::Symmetric(SymmetricError::Decryption(_))
         ));
@@ -307,4 +307,4 @@ mod tests {
     fn test_aes256gcm_invalid_inputs() {
         test_invalid_inputs::<AesGcmScheme<Aes256>>();
     }
-} 
+}

@@ -153,7 +153,7 @@ impl<P: KyberParams> Kem for KyberScheme<P> {
         if public_key.len() != P::PUBLIC_KEY_BYTES {
             return Err(KemError::InvalidPublicKey.into());
         }
-        let pk = P::PqPublicKey::from_bytes(public_key).map_err(|_| KemError::InvalidPublicKey)?;
+        let pk = PqPublicKey::from_bytes(public_key).map_err(|_| KemError::InvalidPublicKey)?;
         let (ss, ct) = P::encapsulate(&pk);
         Ok((
             Zeroizing::new(ss.as_bytes().to_vec()),
@@ -232,4 +232,4 @@ mod tests {
     fn test_kyber_1024() {
         run_kyber_tests::<Kyber1024>();
     }
-} 
+}

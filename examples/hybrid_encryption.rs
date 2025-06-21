@@ -19,8 +19,16 @@ fn main() -> Result<(), CryptoError> {
     //    接收方生成一个 Kyber 密钥对。
     println!("\nStep 1: Recipient generates a Kyber-1024 key pair. / 步骤1：接收方生成 Kyber-1024 密钥对。");
     let (public_key, private_key) = KyberScheme::<Kyber1024>::generate_keypair()?;
-    println!("  - Public Key generated ({} bytes) / 已生成公钥（{}字节）", public_key.len(), public_key.len());
-    println!("  - Private Key generated ({} bytes) / 已生成私钥（{}字节）", private_key.len(), private_key.len());
+    println!(
+        "  - Public Key generated ({} bytes) / 已生成公钥（{}字节）",
+        public_key.len(),
+        public_key.len()
+    );
+    println!(
+        "  - Private Key generated ({} bytes) / 已生成私钥（{}字节）",
+        private_key.len(),
+        private_key.len()
+    );
 
     // 2. Encryption (Sender)
     //    The sender uses the recipient's public key to perform hybrid encryption.
@@ -29,8 +37,16 @@ fn main() -> Result<(), CryptoError> {
     println!("\nStep 2: Sender encrypts a secret message using the recipient's public key. / 步骤2：发送方使用接收方的公钥加密一条秘密消息。");
     let secret_message = b"This is a super secret message!";
     let associated_data = b"Hybrid Encryption Example";
-    println!("  - Plaintext: \"{}\" / 明文：\"{}\"", String::from_utf8_lossy(secret_message), String::from_utf8_lossy(secret_message));
-    println!("  - Associated Data: \"{}\" / 关联数据：\"{}\"", String::from_utf8_lossy(associated_data), String::from_utf8_lossy(associated_data));
+    println!(
+        "  - Plaintext: \"{}\" / 明文：\"{}\"",
+        String::from_utf8_lossy(secret_message),
+        String::from_utf8_lossy(secret_message)
+    );
+    println!(
+        "  - Associated Data: \"{}\" / 关联数据：\"{}\"",
+        String::from_utf8_lossy(associated_data),
+        String::from_utf8_lossy(associated_data)
+    );
 
     // The sender encapsulates a shared secret and gets the encapsulated key.
     // 发送方封装一个共享密钥，并得到封装后的密钥。
@@ -48,11 +64,25 @@ fn main() -> Result<(), CryptoError> {
     // 在实际应用中，您应该使用一个安全的随机数生成器为每次加密创建唯一的 nonce。
     // 例如：use rand::{RngCore, OsRng}; OsRng.fill_bytes(&mut nonce);
 
-    let ciphertext =
-        AesGcmScheme::<Aes256>::encrypt(&shared_secret, &nonce, secret_message, Some(associated_data))?;
-    println!("  - Message successfully encrypted with AES-256-GCM. / 消息已通过 AES-256-GCM 成功加密。");
-    println!("  - Ciphertext length: {} bytes / 密文长度：{}字节", ciphertext.len(), ciphertext.len());
-    println!("  - Encapsulated key length: {} bytes / 封装密钥长度：{}字节", encapsulated_key.len(), encapsulated_key.len());
+    let ciphertext = AesGcmScheme::<Aes256>::encrypt(
+        &shared_secret,
+        &nonce,
+        secret_message,
+        Some(associated_data),
+    )?;
+    println!(
+        "  - Message successfully encrypted with AES-256-GCM. / 消息已通过 AES-256-GCM 成功加密。"
+    );
+    println!(
+        "  - Ciphertext length: {} bytes / 密文长度：{}字节",
+        ciphertext.len(),
+        ciphertext.len()
+    );
+    println!(
+        "  - Encapsulated key length: {} bytes / 封装密钥长度：{}字节",
+        encapsulated_key.len(),
+        encapsulated_key.len()
+    );
 
     // The sender transmits the `ciphertext`, `encapsulated_key`, and `nonce` to the recipient.
     // 发送方将 `ciphertext`、`encapsulated_key` 和 `nonce` 传输给接收方。
@@ -90,4 +120,4 @@ fn main() -> Result<(), CryptoError> {
     println!("\nHybrid encryption flow completed successfully! / 混合加密流程成功完成！");
 
     Ok(())
-} 
+}

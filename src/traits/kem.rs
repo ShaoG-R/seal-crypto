@@ -2,9 +2,9 @@
 //!
 //! 为密钥封装机制 (KEM) 定义了 trait。
 
+use crate::errors::Error;
 use thiserror::Error;
 use zeroize::Zeroizing;
-use crate::errors::Error;
 
 /// A secret value, derived from a KEM, suitable for use as a symmetric key.
 /// It is wrapped in `Zeroizing` to ensure it's wiped from memory when dropped.
@@ -67,8 +67,7 @@ pub trait Kem {
     type PublicKey;
     type PrivateKey;
     type EncapsulatedKey;
-    
-    
+
     /// Generates and encapsulates a shared secret using the recipient's public key.
     ///
     /// # Returns
@@ -81,7 +80,9 @@ pub trait Kem {
     /// # 返回
     /// 一个包含 `(SharedSecret, EncapsulatedKey)` 的元组。
     /// `SharedSecret` 供发送方使用，`EncapsulatedKey` 用于发送给接收方。
-    fn encapsulate(public_key: &Self::PublicKey) -> Result<(SharedSecret, Self::EncapsulatedKey), Error>;
+    fn encapsulate(
+        public_key: &Self::PublicKey,
+    ) -> Result<(SharedSecret, Self::EncapsulatedKey), Error>;
 
     /// Decapsulates an encapsulated key using the recipient's private key to
     /// recover the shared secret.
@@ -93,5 +94,8 @@ pub trait Kem {
     ///
     /// # 返回
     /// 与发送方生成的 `SharedSecret` 相匹配的共享密钥。
-    fn decapsulate(private_key: &Self::PrivateKey, encapsulated_key: &Self::EncapsulatedKey) -> Result<SharedSecret, Error>;
-} 
+    fn decapsulate(
+        private_key: &Self::PrivateKey,
+        encapsulated_key: &Self::EncapsulatedKey,
+    ) -> Result<SharedSecret, Error>;
+}

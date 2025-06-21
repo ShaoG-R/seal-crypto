@@ -2,9 +2,9 @@
 //!
 //! 定义了对称认证加密的 trait。
 
+use crate::errors::Error;
 use thiserror::Error;
 use zeroize::Zeroizing;
-use crate::errors::Error;
 
 /// A key for a symmetric cipher.
 ///
@@ -76,7 +76,7 @@ pub trait SymmetricCipher {
 /// 用于带关联数据的认证加密 (AEAD) 密码的 trait。
 pub trait SymmetricEncryptor: SymmetricCipher {
     type Key: 'static;
-    
+
     /// Encrypts a plaintext with a given nonce, producing a ciphertext with tag.
     ///
     /// # Arguments
@@ -111,7 +111,7 @@ pub trait SymmetricEncryptor: SymmetricCipher {
 /// 用于可解密密文的 AEAD 密码的 trait。
 pub trait SymmetricDecryptor: SymmetricCipher {
     type Key: 'static;
-    
+
     /// Decrypts a ciphertext, producing the original plaintext.
     ///
     /// # Arguments
@@ -145,6 +145,7 @@ pub trait SymmetricDecryptor: SymmetricCipher {
 ///
 /// 用于生成对称密钥的 trait。
 pub trait SymmetricKeyGenerator {
+    type Key: 'static;
     /// The size of the key in bytes.
     ///
     /// 密钥的大小（以字节为单位）。
@@ -152,5 +153,5 @@ pub trait SymmetricKeyGenerator {
     /// Generates a new symmetric key.
     ///
     /// 生成一个新的对称密钥。
-    fn generate_key() -> Result<SymmetricKey, Error>;
-} 
+    fn generate_key() -> Result<Self::Key, Error>;
+}

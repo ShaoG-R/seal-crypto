@@ -18,16 +18,16 @@ use crate::traits::{
     key::{KeyGenerator, PrivateKey, PublicKey},
     sign::{Signature, SignatureError, Signer, Verifier},
 };
+use rsa::signature::{RandomizedSigner, SignatureEncoding};
 use rsa::{
     pkcs8::{DecodePrivateKey, DecodePublicKey, EncodePrivateKey, EncodePublicKey},
-    pss::{SigningKey, VerifyingKey, Signature as PssSignature},
-    rand_core::{RngCore, OsRng},
+    pss::{Signature as PssSignature, SigningKey, VerifyingKey},
+    rand_core::{OsRng, RngCore},
     Oaep, RsaPrivateKey, RsaPublicKey,
 };
-use rsa::signature::{RandomizedSigner, SignatureEncoding};
 use sha2::Sha256;
-use zeroize::Zeroizing;
 use std::marker::PhantomData;
+use zeroize::Zeroizing;
 
 // ------------------- Marker Structs and Trait for RSA Parameters -------------------
 // ------------------- 用于 RSA 参数的标记结构体和 Trait -------------------
@@ -82,7 +82,6 @@ pub struct RsaScheme<P: RsaParams> {
 }
 
 impl<P: RsaParams> KeyGenerator for RsaScheme<P> {
-
     fn generate_keypair() -> Result<(PublicKey, PrivateKey), Error> {
         let mut rng = OsRng;
         let private_key = RsaPrivateKey::new(&mut rng, P::KEY_BITS)
@@ -112,7 +111,7 @@ impl<P: RsaParams> Kem for RsaScheme<P> {
         let mut rng = OsRng;
         let rsa_public_key = RsaPublicKey::from_public_key_der(public_key)
             .map_err(|_| KemError::InvalidPublicKey)?;
-        
+
         let mut shared_secret_bytes = vec![0u8; SHARED_SECRET_SIZE];
         rng.fill_bytes(&mut shared_secret_bytes);
 
@@ -128,8 +127,8 @@ impl<P: RsaParams> Kem for RsaScheme<P> {
         private_key: &PrivateKey,
         encapsulated_key: &EncapsulatedKey,
     ) -> Result<SharedSecret, Error> {
-        let rsa_private_key = RsaPrivateKey::from_pkcs8_der(private_key)
-            .map_err(|_| KemError::InvalidPrivateKey)?;
+        let rsa_private_key =
+            RsaPrivateKey::from_pkcs8_der(private_key).map_err(|_| KemError::InvalidPrivateKey)?;
 
         let padding = Oaep::new::<Sha256>();
         let shared_secret_bytes = rsa_private_key
@@ -157,12 +156,8 @@ impl<P: RsaParams> Signer for RsaScheme<P> {
 impl<P: RsaParams> Verifier for RsaScheme<P> {
     type PublicKey = PublicKey;
     type Signature = Signature;
-    
-    fn verify(
-        public_key: &PublicKey,
-        message: &[u8],
-        signature: &Signature,
-    ) -> Result<(), Error> {
+
+    fn verify(public_key: &PublicKey, message: &[u8], signature: &Signature) -> Result<(), Error> {
         let rsa_public_key = RsaPublicKey::from_public_key_der(public_key)
             .map_err(|_| SignatureError::InvalidPublicKey)?;
         let verifying_key = VerifyingKey::<Sha256>::new(rsa_public_key);
@@ -220,4 +215,4 @@ mod tests {
     fn test_rsa_4096() {
         run_rsa_tests::<Rsa4096>();
     }
-} 
+}

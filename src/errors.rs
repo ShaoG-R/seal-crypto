@@ -38,4 +38,4 @@ pub enum Error {
     /// 在密钥生成期间发生错误。
     #[error("Key generation failed")]
     KeyGeneration(#[source] Box<dyn std::error::Error + Send + Sync>),
-} 
+}

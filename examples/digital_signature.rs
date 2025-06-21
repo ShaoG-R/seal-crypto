@@ -23,21 +23,31 @@ fn main() -> Result<(), CryptoError> {
     //    用户使用其私钥对一条消息进行签名。
     println!("\nStep 2: User signs a message. / 步骤2：用户对消息进行签名。");
     let message = b"This message is authentic and untampered.";
-    println!("  - Message to be signed: \"{}\" / 待签名消息：\"{}\"", String::from_utf8_lossy(message), String::from_utf8_lossy(message));
-    
+    println!(
+        "  - Message to be signed: \"{}\" / 待签名消息：\"{}\"",
+        String::from_utf8_lossy(message),
+        String::from_utf8_lossy(message)
+    );
+
     let signature = RsaScheme::<Rsa4096>::sign(&private_key, message)?;
-    println!("  - Signature created ({} bytes). / 已创建签名（{}字节）。", signature.len(), signature.len());
+    println!(
+        "  - Signature created ({} bytes). / 已创建签名（{}字节）。",
+        signature.len(),
+        signature.len()
+    );
 
     // 3. Verification
     //    Another user (or the same one) verifies the signature with the public key.
     // 3. 验证
     //    另一个用户（或同一个人）使用公钥来验证签名。
     println!("\nStep 3: Verifying the signature. / 步骤3：验证签名。");
-    
+
     // The verification should succeed with the correct message and public key.
     // 使用正确的消息和公钥，验证应该成功。
     RsaScheme::<Rsa4096>::verify(&public_key, message, &signature)?;
-    println!("  - Success! Signature is valid for the original message. / 成功！签名对原始消息有效。");
+    println!(
+        "  - Success! Signature is valid for the original message. / 成功！签名对原始消息有效。"
+    );
 
     // 4. Verification Failure Scenarios
     //    Demonstrate cases where verification should fail.
@@ -60,7 +70,7 @@ fn main() -> Result<(), CryptoError> {
     let wrong_key_result = RsaScheme::<Rsa4096>::verify(&other_public_key, message, &signature);
     assert!(wrong_key_result.is_err());
     println!("    -> Correctly failed as expected. / -> 已按预期正确失败。");
-    
+
     println!("\nDigital signature flow completed successfully! / 数字签名流程成功完成！");
 
     Ok(())

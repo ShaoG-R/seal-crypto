@@ -6,4 +6,4 @@
 pub mod rsa;
 
 #[cfg(feature = "kyber")]
-pub mod kyber; 
+pub mod kyber;

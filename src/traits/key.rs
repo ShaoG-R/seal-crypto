@@ -1,8 +1,8 @@
 //! Defines the core trait for key generation.
 //!
 //! 定义了密钥生成的核心 trait。
-use zeroize::Zeroizing;
 use crate::errors::Error;
+use zeroize::Zeroizing;
 
 /// Represents a generic public key.
 ///
@@ -18,7 +18,6 @@ pub type PrivateKey = Zeroizing<Vec<u8>>;
 ///
 /// 用于可生成密钥对的加密方案的 trait。
 pub trait KeyGenerator {
-
     /// Generates a new key pair.
     ///
     /// The `config` parameter is currently a placeholder and not used,
@@ -31,4 +30,4 @@ pub trait KeyGenerator {
     /// 以便未来进行扩展，使密钥生成过程可以配置
     /// （例如，指定密钥大小）。
     fn generate_keypair() -> Result<(PublicKey, PrivateKey), Error>;
-} 
+}
