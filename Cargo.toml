@@ -6,6 +6,9 @@ authors = ["GlorYouth <admin@gloryouth.com>"]
 description = "A crate providing pure cryptographic capability abstractions (traits) and implementations for the seal-kit ecosystem."
 license = "MPL-2.0"
 readme = "README.md"
+repository = "https://github.com/GlorYouth/seal-crypto"
+homepage = "https://github.com/GlorYouth/seal-crypto"
+documentation = "https://docs.rs/seal-crypto"
 keywords = ["cryptography", "trait", "kem", "signature", "aead"]
 categories = ["cryptography"]
 
