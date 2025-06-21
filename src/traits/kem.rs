@@ -1,6 +1,5 @@
 //! Defines the trait for a Key Encapsulation Mechanism (KEM).
 
-use super::key::{PublicKey, PrivateKey};
 use thiserror::Error;
 use zeroize::Zeroizing;
 use crate::errors::Error;

@@ -26,6 +26,6 @@ pub mod prelude {
         kem::Kem,
         key::KeyGenerator,
         sign::{Signer, Verifier},
-        symmetric::{SymmetricDecryptor, SymmetricEncryptor},
+        symmetric::{SymmetricDecryptor, SymmetricEncryptor, SymmetricKeyGenerator},
     };
 } 

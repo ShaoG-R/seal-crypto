@@ -87,4 +87,12 @@ pub trait SymmetricDecryptor: SymmetricCipher {
         ciphertext_with_tag: &[u8],
         aad: Option<AssociatedData>,
     ) -> Result<Vec<u8>, Error>;
+}
+
+/// A trait for generating symmetric keys.
+pub trait SymmetricKeyGenerator {
+    /// The size of the key in bytes.
+    const KEY_SIZE: usize;
+    /// Generates a new symmetric key.
+    fn generate_key() -> Result<SymmetricKey, Error>;
 } 

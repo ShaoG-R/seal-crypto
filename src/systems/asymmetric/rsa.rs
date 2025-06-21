@@ -14,7 +14,7 @@ use crate::traits::{
 use rsa::{
     pkcs8::{DecodePrivateKey, DecodePublicKey, EncodePrivateKey, EncodePublicKey},
     pss::{SigningKey, VerifyingKey, Signature as PssSignature},
-    rand_core::{CryptoRng, RngCore, OsRng},
+    rand_core::{RngCore, OsRng},
     Oaep, RsaPrivateKey, RsaPublicKey,
 };
 use rsa::signature::{RandomizedSigner, SignatureEncoding};
