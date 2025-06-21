@@ -70,9 +70,8 @@ impl DilithiumParams for Dilithium2 {
         msg: &[u8],
         pk: &Self::PqPublicKey,
     ) -> Result<(), Error> {
-        Ok(dilithium2::verify_detached_signature(sig, msg, pk).map_err(|e| {
-            SignatureError::Verification(Box::new(e))
-        })?)
+        Ok(dilithium2::verify_detached_signature(sig, msg, pk)
+            .map_err(|e| SignatureError::Verification(Box::new(e)))?)
     }
 }
 
@@ -103,9 +102,8 @@ impl DilithiumParams for Dilithium3 {
         msg: &[u8],
         pk: &Self::PqPublicKey,
     ) -> Result<(), Error> {
-        Ok(dilithium3::verify_detached_signature(sig, msg, pk).map_err(|e| {
-            SignatureError::Verification(Box::new(e))
-        })?)
+        Ok(dilithium3::verify_detached_signature(sig, msg, pk)
+            .map_err(|e| SignatureError::Verification(Box::new(e)))?)
     }
 }
 
@@ -136,9 +134,8 @@ impl DilithiumParams for Dilithium5 {
         msg: &[u8],
         pk: &Self::PqPublicKey,
     ) -> Result<(), Error> {
-        Ok(dilithium5::verify_detached_signature(sig, msg, pk).map_err(|e| {
-            SignatureError::Verification(Box::new(e))
-        })?)
+        Ok(dilithium5::verify_detached_signature(sig, msg, pk)
+            .map_err(|e| SignatureError::Verification(Box::new(e)))?)
     }
 }
 
@@ -169,8 +166,8 @@ impl<P: DilithiumParams> Signer for DilithiumScheme<P> {
         if private_key.len() != P::secret_key_bytes() {
             return Err(SignatureError::InvalidPrivateKey.into());
         }
-        let sk =
-            P::PqSecretKey::from_bytes(private_key).map_err(|_| SignatureError::InvalidPrivateKey)?;
+        let sk = P::PqSecretKey::from_bytes(private_key)
+            .map_err(|_| SignatureError::InvalidPrivateKey)?;
         let signature = P::sign(&sk, message);
         Ok(signature.as_bytes().to_vec())
     }
@@ -192,10 +189,7 @@ impl<P: DilithiumParams> Verifier for DilithiumScheme<P> {
         if P::verify(&sig, message, &pk).is_ok() {
             Ok(())
         } else {
-            Err(SignatureError::Verification(
-                "Signature verification failed".into(),
-            )
-            .into())
+            Err(SignatureError::Verification("Signature verification failed".into()).into())
         }
     }
 }
@@ -244,4 +238,4 @@ mod tests {
     fn test_dilithium5() {
         run_dilithium_tests::<Dilithium5>();
     }
-} 
+}

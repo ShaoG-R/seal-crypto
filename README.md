@@ -34,24 +34,28 @@ seal-crypto = { version = "0.1.0", features = ["full"] }
 
 ### Example Usage
 
-Here is a quick example of signing and verifying a message using RSA-4096.
+Here is a quick example of signing and verifying a message using RSA-4096 with SHA-256.
 
 ```rust
 use seal_crypto::prelude::*;
-use seal_crypto::systems::asymmetric::rsa::{Rsa4096, RsaScheme};
+use seal_crypto::systems::asymmetric::rsa::{Rsa, Rsa4096, RsaScheme};
+use seal_crypto::traits::hash::Sha256;
 
 fn main() -> Result<(), CryptoError> {
-    // 1. Generate a key pair using the RsaScheme with Rsa4096 parameters.
-    let (public_key, private_key) = RsaScheme::<Rsa4096>::generate_keypair()?;
+    // 1. Define the scheme by combining key parameters and a hash function.
+    type MyRsaScheme = RsaScheme<Rsa<Rsa4096, Sha256>>;
+
+    // 2. Generate a key pair.
+    let (public_key, private_key) = MyRsaScheme::generate_keypair()?;
     println!("Successfully generated RSA-4096 key pair.");
 
-    // 2. Prepare a message and sign it.
+    // 3. Prepare a message and sign it.
     let message = b"This is an important message.";
-    let signature = RsaScheme::<Rsa4096>::sign(&private_key, message)?;
+    let signature = MyRsaScheme::sign(&private_key, message)?;
     println!("Message signed successfully.");
 
-    // 3. Verify the signature.
-    RsaScheme::<Rsa4096>::verify(&public_key, message, &signature)?;
+    // 4. Verify the signature.
+    MyRsaScheme::verify(&public_key, message, &signature)?;
     println!("Signature verification successful!");
 
     Ok(())
@@ -72,10 +76,12 @@ cargo run --example digital_signature --features "full"
 
 | Capability | Algorithm | Cargo Feature |
 | :--- | :--- | :--- |
-| **Signature** | RSA-PSS (2048/4096 bits) | `rsa` |
-| **KEM** | RSA-OAEP (2048/4096 bits) | `rsa` |
+| **Signature** | RSA-PSS (2048/4096 bits, configurable hash) | `rsa`, `sha256`, etc. |
+| **KEM** | RSA-OAEP (2048/4096 bits, configurable hash) | `rsa`, `sha256`, etc. |
 | | Kyber (512/768/1024) | `kyber` |
 | **AEAD** | AES-GCM (128/256 bits) | `aes-gcm` |
+| | ChaCha20-Poly1305 | `chacha20-poly1305` |
+| **Hashing** | SHA-2 (256, 384, 512) | `sha256`, `sha384`, `sha512` |
 
 ## License
 

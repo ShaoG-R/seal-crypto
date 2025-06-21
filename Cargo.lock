@@ -521,6 +521,7 @@ version = "0.1.1-rc"
 dependencies = [
  "aes-gcm",
  "chacha20poly1305",
+ "digest",
  "pqcrypto-dilithium",
  "pqcrypto-kyber",
  "pqcrypto-traits",

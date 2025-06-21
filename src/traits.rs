@@ -4,6 +4,7 @@
 //! `traits` 模块是所有加密能力 trait 的统一入口。
 //! 它从其子模块中重新导出各个 trait 的定义。
 
+pub mod hash;
 pub mod kem;
 pub mod key;
 pub mod sign;

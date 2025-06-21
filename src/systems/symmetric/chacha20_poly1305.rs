@@ -249,4 +249,4 @@ mod tests {
     fn test_chacha20_poly1305_invalid_inputs() {
         test_invalid_inputs::<Chacha20Poly1305Scheme<Chacha20>>();
     }
-} 
+}

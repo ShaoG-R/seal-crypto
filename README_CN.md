@@ -34,24 +34,28 @@ seal-crypto = { version = "0.1.0", features = ["full"] }
 
 ### 使用示例
 
-以下是一个使用 RSA-4096 进行签名和验证的快速示例：
+以下是一个使用 RSA-4096 和 SHA-256 进行签名和验证的快速示例：
 
 ```rust
 use seal_crypto::prelude::*;
-use seal_crypto::systems::asymmetric::rsa::{Rsa4096, RsaScheme};
+use seal_crypto::systems::asymmetric::rsa::{Rsa, Rsa4096, RsaScheme};
+use seal_crypto::traits::hash::Sha256;
 
 fn main() -> Result<(), CryptoError> {
-    // 1. 使用 RsaScheme 和 Rsa4096 参数来生成密钥对。
-    let (public_key, private_key) = RsaScheme::<Rsa4096>::generate_keypair()?;
+    // 1. 通过组合密钥参数和哈希函数来定义方案。
+    type MyRsaScheme = RsaScheme<Rsa<Rsa4096, Sha256>>;
+
+    // 2. 生成密钥对。
+    let (public_key, private_key) = MyRsaScheme::generate_keypair()?;
     println!("成功生成 RSA-4096 密钥对。");
 
-    // 2. 准备消息并签名。
+    // 3. 准备消息并签名。
     let message = b"这是一条重要的消息。";
-    let signature = RsaScheme::<Rsa4096>::sign(&private_key, message)?;
+    let signature = MyRsaScheme::sign(&private_key, message)?;
     println!("消息签名成功。");
 
-    // 3. 验证签名。
-    RsaScheme::<Rsa4096>::verify(&public_key, message, &signature)?;
+    // 4. 验证签名。
+    MyRsaScheme::verify(&public_key, message, &signature)?;
     println!("签名验证成功！");
 
     Ok(())
@@ -76,15 +80,19 @@ API 主要由以下几个核心 `trait` 组成，它们位于 `seal_crypto::trai
 -   `SymmetricEncryptor` / `SymmetricDecryptor`: 提供对称认证加密（AEAD）功能。
 -   `Kem` (Key Encapsulation Mechanism): 用于安全地交换密钥。
 -   `Signer` / `Verifier`: 创建和验证数字签名。
+-   `Hasher`: 提供哈希摘要功能。
 
 ## 支持的算法
 
 | 功能 | 算法 | Cargo Feature |
 | :--- | :--- | :--- |
-| **签名** | RSA-PSS (2048/4096 位) | `rsa` |
-| **KEM** | RSA-OAEP (2048/4096 位) | `rsa` |
+| **签名** | RSA-PSS (2048/4096 位, 可配置哈希) | `rsa`, `sha256`, etc. |
+| | Dilithium (2/3/5) | `dilithium` |
+| **KEM** | RSA-OAEP (2048/4096 位, 可配置哈希) | `rsa`, `sha256`, etc. |
 | | Kyber (512/768/1024) | `kyber` |
 | **AEAD** | AES-GCM (128/256 位) | `aes-gcm` |
+| | ChaCha20-Poly1305 | `chacha20-poly1305` |
+| **哈希** | SHA-2 (256, 384, 512) | `sha256`, `sha384`, `sha512` |
 
 ## 许可证
 
