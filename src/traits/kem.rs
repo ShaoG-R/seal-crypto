@@ -3,6 +3,7 @@
 //! 为密钥封装机制 (KEM) 定义了 trait。
 
 use crate::errors::Error;
+#[cfg(feature = "std")]
 use thiserror::Error;
 use zeroize::Zeroizing;
 
@@ -21,37 +22,38 @@ pub type EncapsulatedKey = Vec<u8>;
 /// Defines the errors that can occur during KEM operations.
 ///
 /// 定义 KEM 操作期间可能发生的错误。
-#[derive(Error, Debug)]
+#[cfg_attr(feature = "std", derive(Error))]
+#[derive(Debug)]
 pub enum KemError {
     /// Failed to encapsulate a shared secret.
     ///
     /// 封装共享密钥失败。
-    #[error("Key encapsulation failed")]
-    Encapsulation(#[source] Box<dyn std::error::Error + Send + Sync>),
+    #[cfg_attr(feature = "std", error("Key encapsulation failed"))]
+    Encapsulation,
 
     /// Failed to decapsulate a shared secret, often due to an invalid
     /// or tampered encapsulated key.
     ///
     /// 解封装共享密钥失败，通常是由于无效或被篡改的封装密钥。
-    #[error("Key decapsulation failed")]
-    Decapsulation(#[source] Box<dyn std::error::Error + Send + Sync>),
+    #[cfg_attr(feature = "std", error("Key decapsulation failed"))]
+    Decapsulation,
 
     /// The provided public key is invalid for the operation.
     ///
     /// 提供的公钥对于该操作无效。
-    #[error("Invalid public key")]
+    #[cfg_attr(feature = "std", error("Invalid public key"))]
     InvalidPublicKey,
 
     /// The provided private key is invalid for the operation.
     ///
     /// 提供的私钥对于该操作无效。
-    #[error("Invalid private key")]
+    #[cfg_attr(feature = "std", error("Invalid private key"))]
     InvalidPrivateKey,
 
     /// The provided encapsulated key (ciphertext) is invalid.
     ///
     /// 提供的封装密钥（密文）无效。
-    #[error("Invalid encapsulated key")]
+    #[cfg_attr(feature = "std", error("Invalid encapsulated key"))]
     InvalidEncapsulatedKey,
 }
 

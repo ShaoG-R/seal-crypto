@@ -20,43 +20,39 @@ pub trait Hasher: private::Sealed + Send + Sync + 'static {
     type Digest: Digest + Clone + Send + Sync + 'static + FixedOutputReset + DynDigest;
 }
 
-// --- Marker Structs for common hash functions ---
+/// `sha2` family hash functions
+#[cfg(feature = "sha2")]
+pub use sha2::{Sha256 as Sha256_, Sha384 as Sha384_, Sha512 as Sha512_};
 
-/// Marker struct for SHA-256.
-#[cfg(feature = "sha256")]
-#[derive(Debug, Default)]
+#[cfg(feature = "sha2")]
 pub struct Sha256;
 
-#[cfg(feature = "sha256")]
+#[cfg(feature = "sha2")]
 impl private::Sealed for Sha256 {}
 
-#[cfg(feature = "sha256")]
+#[cfg(feature = "sha2")]
 impl Hasher for Sha256 {
-    type Digest = sha2::Sha256;
+    type Digest = Sha256_;
 }
 
-/// Marker struct for SHA-384.
-#[cfg(feature = "sha384")]
-#[derive(Debug, Default)]
+#[cfg(feature = "sha2")]
 pub struct Sha384;
 
-#[cfg(feature = "sha384")]
+#[cfg(feature = "sha2")]
 impl private::Sealed for Sha384 {}
 
-#[cfg(feature = "sha384")]
+#[cfg(feature = "sha2")]
 impl Hasher for Sha384 {
-    type Digest = sha2::Sha384;
+    type Digest = Sha384_;
 }
 
-/// Marker struct for SHA-512.
-#[cfg(feature = "sha512")]
-#[derive(Debug, Default)]
+#[cfg(feature = "sha2")]
 pub struct Sha512;
 
-#[cfg(feature = "sha512")]
+#[cfg(feature = "sha2")]
 impl private::Sealed for Sha512 {}
 
-#[cfg(feature = "sha512")]
+#[cfg(feature = "sha2")]
 impl Hasher for Sha512 {
-    type Digest = sha2::Sha512;
+    type Digest = Sha512_;
 }

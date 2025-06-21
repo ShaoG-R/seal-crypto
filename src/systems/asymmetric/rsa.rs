@@ -12,7 +12,7 @@
 //! - RSA-PSS 用于签名功能。
 //! 密钥应为 PKCS#8 DER 格式。
 
-use crate::errors::{Error as CryptoError, Error};
+use crate::errors::Error;
 use crate::traits::{
     hash::Hasher,
     kem::{EncapsulatedKey, Kem, KemError, SharedSecret},
@@ -108,16 +108,15 @@ pub struct RsaScheme<P: RsaParams> {
 impl<P: RsaParams> KeyGenerator for RsaScheme<P> {
     fn generate_keypair() -> Result<(PublicKey, PrivateKey), Error> {
         let mut rng = OsRng;
-        let private_key = RsaPrivateKey::new(&mut rng, P::KEY_BITS)
-            .map_err(|e| CryptoError::KeyGeneration(Box::new(e)))?;
+        let private_key = RsaPrivateKey::new(&mut rng, P::KEY_BITS).map_err(Error::Rsa)?;
         let public_key = private_key.to_public_key();
 
         let private_key_der = private_key
             .to_pkcs8_der()
-            .map_err(|e| CryptoError::KeyGeneration(e.into()))?;
+            .map_err(|e| Error::Rsa(e.into()))?;
         let public_key_der = public_key
             .to_public_key_der()
-            .map_err(|e| CryptoError::KeyGeneration(e.into()))?;
+            .map_err(|e| Error::Rsa(rsa::pkcs8::Error::from(e).into()))?;
 
         Ok((
             public_key_der.as_bytes().to_vec(),
@@ -142,7 +141,7 @@ impl<P: RsaParams> Kem for RsaScheme<P> {
         let padding = Oaep::new::<<P::Hash as Hasher>::Digest>();
         let encapsulated_key = rsa_public_key
             .encrypt(&mut rng, padding, &shared_secret_bytes)
-            .map_err(|e| KemError::Encapsulation(Box::new(e)))?;
+            .map_err(|_| KemError::Encapsulation)?;
 
         Ok((Zeroizing::new(shared_secret_bytes), encapsulated_key))
     }
@@ -157,7 +156,7 @@ impl<P: RsaParams> Kem for RsaScheme<P> {
         let padding = Oaep::new::<<P::Hash as Hasher>::Digest>();
         let shared_secret_bytes = rsa_private_key
             .decrypt(padding, encapsulated_key)
-            .map_err(|e| KemError::Decapsulation(Box::new(e)))?;
+            .map_err(|_| KemError::Decapsulation)?;
 
         Ok(Zeroizing::new(shared_secret_bytes))
     }
@@ -190,14 +189,14 @@ impl<P: RsaParams> Verifier for RsaScheme<P> {
         use rsa::signature::Verifier;
         Ok(verifying_key
             .verify(message, &pss_signature)
-            .map_err(|e| SignatureError::Verification(Box::new(e)))?)
+            .map_err(|_| SignatureError::Verification)?)
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::traits::hash::{Sha256, Sha512};
+    use crate::schemes::kem::rsa::{Sha256, Sha512};
 
     fn run_rsa_tests<P: RsaParams>()
     where
@@ -233,13 +232,13 @@ mod tests {
     }
 
     #[test]
-    #[cfg(all(feature = "sha256"))]
+    #[cfg(all(feature = "sha2"))]
     fn test_rsa_2048_sha256() {
         run_rsa_tests::<Rsa<Rsa2048, Sha256>>();
     }
 
     #[test]
-    #[cfg(all(feature = "sha512"))]
+    #[cfg(all(feature = "sha2"))]
     fn test_rsa_4096_sha512() {
         run_rsa_tests::<Rsa<Rsa4096, Sha512>>();
     }

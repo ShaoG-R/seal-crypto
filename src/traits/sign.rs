@@ -3,6 +3,7 @@
 //! 定义了用于数字签名创建和验证的 trait。
 
 use crate::errors::Error;
+#[cfg(feature = "std")]
 use thiserror::Error;
 
 /// Represents a digital signature.
@@ -13,37 +14,38 @@ pub type Signature = Vec<u8>;
 /// Defines the errors that can occur during signing and verification.
 ///
 /// 定义了在签名和验证过程中可能发生的错误。
-#[derive(Error, Debug)]
+#[cfg_attr(feature = "std", derive(Error))]
+#[derive(Debug)]
 pub enum SignatureError {
     /// Failed to create a digital signature.
     ///
     /// 创建数字签名失败。
-    #[error("Signing failed")]
-    Signing(#[source] Box<dyn std::error::Error + Send + Sync>),
+    #[cfg_attr(feature = "std", error("Signing failed"))]
+    Signing,
 
     /// Signature verification failed, indicating that the signature is invalid,
     /// the data has been tampered with, or the wrong key was used.
     ///
     /// 签名验证失败，表明签名无效、数据被篡改或使用了错误的密钥。
-    #[error("Verification failed")]
-    Verification(#[source] Box<dyn std::error::Error + Send + Sync>),
+    #[cfg_attr(feature = "std", error("Verification failed"))]
+    Verification,
 
     /// The provided public key is invalid for this operation.
     ///
     /// 提供的公钥对此操作无效。
-    #[error("Invalid public key")]
+    #[cfg_attr(feature = "std", error("Invalid public key"))]
     InvalidPublicKey,
 
     /// The provided private key is invalid for this operation.
     ///
     /// 提供的私钥对此操作无效。
-    #[error("Invalid private key")]
+    #[cfg_attr(feature = "std", error("Invalid private key"))]
     InvalidPrivateKey,
 
     /// The provided signature is malformed or has an invalid length.
     ///
     /// 提供的签名格式错误或长度无效。
-    #[error("Invalid signature format")]
+    #[cfg_attr(feature = "std", error("Invalid signature format"))]
     InvalidSignature,
 }
 

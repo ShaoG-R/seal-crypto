@@ -70,8 +70,8 @@ impl DilithiumParams for Dilithium2 {
         msg: &[u8],
         pk: &Self::PqPublicKey,
     ) -> Result<(), Error> {
-        Ok(dilithium2::verify_detached_signature(sig, msg, pk)
-            .map_err(|e| SignatureError::Verification(Box::new(e)))?)
+        dilithium2::verify_detached_signature(sig, msg, pk)
+            .map_err(|_| SignatureError::Verification.into())
     }
 }
 
@@ -102,8 +102,8 @@ impl DilithiumParams for Dilithium3 {
         msg: &[u8],
         pk: &Self::PqPublicKey,
     ) -> Result<(), Error> {
-        Ok(dilithium3::verify_detached_signature(sig, msg, pk)
-            .map_err(|e| SignatureError::Verification(Box::new(e)))?)
+        dilithium3::verify_detached_signature(sig, msg, pk)
+            .map_err(|_| SignatureError::Verification.into())
     }
 }
 
@@ -134,8 +134,8 @@ impl DilithiumParams for Dilithium5 {
         msg: &[u8],
         pk: &Self::PqPublicKey,
     ) -> Result<(), Error> {
-        Ok(dilithium5::verify_detached_signature(sig, msg, pk)
-            .map_err(|e| SignatureError::Verification(Box::new(e)))?)
+        dilithium5::verify_detached_signature(sig, msg, pk)
+            .map_err(|_| SignatureError::Verification.into())
     }
 }
 
@@ -181,16 +181,12 @@ impl<P: DilithiumParams> Verifier for DilithiumScheme<P> {
         if public_key.len() != P::public_key_bytes() {
             return Err(SignatureError::InvalidPublicKey.into());
         }
-        let pk =
-            P::PqPublicKey::from_bytes(public_key).map_err(|_| SignatureError::InvalidPublicKey)?;
+        let pk = P::PqPublicKey::from_bytes(public_key)
+            .map_err(|_| SignatureError::InvalidPublicKey)?;
         let sig = P::PqDetachedSignature::from_bytes(signature)
             .map_err(|_| SignatureError::InvalidSignature)?;
 
-        if P::verify(&sig, message, &pk).is_ok() {
-            Ok(())
-        } else {
-            Err(SignatureError::Verification("Signature verification failed".into()).into())
-        }
+        P::verify(&sig, message, &pk)
     }
 }
 

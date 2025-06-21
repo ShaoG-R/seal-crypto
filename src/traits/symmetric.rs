@@ -3,6 +3,7 @@
 //! 定义了对称认证加密的 trait。
 
 use crate::errors::Error;
+#[cfg(feature = "std")]
 use thiserror::Error;
 use zeroize::Zeroizing;
 
@@ -19,37 +20,38 @@ pub type AssociatedData<'a> = &'a [u8];
 /// Defines the errors that can occur during symmetric encryption and decryption.
 ///
 /// 定义了在对称加密和解密过程中可能发生的错误。
-#[derive(Error, Debug)]
+#[derive(Debug)]
+#[cfg_attr(feature = "std", derive(Error))]
 pub enum SymmetricError {
     /// Failed to encrypt the plaintext.
     ///
     /// 加密明文失败。
-    #[error("Encryption failed")]
-    Encryption(#[source] Box<dyn std::error::Error + Send + Sync>),
+    #[cfg_attr(feature = "std", error("Encryption failed"))]
+    Encryption,
 
     /// Failed to decrypt the ciphertext. This commonly occurs if the key is wrong,
     /// the ciphertext or AAD has been tampered with, or the authentication tag is invalid.
     ///
     /// 解密密文失败。如果密钥错误、密文或 AAD 被篡改，或认证标签无效，则通常会发生这种情况。
-    #[error("Decryption failed")]
-    Decryption(#[source] Box<dyn std::error::Error + Send + Sync>),
+    #[cfg_attr(feature = "std", error("Decryption failed"))]
+    Decryption,
 
     /// The provided key has an invalid size.
     ///
     /// 提供的密钥大小无效。
-    #[error("Invalid key size")]
+    #[cfg_attr(feature = "std", error("Invalid key size"))]
     InvalidKeySize,
 
     /// The provided nonce has an invalid size.
     ///
     /// 提供的 nonce 大小无效。
-    #[error("Invalid nonce size")]
+    #[cfg_attr(feature = "std", error("Invalid nonce size"))]
     InvalidNonceSize,
 
     /// The provided ciphertext is malformed or truncated.
     ///
     /// 提供的密文格式错误或被截断。
-    #[error("Invalid ciphertext")]
+    #[cfg_attr(feature = "std", error("Invalid ciphertext"))]
     InvalidCiphertext,
 }
 

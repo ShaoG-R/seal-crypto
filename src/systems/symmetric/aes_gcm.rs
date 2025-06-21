@@ -2,7 +2,7 @@
 //!
 //! 提供了使用 AES-GCM 的对称 AEAD 加密实现。
 
-use crate::errors::{Error, Error as CryptoError};
+use crate::errors::Error;
 use crate::traits::symmetric::{
     AssociatedData, SymmetricCipher, SymmetricDecryptor, SymmetricEncryptor, SymmetricError,
     SymmetricKey, SymmetricKeyGenerator,
@@ -92,7 +92,7 @@ impl<P: AesGcmParams> SymmetricKeyGenerator for AesGcmScheme<P> {
         let mut key_bytes = vec![0u8; P::KEY_SIZE];
         OsRng
             .try_fill_bytes(&mut key_bytes)
-            .map_err(|e| CryptoError::KeyGeneration(e.to_string().into()))?;
+            .map_err(|_| Error::Symmetric(SymmetricError::InvalidKeySize))?;
         Ok(SymmetricKey::new(key_bytes))
     }
 }
@@ -118,11 +118,11 @@ impl<P: AesGcmParams> SymmetricEncryptor for AesGcmScheme<P> {
 
         let payload = Payload {
             msg: plaintext,
-            aad: aad.unwrap_or(&[]),
+            aad: aad.unwrap_or_default(),
         };
         cipher
             .encrypt(nonce, payload)
-            .map_err(|e| SymmetricError::Encryption(Box::new(e)).into())
+            .map_err(|_| Error::Symmetric(SymmetricError::Encryption))
     }
 }
 
@@ -148,11 +148,11 @@ impl<P: AesGcmParams> SymmetricDecryptor for AesGcmScheme<P> {
 
         let payload = Payload {
             msg: ciphertext_with_tag,
-            aad: aad.unwrap_or(&[]),
+            aad: aad.unwrap_or_default(),
         };
         cipher
             .decrypt(nonce, payload)
-            .map_err(|e| SymmetricError::Decryption(Box::new(e)).into())
+            .map_err(|_| Error::Symmetric(SymmetricError::Decryption))
     }
 }
 
@@ -215,7 +215,7 @@ mod tests {
         let res = S::decrypt(&key, &nonce, &ciphertext_aad, None);
         assert!(matches!(
             res.unwrap_err(),
-            Error::Symmetric(SymmetricError::Decryption(_))
+            Error::Symmetric(SymmetricError::Decryption)
         ));
 
         let mut tampered_ciphertext = ciphertext_aad.clone();
@@ -223,7 +223,7 @@ mod tests {
         let res = S::decrypt(&key, &nonce, &tampered_ciphertext, Some(&aad));
         assert!(matches!(
             res.unwrap_err(),
-            Error::Symmetric(SymmetricError::Decryption(_))
+            Error::Symmetric(SymmetricError::Decryption)
         ));
 
         let mut tampered_aad = aad.clone();
@@ -231,7 +231,7 @@ mod tests {
         let res = S::decrypt(&key, &nonce, &ciphertext_aad, Some(&tampered_aad));
         assert!(matches!(
             res.unwrap_err(),
-            Error::Symmetric(SymmetricError::Decryption(_))
+            Error::Symmetric(SymmetricError::Decryption)
         ));
     }
 
@@ -270,7 +270,7 @@ mod tests {
         let res = S::decrypt(&wrong_key, &nonce, &ciphertext, Some(aad));
         assert!(matches!(
             res.unwrap_err(),
-            Error::Symmetric(SymmetricError::Decryption(_))
+            Error::Symmetric(SymmetricError::Decryption)
         ));
 
         // Wrong nonce
@@ -278,7 +278,7 @@ mod tests {
         let res = S::decrypt(&key, &wrong_nonce, &ciphertext, Some(aad));
         assert!(matches!(
             res.unwrap_err(),
-            Error::Symmetric(SymmetricError::Decryption(_))
+            Error::Symmetric(SymmetricError::Decryption)
         ));
 
         // Wrong size key

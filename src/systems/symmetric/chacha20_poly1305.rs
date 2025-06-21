@@ -2,7 +2,7 @@
 //!
 //! 提供了使用 ChaCha20-Poly1305 的对称 AEAD 加密实现。
 
-use crate::errors::{Error, Error as CryptoError};
+use crate::errors::Error;
 use crate::traits::symmetric::{
     AssociatedData, SymmetricCipher, SymmetricDecryptor, SymmetricEncryptor, SymmetricError,
     SymmetricKey, SymmetricKeyGenerator,
@@ -79,7 +79,7 @@ impl<P: Chacha20Poly1305Params> SymmetricKeyGenerator for Chacha20Poly1305Scheme
         let mut key_bytes = vec![0u8; P::KEY_SIZE];
         OsRng
             .try_fill_bytes(&mut key_bytes)
-            .map_err(|e| CryptoError::KeyGeneration(e.to_string().into()))?;
+            .map_err(|_| Error::Symmetric(SymmetricError::InvalidKeySize))?;
         Ok(SymmetricKey::new(key_bytes))
     }
 }
@@ -105,11 +105,11 @@ impl<P: Chacha20Poly1305Params> SymmetricEncryptor for Chacha20Poly1305Scheme<P>
 
         let payload = Payload {
             msg: plaintext,
-            aad: aad.unwrap_or(&[]),
+            aad: aad.unwrap_or_default(),
         };
         cipher
             .encrypt(nonce, payload)
-            .map_err(|e| SymmetricError::Encryption(Box::new(e)).into())
+            .map_err(|_| Error::Symmetric(SymmetricError::Encryption))
     }
 }
 
@@ -135,11 +135,11 @@ impl<P: Chacha20Poly1305Params> SymmetricDecryptor for Chacha20Poly1305Scheme<P>
 
         let payload = Payload {
             msg: ciphertext_with_tag,
-            aad: aad.unwrap_or(&[]),
+            aad: aad.unwrap_or_default(),
         };
         cipher
             .decrypt(nonce, payload)
-            .map_err(|e| SymmetricError::Decryption(Box::new(e)).into())
+            .map_err(|_| Error::Symmetric(SymmetricError::Decryption))
     }
 }
 
