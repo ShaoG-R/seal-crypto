@@ -38,10 +38,14 @@ jobs:
           target/
         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-    - name: Run tests
+    - name: Run tests with no features
+      if: matrix.features == ''
       run: |
-        if [ -z "${{ matrix.features }}" ]; then
-          cargo test --lib --no-default-features
-        else
-          cargo test --no-default-features --features "${{ matrix.features }}"
-        fi 
+        echo "Testing with no features (default)"
+        cargo test --lib --no-default-features
+
+    - name: Run tests with specific features
+      if: matrix.features != ''
+      run: |
+        echo "Testing with features: ${{ matrix.features }}"
+        cargo test --no-default-features --features "${{ matrix.features }}" 
