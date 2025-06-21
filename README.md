@@ -29,52 +29,53 @@ Add `seal-crypto` to your `Cargo.toml`. You can enable the `full` feature to inc
 seal-crypto = { version = "0.1.0", features = ["full"] }
 
 # Or, enable only specific algorithms
-# seal-crypto = { version = "0.1.0", features = ["rsa", "aes-gcm"] }
+# seal-crypto = { version = "0.1.0", features = ["rsa", "aes-gcm", "kyber"] }
 ```
 
 ### Example Usage
 
-Here is an example of signing and verifying a message using RSA:
+Here is a quick example of signing and verifying a message using RSA-4096.
 
 ```rust
 use seal_crypto::prelude::*;
+use seal_crypto::systems::asymmetric::rsa::{Rsa4096, RsaScheme};
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // 1. Define the algorithm implementation to use.
-    //    Here, we use the built-in RsaSha256 implementation.
-    use seal_crypto::systems::asymmetric::rsa::RsaSha256;
+fn main() -> Result<(), CryptoError> {
+    // 1. Generate a key pair using the RsaScheme with Rsa4096 parameters.
+    let (public_key, private_key) = RsaScheme::<Rsa4096>::generate_keypair()?;
+    println!("Successfully generated RSA-4096 key pair.");
 
-    // 2. Generate a key pair.
-    let (public_key, private_key) = RsaSha256::generate_keypair()?;
-    println!("Successfully generated RSA key pair.");
-
-    // 3. Prepare a message and sign it.
-    let message = b"This is a very important message.";
-    let signature = RsaSha256::sign(&private_key, message)?;
+    // 2. Prepare a message and sign it.
+    let message = b"This is an important message.";
+    let signature = RsaScheme::<Rsa4096>::sign(&private_key, message)?;
     println!("Message signed successfully.");
 
-    // 4. Verify the signature.
-    RsaSha256::verify(&public_key, message, &signature)?;
+    // 3. Verify the signature.
+    RsaScheme::<Rsa4096>::verify(&public_key, message, &signature)?;
     println!("Signature verification successful!");
-
-    // 5. Attempt to verify with a tampered message.
-    let tampered_message = b"This is a tampered message.";
-    let verification_result = RsaSha256::verify(&public_key, tampered_message, &signature);
-    assert!(verification_result.is_err());
-    println!("Verification with tampered message failed as expected.");
 
     Ok(())
 }
+```
+
+For more detailed examples, check out the `examples` directory. You can run them using `cargo`:
+
+```sh
+# Run the hybrid encryption example
+cargo run --example hybrid_encryption --features "full"
+
+# Run the digital signature example
+cargo run --example digital_signature --features "full"
 ```
 
 ## Supported Algorithms
 
 | Capability | Algorithm | Cargo Feature |
 | :--- | :--- | :--- |
-| **Signature** | RSA (SHA-256) | `rsa` |
-| **KEM** | RSA | `rsa` |
-| | Kyber (PQC) | `kyber` |
-| **AEAD** | AES-256-GCM | `aes-gcm` |
+| **Signature** | RSA-PSS (2048/4096 bits) | `rsa` |
+| **KEM** | RSA-OAEP (2048/4096 bits) | `rsa` |
+| | Kyber (512/768/1024) | `kyber` |
+| **AEAD** | AES-GCM (128/256 bits) | `aes-gcm` |
 
 ## License
 

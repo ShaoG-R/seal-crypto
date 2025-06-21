@@ -29,42 +29,43 @@
 seal-crypto = { version = "0.1.0", features = ["full"] }
 
 # 或者，只启用特定算法
-# seal-crypto = { version = "0.1.0", features = ["rsa", "aes-gcm"] }
+# seal-crypto = { version = "0.1.0", features = ["rsa", "aes-gcm", "kyber"] }
 ```
 
 ### 使用示例
 
-以下是一个使用 RSA 进行签名和验证的例子：
+以下是一个使用 RSA-4096 进行签名和验证的快速示例：
 
 ```rust
 use seal_crypto::prelude::*;
+use seal_crypto::systems::asymmetric::rsa::{Rsa4096, RsaScheme};
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // 1. 定义要使用的算法实现
-    //    这里我们使用 seal-crypto 内置的 RsaSha256 算法
-    use seal_crypto::systems::asymmetric::rsa::RsaSha256;
+fn main() -> Result<(), CryptoError> {
+    // 1. 使用 RsaScheme 和 Rsa4096 参数来生成密钥对。
+    let (public_key, private_key) = RsaScheme::<Rsa4096>::generate_keypair()?;
+    println!("成功生成 RSA-4096 密钥对。");
 
-    // 2. 生成密钥对
-    let (public_key, private_key) = RsaSha256::generate_keypair()?;
-    println!("成功生成 RSA 密钥对。");
-
-    // 3. 准备消息并签名
-    let message = b"This is a very important message.";
-    let signature = RsaSha256::sign(&private_key, message)?;
+    // 2. 准备消息并签名。
+    let message = b"这是一条重要的消息。";
+    let signature = RsaScheme::<Rsa4096>::sign(&private_key, message)?;
     println!("消息签名成功。");
 
-    // 4. 验证签名
-    RsaSha256::verify(&public_key, message, &signature)?;
+    // 3. 验证签名。
+    RsaScheme::<Rsa4096>::verify(&public_key, message, &signature)?;
     println!("签名验证成功！");
-
-    // 尝试用错误的消息进行验证
-    let tampered_message = b"This is a tampered message.";
-    let verification_result = RsaSha256::verify(&public_key, tampered_message, &signature);
-    assert!(verification_result.is_err());
-    println!("使用被篡改的消息进行验证，符合预期地失败了。");
 
     Ok(())
 }
+```
+
+我们提供了更详细的示例代码，请查看 `examples` 目录。你可以使用 `cargo` 来运行它们：
+
+```sh
+# 运行混合加密示例
+cargo run --example hybrid_encryption --features "full"
+
+# 运行数字签名示例
+cargo run --example digital_signature --features "full"
 ```
 
 ## API 概览
@@ -80,10 +81,10 @@ API 主要由以下几个核心 `trait` 组成，它们位于 `seal_crypto::trai
 
 | 功能 | 算法 | Cargo Feature |
 | :--- | :--- | :--- |
-| **签名** | RSA (SHA-256) | `rsa` |
-| **KEM** | RSA | `rsa` |
-| | Kyber (PQC) | `kyber` |
-| **AEAD** | AES-256-GCM | `aes-gcm` |
+| **签名** | RSA-PSS (2048/4096 位) | `rsa` |
+| **KEM** | RSA-OAEP (2048/4096 位) | `rsa` |
+| | Kyber (512/768/1024) | `kyber` |
+| **AEAD** | AES-GCM (128/256 位) | `aes-gcm` |
 
 ## 许可证
 
