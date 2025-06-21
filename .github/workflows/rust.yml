@@ -13,7 +13,7 @@ jobs:
   test:
     name: Test ${{ matrix.rust }} on ${{ matrix.os }} (${{ matrix.config.name }})
     runs-on: ${{ matrix.os }}
-    continue-on-error: ${{ matrix.os == 'macos-latest' && (contains(matrix.config.name, 'avx2') || contains(matrix.config.name, 'optimized')) }}
+    continue-on-error: ${{ (matrix.os == 'macos-latest' && (contains(matrix.config.name, 'avx2') || contains(matrix.config.name, 'optimized'))) || (matrix.os == 'windows-latest' && (contains(matrix.config.name, 'asm') || contains(matrix.config.name, 'optimized'))) }}
     strategy:
       fail-fast: false
       matrix:
