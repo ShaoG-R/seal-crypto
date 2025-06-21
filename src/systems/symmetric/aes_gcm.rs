@@ -92,7 +92,7 @@ impl<P: AesGcmParams> SymmetricKeyGenerator for AesGcmScheme<P> {
         let mut key_bytes = vec![0u8; P::KEY_SIZE];
         OsRng
             .try_fill_bytes(&mut key_bytes)
-            .map_err(|e| CryptoError::KeyGeneration(Box::new(e)))?;
+            .map_err(|e| CryptoError::KeyGeneration(e.to_string().into()))?;
         Ok(SymmetricKey::new(key_bytes))
     }
 }

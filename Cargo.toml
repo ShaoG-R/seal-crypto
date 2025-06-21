@@ -32,4 +32,12 @@ aes-gcm = ["dep:aes-gcm"]
 
 # --- Functionality Set Features ---
 # full activates all implementations
-full = ["rsa", "kyber", "aes-gcm"] 
+full = ["rsa", "kyber", "aes-gcm"]
+
+[[example]]
+name = "digital_signature"
+required-features = ["rsa"]
+
+[[example]]
+name = "hybrid_encryption"
+required-features = ["kyber", "aes-gcm"] 
