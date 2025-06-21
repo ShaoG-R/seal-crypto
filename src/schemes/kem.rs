@@ -23,4 +23,4 @@ pub mod rsa {
 #[cfg(feature = "kyber")]
 pub mod kyber {
     pub use crate::systems::asymmetric::kyber::{Kyber1024, Kyber512, Kyber768};
-} 
+}

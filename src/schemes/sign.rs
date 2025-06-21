@@ -23,4 +23,4 @@ pub mod rsa {
 #[cfg(feature = "dilithium")]
 pub mod dilithium {
     pub use crate::systems::asymmetric::dilithium::{Dilithium2, Dilithium3, Dilithium5};
-} 
+}

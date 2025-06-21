@@ -11,4 +11,4 @@ pub use crate::traits::{
     sign::{Signer, Verifier},
     symmetric::{SymmetricCipher, SymmetricDecryptor, SymmetricEncryptor, SymmetricKeyGenerator},
 };
-pub use ::zeroize; 
+pub use ::zeroize;

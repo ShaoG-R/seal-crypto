@@ -181,8 +181,8 @@ impl<P: DilithiumParams> Verifier for DilithiumScheme<P> {
         if public_key.len() != P::public_key_bytes() {
             return Err(SignatureError::InvalidPublicKey.into());
         }
-        let pk = P::PqPublicKey::from_bytes(public_key)
-            .map_err(|_| SignatureError::InvalidPublicKey)?;
+        let pk =
+            P::PqPublicKey::from_bytes(public_key).map_err(|_| SignatureError::InvalidPublicKey)?;
         let sig = P::PqDetachedSignature::from_bytes(signature)
             .map_err(|_| SignatureError::InvalidSignature)?;
 
