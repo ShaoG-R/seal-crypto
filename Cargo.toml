@@ -18,6 +18,8 @@ rsa = { version = "0.9.8", optional = true }
 pqcrypto-kyber = { version = "0.8.1", optional = true }
 aes-gcm = { version = "0.10.3", features = ["std"], optional = true }
 sha2 = { version = "0.10.9", optional = true } # RSA-PSS dependency
+chacha20poly1305 = { version = "0.10", optional = true }
+pqcrypto-dilithium = { version = "0.5.0", optional = true }
 
 # Helper Crates
 thiserror = "2.0.12"
@@ -32,10 +34,12 @@ default = ["full"]
 rsa = ["dep:rsa", "dep:sha2"]
 kyber = ["dep:pqcrypto-kyber", "dep:pqcrypto-traits"]
 aes-gcm = ["dep:aes-gcm"]
+chacha20-poly1305 = ["dep:chacha20poly1305"]
+dilithium = ["dep:pqcrypto-dilithium", "dep:pqcrypto-traits"]
 
 # --- Functionality Set Features ---
 # full activates all implementations
-full = ["rsa", "kyber", "aes-gcm"]
+full = ["rsa", "kyber", "aes-gcm", "chacha20-poly1305", "dilithium"]
 
 [[example]]
 name = "digital_signature"
