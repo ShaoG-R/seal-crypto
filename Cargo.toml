@@ -1,0 +1,35 @@
+[package]
+name = "seal-crypto"
+version = "0.1.0"
+edition = "2021"
+authors = ["GlorYouth <admin@gloryouth.com>"]
+description = "A crate providing pure cryptographic capability abstractions (traits) and implementations for the seal-kit ecosystem."
+license = "MPL-2.0"
+readme = "README.md"
+keywords = ["cryptography", "trait", "kem", "signature", "aead"]
+categories = ["cryptography"]
+
+[dependencies]
+# Cryptography Backends
+rsa = { version = "0.9.8", optional = true }
+pqcrypto-kyber = { version = "0.8.1", optional = true }
+aes-gcm = { version = "0.10.3", features = ["std"], optional = true }
+sha2 = { version = "0.10.9", optional = true } # RSA-PSS dependency
+
+# Helper Crates
+thiserror = "2.0.12"
+pqcrypto-traits = { version = "0.3.5", optional = true }
+rand_core = { version = "0.9.3", features = ["std"] }
+zeroize = { version = "1.8.1", features = ["derive"] }
+
+[features]
+default = ["full"]
+
+# --- Algorithm Implementation Features ---
+rsa = ["dep:rsa", "dep:sha2"]
+kyber = ["dep:pqcrypto-kyber", "dep:pqcrypto-traits"]
+aes-gcm = ["dep:aes-gcm"]
+
+# --- Functionality Set Features ---
+# full activates all implementations
+full = ["rsa", "kyber", "aes-gcm"] 
