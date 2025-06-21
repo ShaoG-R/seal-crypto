@@ -1,4 +1,6 @@
 //! Provides an implementation of the Kyber post-quantum KEM.
+//!
+//! 提供了 Kyber 后量子 KEM 的实现。
 
 use crate::errors::Error;
 use crate::traits::{
@@ -14,6 +16,7 @@ use std::marker::PhantomData;
 use zeroize::Zeroizing;
 
 // ------------------- Marker Structs and Trait for Kyber Parameters -------------------
+// ------------------- 用于 Kyber 参数的标记结构体和 Trait -------------------
 
 mod private {
     pub trait Sealed {}
@@ -21,6 +24,9 @@ mod private {
 
 /// A trait that defines the parameters for a specific Kyber security level.
 /// This is a sealed trait, meaning only types within this crate can implement it.
+///
+/// 一个定义特定 Kyber 安全级别参数的 trait。
+/// 这是一个密封的 trait，意味着只有此 crate 中的类型才能实现它。
 pub trait KyberParams: private::Sealed + Send + Sync + 'static {
     type PqPublicKey: PqPublicKey + Clone;
     type PqSecretKey: PqSecretKey + Clone;
@@ -37,6 +43,8 @@ pub trait KyberParams: private::Sealed + Send + Sync + 'static {
 }
 
 /// Marker struct for Kyber-512 parameters.
+///
+/// Kyber-512 参数的标记结构体。
 #[derive(Debug, Default)]
 pub struct Kyber512;
 impl private::Sealed for Kyber512 {}
@@ -62,6 +70,8 @@ impl KyberParams for Kyber512 {
 }
 
 /// Marker struct for Kyber-768 parameters.
+///
+/// Kyber-768 参数的标记结构体。
 #[derive(Debug, Default)]
 pub struct Kyber768;
 impl private::Sealed for Kyber768 {}
@@ -87,6 +97,8 @@ impl KyberParams for Kyber768 {
 }
 
 /// Marker struct for Kyber-1024 parameters.
+///
+/// Kyber-1024 参数的标记结构体。
 #[derive(Debug, Default)]
 pub struct Kyber1024;
 impl private::Sealed for Kyber1024 {}
@@ -112,8 +124,11 @@ impl KyberParams for Kyber1024 {
 }
 
 // ------------------- Generic Kyber KEM Implementation -------------------
+// ------------------- 通用 Kyber KEM 实现 -------------------
 
 /// A generic struct representing the Kyber cryptographic system for a given parameter set.
+///
+/// 一个通用结构体，表示给定参数集的 Kyber 密码系统。
 #[derive(Debug, Default)]
 pub struct KyberScheme<P: KyberParams> {
     _params: PhantomData<P>,
@@ -167,6 +182,7 @@ impl<P: KyberParams> Kem for KyberScheme<P> {
 }
 
 // ------------------- Tests -------------------
+// ------------------- 测试 -------------------
 
 #[cfg(test)]
 mod tests {
@@ -176,22 +192,26 @@ mod tests {
         type TestScheme<P> = KyberScheme<P>;
 
         // Test key generation
+        // 测试密钥生成
         let (pk, sk) = TestScheme::<P>::generate_keypair().unwrap();
         assert_eq!(pk.len(), P::PUBLIC_KEY_BYTES);
         assert_eq!(sk.len(), P::SECRET_KEY_BYTES);
 
         // Test KEM roundtrip
+        // 测试 KEM 往返操作
         let (ss1, encapsulated_key) = TestScheme::<P>::encapsulate(&pk).unwrap();
         let ss2 = TestScheme::<P>::decapsulate(&sk, &encapsulated_key).unwrap();
         assert_eq!(ss1, ss2);
 
         // Test wrong key decapsulation
+        // 测试使用错误密钥进行解封装
         let (pk2, _sk2) = TestScheme::<P>::generate_keypair().unwrap();
         let (ss_for_pk2, encapsulated_key_for_pk2) = TestScheme::<P>::encapsulate(&pk2).unwrap();
         let wrong_ss = TestScheme::<P>::decapsulate(&sk, &encapsulated_key_for_pk2).unwrap();
         assert_ne!(ss_for_pk2, wrong_ss);
 
         // Test tampered ciphertext
+        // 测试篡改后的密文
         let (ss_orig, mut tampered_ct) = TestScheme::<P>::encapsulate(&pk).unwrap();
         tampered_ct[0] ^= 1;
         let tampered_ss = TestScheme::<P>::decapsulate(&sk, &tampered_ct).unwrap();

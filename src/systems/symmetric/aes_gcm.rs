@@ -1,4 +1,6 @@
 //! Provides an implementation of symmetric AEAD encryption using AES-GCM.
+//!
+//! 提供了使用 AES-GCM 的对称 AEAD 加密实现。
 
 use crate::errors::{Error, Error as CryptoError};
 use crate::traits::symmetric::{
@@ -12,24 +14,37 @@ use std::marker::PhantomData;
 
 
 // ------------------- Marker Structs and Trait for AES-GCM Parameters -------------------
+// ------------------- 用于 AES-GCM 参数的标记结构体和 Trait -------------------
 
 mod private {
     pub trait Sealed {}
 }
 
 /// A sealed trait that defines the parameters for an AES-GCM scheme.
+///
+/// 一个密封的 trait，用于定义 AES-GCM 方案的参数。
 pub trait AesGcmParams: private::Sealed + Send + Sync + 'static {
     /// The underlying `aes_gcm` AEAD cipher type.
+    ///
+    /// 底层的 `aes_gcm` AEAD 密码类型。
     type AeadCipher: Aead + KeyInit;
     /// The size of the key in bytes.
+    ///
+    /// 密钥的大小（以字节为单位）。
     const KEY_SIZE: usize;
     /// The size of the nonce in bytes.
+    ///
+    /// Nonce 的大小（以字节为单位）。
     const NONCE_SIZE: usize;
     /// The size of the authentication tag in bytes.
+    ///
+    /// 认证标签的大小（以字节为单位）。
     const TAG_SIZE: usize;
 }
 
 /// Marker struct for AES-128-GCM.
+///
+/// AES-128-GCM 的标记结构体。
 #[derive(Debug, Default)]
 pub struct Aes128;
 impl private::Sealed for Aes128 {}
@@ -41,6 +56,8 @@ impl AesGcmParams for Aes128 {
 }
 
 /// Marker struct for AES-256-GCM.
+///
+/// AES-256-GCM 的标记结构体。
 #[derive(Debug, Default)]
 pub struct Aes256;
 impl private::Sealed for Aes256 {}
@@ -52,8 +69,11 @@ impl AesGcmParams for Aes256 {
 }
 
 // ------------------- Generic AES-GCM Implementation -------------------
+// ------------------- 通用 AES-GCM 实现 -------------------
 
 /// A generic struct representing the AES-GCM cryptographic system for a given parameter set.
+///
+/// 一个通用结构体，表示给定参数集的 AES-GCM 密码系统。
 #[derive(Debug, Default)]
 pub struct AesGcmScheme<P: AesGcmParams> {
     _params: PhantomData<P>,
@@ -137,6 +157,7 @@ impl<P: AesGcmParams> SymmetricDecryptor for AesGcmScheme<P> {
 }
 
 // ------------------- Tests -------------------
+// ------------------- 测试 -------------------
 
 #[cfg(test)]
 mod tests {
@@ -157,27 +178,32 @@ mod tests {
         OsRng.fill_bytes(&mut nonce);
 
         // With AAD
+        // 使用 AAD
         let ciphertext_aad = S::encrypt(&key, &nonce, &plaintext, Some(&aad)).unwrap();
         let decrypted_aad = S::decrypt(&key, &nonce, &ciphertext_aad, Some(&aad)).unwrap();
         assert_eq!(plaintext, decrypted_aad);
 
         // Without AAD
+        // 不使用 AAD
         let ciphertext_no_aad = S::encrypt(&key, &nonce, &plaintext, None).unwrap();
         let decrypted_no_aad = S::decrypt(&key, &nonce, &ciphertext_no_aad, None).unwrap();
         assert_eq!(plaintext, decrypted_no_aad);
 
         // Empty Plaintext with AAD
+        // 空明文和 AAD
         let ciphertext_empty_pt = S::encrypt(&key, &nonce, &empty_vec, Some(&aad)).unwrap();
         let decrypted_empty_pt = S::decrypt(&key, &nonce, &ciphertext_empty_pt, Some(&aad)).unwrap();
         assert_eq!(empty_vec, decrypted_empty_pt);
 
         // Plaintext with Empty AAD
+        // 明文和空 AAD
         let ciphertext_empty_aad = S::encrypt(&key, &nonce, &plaintext, Some(&empty_vec)).unwrap();
         let decrypted_empty_aad =
             S::decrypt(&key, &nonce, &ciphertext_empty_aad, Some(&empty_vec)).unwrap();
         assert_eq!(plaintext, decrypted_empty_aad);
 
         // Empty Plaintext and Empty AAD
+        // 空明文和空 AAD
         let ciphertext_all_empty =
             S::encrypt(&key, &nonce, &empty_vec, Some(&empty_vec)).unwrap();
         let decrypted_all_empty =
@@ -185,6 +211,7 @@ mod tests {
         assert_eq!(empty_vec, decrypted_all_empty);
 
         // Failure cases
+        // 失败案例
         let res = S::decrypt(&key, &nonce, &ciphertext_aad, None);
         assert!(matches!(
             res.unwrap_err(),
@@ -239,6 +266,7 @@ mod tests {
         let ciphertext = S::encrypt(&key, &nonce, plaintext, Some(aad)).unwrap();
 
         // Wrong key
+        // 错误密钥
         let res = S::decrypt(&wrong_key, &nonce, &ciphertext, Some(aad));
         assert!(matches!(
             res.unwrap_err(),
@@ -246,6 +274,7 @@ mod tests {
         ));
 
         // Wrong nonce
+        // 错误 Nonce
         let res = S::decrypt(&key, &wrong_nonce, &ciphertext, Some(aad));
          assert!(matches!(
             res.unwrap_err(),
