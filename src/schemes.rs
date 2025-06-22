@@ -21,5 +21,6 @@
 //! 它从内部的 `systems` 和 `traits` 模块中重新导出类型，为库的使用者提供一个稳定、直观的"外观"。
 
 pub mod aead;
+pub mod hash;
 pub mod kem;
 pub mod sign;

@@ -48,7 +48,7 @@ pub trait RsaKeyParams: private::Sealed + Send + Sync + 'static {
     const KEY_BITS: usize;
 }
 
-/// Marker struct for RSA-2048.
+/// Marker struct for RSA with a 2048-bit key.
 ///
 /// RSA-2048 的标记结构体。
 #[derive(Debug, Default)]
@@ -58,7 +58,7 @@ impl RsaKeyParams for Rsa2048 {
     const KEY_BITS: usize = 2048;
 }
 
-/// Marker struct for RSA-4096.
+/// Marker struct for RSA with a 4096-bit key.
 ///
 /// RSA-4096 的标记结构体。
 #[derive(Debug, Default)]
@@ -68,47 +68,26 @@ impl RsaKeyParams for Rsa4096 {
     const KEY_BITS: usize = 4096;
 }
 
-/// A generic struct that combines RSA key parameters and a hash function.
-///
-/// 一个组合了 RSA 密钥参数和哈希函数的通用结构体。
-#[derive(Debug, Default)]
-pub struct Rsa<KP: RsaKeyParams, H: Hasher> {
-    _key_params: PhantomData<KP>,
-    _hasher: PhantomData<H>,
-}
-
-/// The main trait for RSA parameters, associating key size and a hash function.
-///
-/// RSA 参数的主 trait，关联了密钥大小和哈希函数。
-pub trait RsaParams: private::Sealed + Send + Sync + 'static {
-    const KEY_BITS: usize;
-    type Hash: Hasher;
-}
-
-impl<KP: RsaKeyParams, H: Hasher> private::Sealed for Rsa<KP, H> {}
-
-impl<KP: RsaKeyParams, H: Hasher> RsaParams for Rsa<KP, H> {
-    const KEY_BITS: usize = KP::KEY_BITS;
-    type Hash = H;
-}
-
 // ------------------- Generic RSA Implementation -------------------
 // ------------------- 通用 RSA 实现 -------------------
 
 const SHARED_SECRET_SIZE: usize = 32;
 
-/// A generic struct representing the RSA cryptographic system for a given parameter set.
+/// A generic struct representing the RSA cryptographic scheme.
+/// It is generic over the RSA key parameters (key size) and the hash function.
 ///
-/// 一个通用结构体，表示给定参数集的 RSA 密码系统。
+/// 一个通用结构体，表示 RSA 密码学方案。
+/// 它在 RSA 密钥参数（密钥大小）和哈希函数上是通用的。
 #[derive(Debug, Default)]
-pub struct RsaScheme<P: RsaParams> {
-    _params: PhantomData<P>,
+pub struct RsaScheme<KP: RsaKeyParams, H: Hasher> {
+    _key_params: PhantomData<KP>,
+    _hasher: PhantomData<H>,
 }
 
-impl<P: RsaParams> KeyGenerator for RsaScheme<P> {
+impl<KP: RsaKeyParams, H: Hasher> KeyGenerator for RsaScheme<KP, H> {
     fn generate_keypair() -> Result<(PublicKey, PrivateKey), Error> {
         let mut rng = OsRng;
-        let private_key = RsaPrivateKey::new(&mut rng, P::KEY_BITS).map_err(Error::Rsa)?;
+        let private_key = RsaPrivateKey::new(&mut rng, KP::KEY_BITS).map_err(Error::Rsa)?;
         let public_key = private_key.to_public_key();
 
         let private_key_der = private_key
@@ -125,7 +104,7 @@ impl<P: RsaParams> KeyGenerator for RsaScheme<P> {
     }
 }
 
-impl<P: RsaParams> Kem for RsaScheme<P> {
+impl<KP: RsaKeyParams, H: Hasher> Kem for RsaScheme<KP, H> {
     type PublicKey = PublicKey;
     type PrivateKey = PrivateKey;
     type EncapsulatedKey = EncapsulatedKey;
@@ -138,7 +117,7 @@ impl<P: RsaParams> Kem for RsaScheme<P> {
         let mut shared_secret_bytes = vec![0u8; SHARED_SECRET_SIZE];
         rng.fill_bytes(&mut shared_secret_bytes);
 
-        let padding = Oaep::new::<<P::Hash as Hasher>::Digest>();
+        let padding = Oaep::new::<H::Digest>();
         let encapsulated_key = rsa_public_key
             .encrypt(&mut rng, padding, &shared_secret_bytes)
             .map_err(|_| KemError::Encapsulation)?;
@@ -153,7 +132,7 @@ impl<P: RsaParams> Kem for RsaScheme<P> {
         let rsa_private_key =
             RsaPrivateKey::from_pkcs8_der(private_key).map_err(|_| KemError::InvalidPrivateKey)?;
 
-        let padding = Oaep::new::<<P::Hash as Hasher>::Digest>();
+        let padding = Oaep::new::<H::Digest>();
         let shared_secret_bytes = rsa_private_key
             .decrypt(padding, encapsulated_key)
             .map_err(|_| KemError::Decapsulation)?;
@@ -162,28 +141,28 @@ impl<P: RsaParams> Kem for RsaScheme<P> {
     }
 }
 
-impl<P: RsaParams> Signer for RsaScheme<P> {
+impl<KP: RsaKeyParams, H: Hasher> Signer for RsaScheme<KP, H> {
     type PrivateKey = PrivateKey;
     type Signature = Signature;
 
     fn sign(private_key: &PrivateKey, message: &[u8]) -> Result<Signature, Error> {
         let rsa_private_key = RsaPrivateKey::from_pkcs8_der(private_key)
             .map_err(|_| SignatureError::InvalidPrivateKey)?;
-        let signing_key = SigningKey::<<P::Hash as Hasher>::Digest>::new(rsa_private_key);
+        let signing_key = SigningKey::<H::Digest>::new(rsa_private_key);
         let mut rng = OsRng;
         let signature = signing_key.sign_with_rng(&mut rng, message);
         Ok(signature.to_vec())
     }
 }
 
-impl<P: RsaParams> Verifier for RsaScheme<P> {
+impl<KP: RsaKeyParams, H: Hasher> Verifier for RsaScheme<KP, H> {
     type PublicKey = PublicKey;
     type Signature = Signature;
 
     fn verify(public_key: &PublicKey, message: &[u8], signature: &Signature) -> Result<(), Error> {
         let rsa_public_key = RsaPublicKey::from_public_key_der(public_key)
             .map_err(|_| SignatureError::InvalidPublicKey)?;
-        let verifying_key = VerifyingKey::<<P::Hash as Hasher>::Digest>::new(rsa_public_key);
+        let verifying_key = VerifyingKey::<H::Digest>::new(rsa_public_key);
         let pss_signature = PssSignature::try_from(signature.as_slice())
             .map_err(|_| SignatureError::InvalidSignature)?;
         use rsa::signature::Verifier;
@@ -196,16 +175,18 @@ impl<P: RsaParams> Verifier for RsaScheme<P> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::schemes::kem::rsa::{Sha256, Sha512};
+    use crate::schemes::hash::{Sha256, Sha512};
 
-    fn run_rsa_tests<P: RsaParams>()
+    fn run_rsa_tests<KP: RsaKeyParams, H: Hasher>()
     where
-        RsaScheme<P>: KeyGenerator
+        RsaScheme<KP, H>: KeyGenerator
             + Kem<PublicKey = Vec<u8>, PrivateKey = Zeroizing<Vec<u8>>>
             + Signer<PrivateKey = PrivateKey, Signature = Signature>
             + Verifier<PublicKey = PublicKey, Signature = Signature>,
     {
-        type TestScheme<P> = RsaScheme<P>;
+        // Define the scheme to be tested based on the generic parameters.
+        // 根据泛型参数定义要测试的方案。
+        type TestScheme<H, KP> = RsaScheme<KP, H>;
 
         // Test key generation
         // 测试密钥生成
@@ -234,12 +215,12 @@ mod tests {
     #[test]
     #[cfg(all(feature = "sha2"))]
     fn test_rsa_2048_sha256() {
-        run_rsa_tests::<Rsa<Rsa2048, Sha256>>();
+        run_rsa_tests::<Rsa2048, Sha256>();
     }
 
     #[test]
     #[cfg(all(feature = "sha2"))]
     fn test_rsa_4096_sha512() {
-        run_rsa_tests::<Rsa<Rsa4096, Sha512>>();
+        run_rsa_tests::<Rsa4096, Sha512>();
     }
 }

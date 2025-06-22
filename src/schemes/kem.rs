@@ -13,8 +13,7 @@ pub use crate::systems::asymmetric::kyber::KyberScheme;
 /// RSA-KEM 方案的参数。
 #[cfg(feature = "rsa")]
 pub mod rsa {
-    pub use crate::systems::asymmetric::rsa::{Rsa, Rsa2048, Rsa4096};
-    pub use crate::traits::hash::{Sha256, Sha384, Sha512};
+    pub use crate::systems::asymmetric::rsa::{Rsa2048, Rsa4096};
 }
 
 /// Parameters for the Kyber KEM scheme.

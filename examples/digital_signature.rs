@@ -8,7 +8,7 @@ use seal_crypto::schemes::sign::{self, RsaScheme};
 fn main() -> Result<(), CryptoError> {
     // Define the concrete RSA scheme we want to use.
     // 定义我们想要使用的具体 RSA 方案。
-    type MyRsa = RsaScheme<sign::rsa::Rsa<sign::rsa::Rsa4096, sign::rsa::Sha256>>;
+    type MyRsa = RsaScheme<sign::rsa::Rsa4096, sign::rsa::Sha256>;
 
     println!("Running digital signature example... / 正在运行数字签名示例...");
 
