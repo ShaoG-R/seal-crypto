@@ -11,8 +11,7 @@ use crate::traits::symmetric::{
 use chacha20poly1305::aead::rand_core::RngCore;
 use chacha20poly1305::aead::{Aead, Key, KeyInit, Nonce, OsRng, Payload};
 use chacha20poly1305::{
-    ChaCha20Poly1305 as ChaCha20Poly1305Core,
-    XChaCha20Poly1305 as XChaCha20Poly1305Core,
+    ChaCha20Poly1305 as ChaCha20Poly1305Core, XChaCha20Poly1305 as XChaCha20Poly1305Core,
 };
 use std::marker::PhantomData;
 

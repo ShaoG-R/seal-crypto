@@ -52,7 +52,7 @@ pub trait RsaKeyParams: private::Sealed + Send + Sync + 'static {
 /// Marker struct for RSA with a 2048-bit key.
 ///
 /// RSA-2048 的标记结构体。
-#[derive(Debug, Default)]
+#[derive(Debug, Clone, Default)]
 pub struct Rsa2048;
 impl private::Sealed for Rsa2048 {}
 impl RsaKeyParams for Rsa2048 {
@@ -62,7 +62,7 @@ impl RsaKeyParams for Rsa2048 {
 /// Marker struct for RSA with a 4096-bit key.
 ///
 /// RSA-4096 的标记结构体。
-#[derive(Debug, Default)]
+#[derive(Debug, Clone, Default)]
 pub struct Rsa4096;
 impl private::Sealed for Rsa4096 {}
 impl RsaKeyParams for Rsa4096 {
@@ -156,10 +156,11 @@ impl<KP: RsaKeyParams, H: Hasher + 'static> key::Algorithm for RsaScheme<KP, H> 
 impl<KP: RsaKeyParams, H: Hasher> KeyGenerator for RsaScheme<KP, H> {
     fn generate_keypair() -> Result<(RsaPublicKey, RsaPrivateKey), Error> {
         let mut rng = OsRng;
-        let private_key =
-            rsa::RsaPrivateKey::new(&mut rng, KP::KEY_BITS).map_err(Error::Rsa)?;
+        let private_key = rsa::RsaPrivateKey::new(&mut rng, KP::KEY_BITS).map_err(Error::Rsa)?;
         let public_key = RsaPublicKey(private_key.to_public_key());
-        let private_key_der = private_key.to_pkcs8_der().map_err(|e| Error::Rsa(e.into()))?;
+        let private_key_der = private_key
+            .to_pkcs8_der()
+            .map_err(|e| Error::Rsa(e.into()))?;
         Ok((
             public_key,
             RsaPrivateKey(Zeroizing::new(private_key_der.as_bytes().to_vec())),
@@ -203,8 +204,8 @@ impl<KP: RsaKeyParams, H: Hasher> Kem for RsaScheme<KP, H> {
 
 impl<KP: RsaKeyParams, H: Hasher> Signer for RsaScheme<KP, H> {
     fn sign(private_key: &RsaPrivateKey, message: &[u8]) -> Result<Signature, Error> {
-        let rsa_private_key = rsa::RsaPrivateKey::from_pkcs8_der(&private_key.0)
-            .map_err(|e| Error::Rsa(e.into()))?;
+        let rsa_private_key =
+            rsa::RsaPrivateKey::from_pkcs8_der(&private_key.0).map_err(|e| Error::Rsa(e.into()))?;
         let signing_key = SigningKey::<H::Digest>::new(rsa_private_key);
         let mut rng = OsRng;
         let signature = signing_key.sign_with_rng(&mut rng, message);
@@ -231,7 +232,7 @@ impl<KP: RsaKeyParams, H: Hasher> Verifier for RsaScheme<KP, H> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::schemes::hash::{Sha256, Sha512};
+    use crate::traits::hash::{Sha256, Sha512};
     use crate::traits::key::Key;
 
     fn run_rsa_tests<KP: RsaKeyParams, H: Hasher>()
