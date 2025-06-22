@@ -39,10 +39,11 @@ Here is a quick example of signing and verifying a message using RSA-4096 with S
 ```rust
 use seal_crypto::prelude::*;
 use seal_crypto::schemes::sign::{self, RsaScheme};
+use seal_crypto::schemes::hash::Sha256;
 
 fn main() -> Result<(), CryptoError> {
     // 1. Define the scheme by combining key parameters and a hash function.
-    type MyRsaScheme = RsaScheme<sign::rsa::Rsa<sign::rsa::Rsa4096, sign::rsa::Sha256>>;
+    type MyRsaScheme = RsaScheme<sign::rsa::Rsa4096, Sha256>;
 
     // 2. Generate a key pair.
     let (public_key, private_key) = MyRsaScheme::generate_keypair()?;
