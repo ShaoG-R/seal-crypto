@@ -233,10 +233,13 @@ pub struct DilithiumScheme<P: DilithiumParams> {
     _params: PhantomData<P>,
 }
 
-impl<P: DilithiumParams + 'static + Clone> key::Algorithm for DilithiumScheme<P> {
-    const NAME: &'static str = "Dilithium";
+impl<P: DilithiumParams + Clone> key::AsymmetricKeySet for DilithiumScheme<P> {
     type PublicKey = DilithiumPublicKey<P>;
     type PrivateKey = DilithiumSecretKey<P>;
+}
+
+impl<P: DilithiumParams + Clone + 'static> key::Algorithm for DilithiumScheme<P> {
+    const NAME: &'static str = "Dilithium";
 }
 
 impl<P: DilithiumParams + Clone> KeyGenerator for DilithiumScheme<P> {

@@ -73,6 +73,58 @@ cargo run --example hybrid_encryption --features "full"
 cargo run --example digital_signature --features "full"
 ```
 
+## Trait 设计哲学
+
+`seal-crypto` 的强大与清晰源于其分层的、一致的、单一职责的 Trait 架构。这种设计使得库既易于完成常见任务，又足够灵活以支持高级的泛型编程。
+
+其层次结构可以可视化如下：
+
+```mermaid
+graph TD
+    subgraph "基础层：密钥原语"
+        A[Key<br/><i>定义如序列化等基础行为</i>]
+        B[PublicKey / PrivateKey<br/><i>密钥类型的标记 Trait</i>]
+    end
+
+    subgraph "第一层：KeySet - 单一事实来源"
+        C[AsymmetricKeySet<br/><b>- type PublicKey<br/>- type PrivateKey</b>]
+        D[SymmetricKeySet<br/><b>- type Key</b>]
+    end
+
+    subgraph "第二层：能力"
+        E[Algorithm<br/><i>继承 AsymmetricKeySet,<br/>添加 `NAME` 常量</i>]
+        F[KeyGenerator<br/><i>继承 Algorithm,<br/>添加 `generate_keypair`</i>]
+        G[Signer / Verifier<br/><i>继承 Algorithm,<br/>添加 `sign`/`verify`</i>]
+        H[Kem<br/><i>继承 Algorithm,<br/>添加 `encapsulate`/`decapsulate`</i>]
+        I[SymmetricKeyGenerator<br/><i>继承 SymmetricKeySet,<br/>添加 `generate_key`</i>]
+        J[SymmetricEncryptor / Decryptor<br/><i>继承 SymmetricKeySet,<br/>添加 `encrypt`/`decrypt`</i>]
+    end
+    
+    subgraph "第三层：方案包 (为方便起见)"
+        K[SignatureScheme<br/><i>捆绑 Algorithm, KeyGenerator, Signer, Verifier</i>]
+        L[AeadScheme<br/><i>捆绑 SymmetricKeySet, SymmetricKeyGenerator 等</i>]
+    end
+
+    A --> B
+    C --> E --> F
+    E --> G
+    E --> H
+    F & G --> K
+
+    D --> I
+    D --> J
+    I & J --> L
+```
+
+各层解析如下：
+
+1.  **基础层：密钥原语**: 位于最底层的是像 `Key`, `PublicKey`, 和 `PrivateKey` 这样的基础 Trait。它们定义了任何密钥都必须具备的最基本的属性。
+2.  **第一层：KeySet**: 这是设计的核心。`AsymmetricKeySet` 和 `SymmetricKeySet` 的职责只有一个：为某个加密方案定义其关联的密钥类型。它们是 `PublicKey`, `PrivateKey`, 和 `SymmetricKey` 的**唯一事实来源**。
+3.  **第二层：能力**: 这一层定义了"动作"。像 `KeyGenerator`, `Signer`, `Kem`, 和 `SymmetricEncryptor` 这样的 Trait 继承自 KeySet 层，并添加了具体的方法（`generate_keypair`, `sign`, `encapsulate` 等）。它们定义了你能用一个方案来*做什么*。
+4.  **第三层：方案包**: 为了方便用户，我们提供了像 `SignatureScheme` 和 `AeadScheme` 这样的"超级 Trait"。它们不添加任何新方法，而是将所有相关的能力捆绑到一个单一、易用的 Trait 中。
+
+这种分层的方法确保了每个 Trait 都有其明确的用途，避免了歧义，并使得整个库高度一致和可预测。
+
 ## API 概览
 
 API 主要由以下几个核心 `trait` 组成，它们位于 `seal_crypto::traits` 模块下：

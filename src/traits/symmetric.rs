@@ -2,7 +2,7 @@
 //!
 //! 定义了对称认证加密的 trait。
 
-use crate::errors::Error;
+use crate::{errors::Error, traits::key::SymmetricKeySet};
 #[cfg(feature = "std")]
 use thiserror::Error;
 use zeroize::Zeroizing;
@@ -76,9 +76,7 @@ pub trait SymmetricCipher {
 /// A trait for Authenticated Encryption with Associated Data (AEAD) ciphers.
 ///
 /// 用于带关联数据的认证加密 (AEAD) 密码的 trait。
-pub trait SymmetricEncryptor: SymmetricCipher {
-    type Key: 'static;
-
+pub trait SymmetricEncryptor: SymmetricKeySet + SymmetricCipher {
     /// Encrypts a plaintext with a given nonce, producing a ciphertext with tag.
     ///
     /// # Arguments
@@ -111,9 +109,7 @@ pub trait SymmetricEncryptor: SymmetricCipher {
 /// A trait for AEAD ciphers that can decrypt a ciphertext.
 ///
 /// 用于可解密密文的 AEAD 密码的 trait。
-pub trait SymmetricDecryptor: SymmetricCipher {
-    type Key: 'static;
-
+pub trait SymmetricDecryptor: SymmetricKeySet + SymmetricCipher {
     /// Decrypts a ciphertext, producing the original plaintext.
     ///
     /// # Arguments
@@ -146,8 +142,7 @@ pub trait SymmetricDecryptor: SymmetricCipher {
 /// A trait for generating symmetric keys.
 ///
 /// 用于生成对称密钥的 trait。
-pub trait SymmetricKeyGenerator {
-    type Key: 'static;
+pub trait SymmetricKeyGenerator: SymmetricKeySet {
     /// The size of the key in bytes.
     ///
     /// 密钥的大小（以字节为单位）。
@@ -166,19 +161,15 @@ pub trait SymmetricKeyGenerator {
 ///
 /// 该 trait 结合了密钥生成、加密和解密的能力。
 pub trait AeadScheme:
-    SymmetricKeyGenerator
-    + SymmetricEncryptor<Key = <Self as SymmetricKeyGenerator>::Key>
-    + SymmetricDecryptor<Key = <Self as SymmetricKeyGenerator>::Key>
-    + SymmetricCipher
-    + Send
-    + Sync
+    SymmetricKeySet + SymmetricKeyGenerator + SymmetricEncryptor + SymmetricDecryptor + SymmetricCipher + Send + Sync
 {
 }
 
 impl<T> AeadScheme for T where
-    T: SymmetricKeyGenerator
-        + SymmetricEncryptor<Key = <Self as SymmetricKeyGenerator>::Key>
-        + SymmetricDecryptor<Key = <Self as SymmetricKeyGenerator>::Key>
+    T: SymmetricKeySet
+        + SymmetricKeyGenerator
+        + SymmetricEncryptor
+        + SymmetricDecryptor
         + SymmetricCipher
         + Send
         + Sync

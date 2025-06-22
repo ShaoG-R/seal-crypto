@@ -144,10 +144,13 @@ pub struct RsaScheme<KP: RsaKeyParams, H: Hasher = Sha256> {
     _hasher: PhantomData<H>,
 }
 
-impl<KP: RsaKeyParams, H: Hasher + 'static> key::Algorithm for RsaScheme<KP, H> {
-    const NAME: &'static str = "RSA-PSS";
+impl<KP: RsaKeyParams, H: Hasher + 'static> key::AsymmetricKeySet for RsaScheme<KP, H> {
     type PublicKey = RsaPublicKey;
     type PrivateKey = RsaPrivateKey;
+}
+
+impl<KP: RsaKeyParams, H: Hasher + 'static> key::Algorithm for RsaScheme<KP, H> {
+    const NAME: &'static str = "RSA-PSS";
 }
 
 impl<KP: RsaKeyParams, H: Hasher> KeyGenerator for RsaScheme<KP, H> {

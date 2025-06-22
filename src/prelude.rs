@@ -7,7 +7,10 @@ pub use crate::errors::Error as CryptoError;
 pub use crate::traits::{
     hash::Hasher,
     kem::Kem,
-    key::{Key, KeyGenerator, KeyPair, PrivateKey, PublicKey, Algorithm},
+    key::{
+        Algorithm, AsymmetricKeySet, Key, KeyGenerator, KeyPair, PrivateKey, PublicKey,
+        SymmetricKeySet,
+    },
     sign::{SignatureScheme, Signer, Verifier},
     symmetric::{
         AeadScheme, SymmetricCipher, SymmetricDecryptor, SymmetricEncryptor, SymmetricKeyGenerator,

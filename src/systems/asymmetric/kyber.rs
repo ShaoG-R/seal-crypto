@@ -236,10 +236,13 @@ pub struct KyberScheme<P: KyberParams> {
     _params: PhantomData<P>,
 }
 
-impl<P: KyberParams + Clone> key::Algorithm for KyberScheme<P> {
-    const NAME: &'static str = "KYBER-KEM";
+impl<P: KyberParams + Clone> key::AsymmetricKeySet for KyberScheme<P> {
     type PublicKey = KyberPublicKey<P>;
     type PrivateKey = KyberSecretKey<P>;
+}
+
+impl<P: KyberParams + Clone> key::Algorithm for KyberScheme<P> {
+    const NAME: &'static str = "KYBER-KEM";
 }
 
 impl<P: KyberParams + Clone> KeyGenerator for KyberScheme<P> {
@@ -277,9 +280,6 @@ impl<P: KyberParams + Clone> Kem for KyberScheme<P> {
         private_key: &Self::PrivateKey,
         encapsulated_key: &EncapsulatedKey,
     ) -> Result<SharedSecret, Error> {
-        if encapsulated_key.len() != P::CIPHERTEXT_BYTES {
-            return Err(KemError::InvalidEncapsulatedKey.into());
-        }
         let sk = P::PqSecretKey::from_bytes(&private_key.bytes)
             .map_err(|_| KemError::InvalidPrivateKey)?;
         let ct = P::PqCiphertext::from_bytes(encapsulated_key)

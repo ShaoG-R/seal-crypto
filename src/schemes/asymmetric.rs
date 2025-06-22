@@ -7,7 +7,7 @@
 /// 基于 RSA 的方案。
 pub mod rsa {
     pub use crate::systems::asymmetric::rsa::{
-        Rsa2048, Rsa4096, RsaPublicKey, RsaScheme,
+        Rsa2048, Rsa4096, RsaPrivateKey, RsaPublicKey, RsaScheme,
     };
 }
 
@@ -17,7 +17,7 @@ pub mod rsa {
 /// 基于 Kyber 的方案。
 pub mod kyber {
     pub use crate::systems::asymmetric::kyber::{
-        Kyber1024, Kyber512, Kyber768, KyberScheme,
+        Kyber1024, Kyber512, Kyber768, KyberScheme, KyberSecretKey,
     };
 }
 
@@ -27,6 +27,6 @@ pub mod kyber {
 /// 基于 Dilithium 的方案。
 pub mod dilithium {
     pub use crate::systems::asymmetric::dilithium::{
-        Dilithium2, Dilithium3, Dilithium5, DilithiumScheme,
+        Dilithium2, Dilithium3, Dilithium5, DilithiumScheme, DilithiumSecretKey,
     };
 } 

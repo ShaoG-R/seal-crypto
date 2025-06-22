@@ -3,6 +3,7 @@
 //! 提供了使用 AES-GCM 的对称 AEAD 加密实现。
 
 use crate::errors::Error;
+use crate::traits::key::SymmetricKeySet;
 use crate::traits::symmetric::{
     AssociatedData, SymmetricCipher, SymmetricDecryptor, SymmetricEncryptor, SymmetricError,
     SymmetricKey, SymmetricKeyGenerator,
@@ -80,6 +81,10 @@ pub struct AesGcmScheme<P: AesGcmParams> {
     _params: PhantomData<P>,
 }
 
+impl<P: AesGcmParams> SymmetricKeySet for AesGcmScheme<P> {
+    type Key = SymmetricKey;
+}
+
 impl<P: AesGcmParams> SymmetricCipher for AesGcmScheme<P> {
     const KEY_SIZE: usize = P::KEY_SIZE;
     const NONCE_SIZE: usize = P::NONCE_SIZE;
@@ -87,7 +92,6 @@ impl<P: AesGcmParams> SymmetricCipher for AesGcmScheme<P> {
 }
 
 impl<P: AesGcmParams> SymmetricKeyGenerator for AesGcmScheme<P> {
-    type Key = SymmetricKey;
     const KEY_SIZE: usize = P::KEY_SIZE;
 
     fn generate_key() -> Result<SymmetricKey, Error> {
@@ -100,8 +104,6 @@ impl<P: AesGcmParams> SymmetricKeyGenerator for AesGcmScheme<P> {
 }
 
 impl<P: AesGcmParams> SymmetricEncryptor for AesGcmScheme<P> {
-    type Key = SymmetricKey;
-
     fn encrypt(
         key: &Self::Key,
         nonce: &[u8],
@@ -129,8 +131,6 @@ impl<P: AesGcmParams> SymmetricEncryptor for AesGcmScheme<P> {
 }
 
 impl<P: AesGcmParams> SymmetricDecryptor for AesGcmScheme<P> {
-    type Key = SymmetricKey;
-
     fn decrypt(
         key: &Self::Key,
         nonce: &[u8],

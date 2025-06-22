@@ -3,6 +3,7 @@
 //! 提供了使用 ChaCha20-Poly1305 的对称 AEAD 加密实现。
 
 use crate::errors::Error;
+use crate::traits::key::SymmetricKeySet;
 use crate::traits::symmetric::{
     AssociatedData, SymmetricCipher, SymmetricDecryptor, SymmetricEncryptor, SymmetricError,
     SymmetricKey, SymmetricKeyGenerator,
@@ -81,6 +82,10 @@ pub struct Chacha20Poly1305Scheme<P: Chacha20Poly1305Params> {
     _params: PhantomData<P>,
 }
 
+impl<P: Chacha20Poly1305Params> SymmetricKeySet for Chacha20Poly1305Scheme<P> {
+    type Key = SymmetricKey;
+}
+
 impl<P: Chacha20Poly1305Params> SymmetricCipher for Chacha20Poly1305Scheme<P> {
     const KEY_SIZE: usize = P::KEY_SIZE;
     const NONCE_SIZE: usize = P::NONCE_SIZE;
@@ -88,7 +93,6 @@ impl<P: Chacha20Poly1305Params> SymmetricCipher for Chacha20Poly1305Scheme<P> {
 }
 
 impl<P: Chacha20Poly1305Params> SymmetricKeyGenerator for Chacha20Poly1305Scheme<P> {
-    type Key = SymmetricKey;
     const KEY_SIZE: usize = P::KEY_SIZE;
 
     fn generate_key() -> Result<SymmetricKey, Error> {
@@ -101,8 +105,6 @@ impl<P: Chacha20Poly1305Params> SymmetricKeyGenerator for Chacha20Poly1305Scheme
 }
 
 impl<P: Chacha20Poly1305Params> SymmetricEncryptor for Chacha20Poly1305Scheme<P> {
-    type Key = SymmetricKey;
-
     fn encrypt(
         key: &Self::Key,
         nonce: &[u8],
@@ -130,8 +132,6 @@ impl<P: Chacha20Poly1305Params> SymmetricEncryptor for Chacha20Poly1305Scheme<P>
 }
 
 impl<P: Chacha20Poly1305Params> SymmetricDecryptor for Chacha20Poly1305Scheme<P> {
-    type Key = SymmetricKey;
-
     fn decrypt(
         key: &Self::Key,
         nonce: &[u8],

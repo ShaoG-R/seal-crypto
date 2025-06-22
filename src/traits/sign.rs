@@ -3,7 +3,7 @@
 //! 定义了用于数字签名创建和验证的 trait。
 
 use crate::errors::Error;
-use crate::traits::key::{KeyGenerator, Algorithm as SignatureSchemeCore};
+use crate::traits::key::{Algorithm, KeyGenerator, PrivateKey, PublicKey};
 #[cfg(feature = "std")]
 use thiserror::Error;
 
@@ -54,7 +54,7 @@ pub enum SignatureError {
 /// A trait for cryptographic schemes that can create digital signatures.
 ///
 /// 用于能够创建数字签名的加密方案的 trait。
-pub trait Signer: SignatureSchemeCore {
+pub trait Signer: Algorithm {
     /// Creates a digital signature for a given message digest.
     ///
     /// 为给定的消息摘要创建一个数字签名。
@@ -64,7 +64,7 @@ pub trait Signer: SignatureSchemeCore {
 /// A trait for cryptographic schemes that can verify digital signatures.
 ///
 /// 用于能够验证数字签名的加密方案的 trait。
-pub trait Verifier: SignatureSchemeCore {
+pub trait Verifier: Algorithm {
     /// Verifies a digital signature for a given message digest.
     ///
     /// # Returns
@@ -90,6 +90,6 @@ pub trait Verifier: SignatureSchemeCore {
 ///
 /// 它结合了密钥生成、签名和验证的能力。
 /// 这是签名算法应该实现的主要 trait。
-pub trait SignatureScheme: SignatureSchemeCore + KeyGenerator + Signer + Verifier {}
+pub trait SignatureScheme: Algorithm + KeyGenerator + Signer + Verifier {}
 
-impl<T: SignatureSchemeCore + KeyGenerator + Signer + Verifier> SignatureScheme for T {}
+impl<T: Algorithm + KeyGenerator + Signer + Verifier> SignatureScheme for T {}

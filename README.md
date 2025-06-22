@@ -73,6 +73,58 @@ cargo run --example hybrid_encryption --features "full"
 cargo run --example digital_signature --features "full"
 ```
 
+## Trait Design Philosophy
+
+The power and clarity of `seal-crypto` come from its layered, consistent, and single-responsibility trait architecture. This design makes the library both easy to use for common tasks and flexible enough for advanced generic programming.
+
+The hierarchy can be visualized as follows:
+
+```mermaid
+graph TD
+    subgraph "Base Layer: Key Primitives"
+        A[Key<br/><i>Defines basic key behaviors like serialization.</i>]
+        B[PublicKey / PrivateKey<br/><i>Marker traits for key types.</i>]
+    end
+
+    subgraph "Layer 1: KeySet - The Single Source of Truth"
+        C[AsymmetricKeySet<br/><b>- type PublicKey<br/>- type PrivateKey</b>]
+        D[SymmetricKeySet<br/><b>- type Key</b>]
+    end
+
+    subgraph "Layer 2: Capabilities"
+        E[Algorithm<br/><i>Inherits AsymmetricKeySet,<br/>adds `NAME` constant.</i>]
+        F[KeyGenerator<br/><i>Inherits Algorithm,<br/>adds `generate_keypair`.</i>]
+        G[Signer / Verifier<br/><i>Inherit Algorithm,<br/>add `sign`/`verify`.</i>]
+        H[Kem<br/><i>Inherits Algorithm,<br/>adds `encapsulate`/`decapsulate`.</i>]
+        I[SymmetricKeyGenerator<br/><i>Inherits SymmetricKeySet,<br/>adds `generate_key`.</i>]
+        J[SymmetricEncryptor / Decryptor<br/><i>Inherit SymmetricKeySet,<br/>add `encrypt`/`decrypt`.</i>]
+    end
+    
+    subgraph "Layer 3: Scheme Bundles (for convenience)"
+        K[SignatureScheme<br/><i>Bundles Algorithm, KeyGenerator, Signer, Verifier.</i>]
+        L[AeadScheme<br/><i>Bundles SymmetricKeySet, SymmetricKeyGenerator, etc.</i>]
+    end
+
+    A --> B
+    C --> E --> F
+    E --> G
+    E --> H
+    F & G --> K
+
+    D --> I
+    D --> J
+    I & J --> L
+```
+
+Here's a breakdown of the layers:
+
+1.  **Base Layer: Key Primitives**: At the very bottom are fundamental traits like `Key`, `PublicKey`, and `PrivateKey`. They define the absolute basic properties of any key.
+2.  **Layer 1: The KeySet**: This is the core of the design. `AsymmetricKeySet` and `SymmetricKeySet` have a single responsibility: to define the associated key types for a cryptographic scheme. They are the **single source of truth** for `PublicKey`, `PrivateKey`, and `SymmetricKey`.
+3.  **Layer 2: Capabilities**: This layer defines actions. Traits like `KeyGenerator`, `Signer`, `Kem`, and `SymmetricEncryptor` inherit from the KeySet layer and add specific methods (`generate_keypair`, `sign`, `encapsulate`, etc.). They define *what you can do* with a scheme.
+4.  **Layer 3: Scheme Bundles**: For user convenience, we provide "supertraits" like `SignatureScheme` and `AeadScheme`. They don't add new methods but bundle all relevant capabilities into a single, easy-to-use trait.
+
+This layered approach ensures that every trait has a clear purpose, preventing ambiguity and making the entire library highly consistent and predictable.
+
 ## Supported Algorithms
 
 | Capability | Algorithm | Cargo Feature |
