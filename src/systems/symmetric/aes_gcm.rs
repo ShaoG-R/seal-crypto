@@ -10,9 +10,7 @@ use crate::traits::symmetric::{
 };
 use aes_gcm::aead::rand_core::RngCore;
 use aes_gcm::aead::{Aead, KeyInit, OsRng, Payload};
-use aes_gcm::{
-    Aes128Gcm as Aes128GcmCore, Aes256Gcm as Aes256GcmCore, Nonce as NonceCore,
-};
+use aes_gcm::{Aes128Gcm as Aes128GcmCore, Aes256Gcm as Aes256GcmCore, Nonce as NonceCore};
 use std::marker::PhantomData;
 
 // ------------------- Marker Structs and Trait for AES-GCM Parameters -------------------

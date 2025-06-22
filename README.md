@@ -38,8 +38,8 @@ Here is a quick example of signing and verifying a message using RSA-4096 with S
 
 ```rust
 use seal_crypto::prelude::*;
-use seal_crypto::schemes::asymmetric::rsa::{Rsa4096, RsaScheme};
-// use seal_crypto::schemes::hash::Sha256;
+use seal_cryptos::asymmetric::rsa::{Rsa4096, RsaScheme};
+// use seal_cryptos::hash::Sha256;
 
 fn main() -> Result<(), CryptoError> {
     // 1. Define the scheme by key parameters.

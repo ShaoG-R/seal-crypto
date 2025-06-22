@@ -264,11 +264,9 @@ impl<P: KyberParams + Clone> KeyGenerator for KyberScheme<P> {
 impl<P: KyberParams + Clone> Kem for KyberScheme<P> {
     type EncapsulatedKey = EncapsulatedKey;
 
-    fn encapsulate(
-        public_key: &Self::PublicKey,
-    ) -> Result<(SharedSecret, EncapsulatedKey), Error> {
-        let pk = PqPublicKey::from_bytes(&public_key.bytes)
-            .map_err(|_| KemError::InvalidPublicKey)?;
+    fn encapsulate(public_key: &Self::PublicKey) -> Result<(SharedSecret, EncapsulatedKey), Error> {
+        let pk =
+            PqPublicKey::from_bytes(&public_key.bytes).map_err(|_| KemError::InvalidPublicKey)?;
         let (ss, ct) = P::encapsulate(&pk);
         Ok((
             Zeroizing::new(ss.as_bytes().to_vec()),
@@ -280,8 +278,8 @@ impl<P: KyberParams + Clone> Kem for KyberScheme<P> {
         private_key: &Self::PrivateKey,
         encapsulated_key: &EncapsulatedKey,
     ) -> Result<SharedSecret, Error> {
-        let sk = PqSecretKey::from_bytes(&private_key.bytes)
-            .map_err(|_| KemError::InvalidPrivateKey)?;
+        let sk =
+            PqSecretKey::from_bytes(&private_key.bytes).map_err(|_| KemError::InvalidPrivateKey)?;
         let ct = PqCiphertext::from_bytes(encapsulated_key)
             .map_err(|_| KemError::InvalidEncapsulatedKey)?;
 
@@ -298,7 +296,10 @@ mod tests {
     use super::*;
     use crate::traits::key::Key;
 
-    fn run_kyber_tests<P: KyberParams + Default + std::fmt::Debug>() where P: Clone {
+    fn run_kyber_tests<P: KyberParams + Default + std::fmt::Debug>()
+    where
+        P: Clone,
+    {
         let (pk, sk) = KyberScheme::<P>::generate_keypair().unwrap();
         assert_eq!(pk.to_bytes().len(), P::PUBLIC_KEY_BYTES);
         assert_eq!(sk.to_bytes().len(), P::SECRET_KEY_BYTES);
@@ -318,8 +319,7 @@ mod tests {
 
         // Test wrong key decapsulation
         let (pk2, _sk2) = KyberScheme::<P>::generate_keypair().unwrap();
-        let (ss_for_pk2, encapsulated_key_for_pk2) =
-            KyberScheme::<P>::encapsulate(&pk2).unwrap();
+        let (ss_for_pk2, encapsulated_key_for_pk2) = KyberScheme::<P>::encapsulate(&pk2).unwrap();
         let wrong_ss = KyberScheme::<P>::decapsulate(&sk, &encapsulated_key_for_pk2).unwrap();
         assert_ne!(ss_for_pk2, wrong_ss);
 

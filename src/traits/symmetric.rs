@@ -161,7 +161,13 @@ pub trait SymmetricKeyGenerator: SymmetricKeySet {
 ///
 /// 该 trait 结合了密钥生成、加密和解密的能力。
 pub trait AeadScheme:
-    SymmetricKeySet + SymmetricKeyGenerator + SymmetricEncryptor + SymmetricDecryptor + SymmetricCipher + Send + Sync
+    SymmetricKeySet
+    + SymmetricKeyGenerator
+    + SymmetricEncryptor
+    + SymmetricDecryptor
+    + SymmetricCipher
+    + Send
+    + Sync
 {
 }
 

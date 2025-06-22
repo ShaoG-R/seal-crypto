@@ -38,8 +38,8 @@ seal-crypto = { version = "0.1.0", features = ["full"] }
 
 ```rust
 use seal_crypto::prelude::*;
-use seal_crypto::schemes::asymmetric::rsa::{Rsa4096, RsaScheme};
-// use seal_crypto::schemes::hash::Sha256;
+use seal_cryptos::asymmetric::rsa::{Rsa4096, RsaScheme};
+// use seal_cryptos::hash::Sha256;
 
 fn main() -> Result<(), CryptoError> {
     // 1. 通过密钥参数来定义方案。
