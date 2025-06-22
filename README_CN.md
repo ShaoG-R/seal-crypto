@@ -43,7 +43,7 @@ use seal_crypto::schemes::sign::{self, RsaScheme};
 
 fn main() -> Result<(), CryptoError> {
     // 1. 通过密钥参数来定义方案。
-    type MyRsaScheme = RsaScheme<sign::rsa::Rsa4096, Sha256>; // 相当于 RsaScheme<sign::rsa::Rsa4096, Sha256>
+    type MyRsaScheme = RsaScheme<sign::rsa::Rsa4096>; // 相当于 RsaScheme<sign::rsa::Rsa4096, Sha256>
 
     // 2. 生成密钥对。
     let (public_key, private_key) = MyRsaScheme::generate_keypair()?;
