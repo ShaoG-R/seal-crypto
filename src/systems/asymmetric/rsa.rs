@@ -28,7 +28,7 @@ use rsa::{
 };
 use std::marker::PhantomData;
 use zeroize::Zeroizing;
-
+use crate::traits::hash::Sha256;
 // ------------------- Marker Structs and Trait for RSA Parameters -------------------
 // ------------------- 用于 RSA 参数的标记结构体和 Trait -------------------
 
@@ -79,7 +79,7 @@ const SHARED_SECRET_SIZE: usize = 32;
 /// 一个通用结构体，表示 RSA 密码学方案。
 /// 它在 RSA 密钥参数（密钥大小）和哈希函数上是通用的。
 #[derive(Debug, Default)]
-pub struct RsaScheme<KP: RsaKeyParams, H: Hasher> {
+pub struct RsaScheme<KP: RsaKeyParams, H: Hasher = Sha256> {
     _key_params: PhantomData<KP>,
     _hasher: PhantomData<H>,
 }
