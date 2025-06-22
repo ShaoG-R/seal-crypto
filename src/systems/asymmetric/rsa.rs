@@ -18,7 +18,7 @@ use crate::traits::{
     hash::Hasher,
     kem::{EncapsulatedKey, Kem, KemError, SharedSecret},
     key::{self, KeyGenerator},
-    sign::{self, Signature, SignatureError, Signer, Verifier},
+    sign::{Signature, SignatureError, Signer, Verifier},
 };
 use rsa::signature::{RandomizedSigner, SignatureEncoding};
 use rsa::{
@@ -27,9 +27,9 @@ use rsa::{
     rand_core::{OsRng, RngCore},
     Oaep,
 };
+use std::convert::TryFrom;
 use std::marker::PhantomData;
 use zeroize::{Zeroize, Zeroizing};
-use std::convert::TryFrom;
 // ------------------- Marker Structs and Trait for RSA Parameters -------------------
 // ------------------- 用于 RSA 参数的标记结构体和 Trait -------------------
 
@@ -208,7 +208,7 @@ impl<KP: RsaKeyParams, H: Hasher> Signer for RsaScheme<KP, H> {
         let signing_key = SigningKey::<H::Digest>::new(rsa_private_key);
         let mut rng = OsRng;
         let signature = signing_key.sign_with_rng(&mut rng, message);
-        Ok(sign::Signature(signature.to_vec()))
+        Ok(Signature(signature.to_vec()))
     }
 }
 

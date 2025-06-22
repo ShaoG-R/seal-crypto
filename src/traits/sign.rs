@@ -3,7 +3,7 @@
 //! 定义了用于数字签名创建和验证的 trait。
 
 use crate::errors::Error;
-use crate::traits::key::{Algorithm, KeyGenerator, PrivateKey, PublicKey};
+use crate::traits::key::{Algorithm, KeyGenerator};
 #[cfg(feature = "std")]
 use thiserror::Error;
 

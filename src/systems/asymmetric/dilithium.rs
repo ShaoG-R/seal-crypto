@@ -260,7 +260,7 @@ impl<P: DilithiumParams + Clone> KeyGenerator for DilithiumScheme<P> {
 
 impl<P: DilithiumParams + Clone> Signer for DilithiumScheme<P> {
     fn sign(private_key: &Self::PrivateKey, message: &[u8]) -> Result<Signature, Error> {
-        let sk = P::PqSecretKey::from_bytes(&private_key.bytes)
+        let sk = PqSecretKey::from_bytes(&private_key.bytes)
             .map_err(|_| Error::from(SignatureError::Signing))?;
         let sig = P::sign(&sk, message);
         Ok(Signature(sig.as_bytes().to_vec()))
@@ -273,9 +273,9 @@ impl<P: DilithiumParams + Clone> Verifier for DilithiumScheme<P> {
         message: &[u8],
         signature: &Signature,
     ) -> Result<(), Error> {
-        let pk = P::PqPublicKey::from_bytes(&public_key.bytes)
+        let pk = PqPublicKey::from_bytes(&public_key.bytes)
             .map_err(|_| Error::from(SignatureError::Verification))?;
-        let sig = P::PqDetachedSignature::from_bytes(signature.as_ref())
+        let sig = PqDetachedSignature::from_bytes(signature.as_ref())
             .map_err(|_| Error::from(SignatureError::InvalidSignature))?;
         P::verify(&sig, message, &pk)
     }

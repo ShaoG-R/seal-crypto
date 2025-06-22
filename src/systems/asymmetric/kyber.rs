@@ -267,7 +267,7 @@ impl<P: KyberParams + Clone> Kem for KyberScheme<P> {
     fn encapsulate(
         public_key: &Self::PublicKey,
     ) -> Result<(SharedSecret, EncapsulatedKey), Error> {
-        let pk = P::PqPublicKey::from_bytes(&public_key.bytes)
+        let pk = PqPublicKey::from_bytes(&public_key.bytes)
             .map_err(|_| KemError::InvalidPublicKey)?;
         let (ss, ct) = P::encapsulate(&pk);
         Ok((
@@ -280,9 +280,9 @@ impl<P: KyberParams + Clone> Kem for KyberScheme<P> {
         private_key: &Self::PrivateKey,
         encapsulated_key: &EncapsulatedKey,
     ) -> Result<SharedSecret, Error> {
-        let sk = P::PqSecretKey::from_bytes(&private_key.bytes)
+        let sk = PqSecretKey::from_bytes(&private_key.bytes)
             .map_err(|_| KemError::InvalidPrivateKey)?;
-        let ct = P::PqCiphertext::from_bytes(encapsulated_key)
+        let ct = PqCiphertext::from_bytes(encapsulated_key)
             .map_err(|_| KemError::InvalidEncapsulatedKey)?;
 
         let ss = P::decapsulate(&sk, &ct);

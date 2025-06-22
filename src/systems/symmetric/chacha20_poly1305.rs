@@ -278,12 +278,12 @@ mod tests {
 /// A type alias for the ChaCha20-Poly1305 scheme.
 ///
 /// ChaCha20-Poly1305 方案的类型别名。
-pub type ChaCha20Poly1305Scheme = self::Chacha20Poly1305Scheme<Chacha20>;
+pub type ChaCha20Poly1305Scheme = Chacha20Poly1305Scheme<Chacha20>;
 
 /// A type alias for the XChaCha20-Poly1305 scheme.
 ///
 /// XChaCha20-Poly1305 方案的类型别名。
-pub type XChaCha20Poly1305Scheme = self::Chacha20Poly1305Scheme<XChacha20>;
+pub type XChaCha20Poly1305Scheme = Chacha20Poly1305Scheme<XChacha20>;
 
 /// A type alias for the authentication tag used in ChaCha20-Poly1305.
 ///
