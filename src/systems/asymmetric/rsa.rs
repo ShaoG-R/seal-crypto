@@ -13,22 +13,23 @@
 //! 密钥应为 PKCS#8 DER 格式。
 
 use crate::errors::Error;
+use crate::traits::hash::Sha256;
 use crate::traits::{
     hash::Hasher,
     kem::{EncapsulatedKey, Kem, KemError, SharedSecret},
-    key::{KeyGenerator, PrivateKey, PublicKey},
-    sign::{Signature, SignatureError, Signer, Verifier},
+    key::{self, KeyGenerator},
+    sign::{self, Signature, SignatureError, Signer, Verifier},
 };
 use rsa::signature::{RandomizedSigner, SignatureEncoding};
 use rsa::{
     pkcs8::{DecodePrivateKey, DecodePublicKey, EncodePrivateKey, EncodePublicKey},
-    pss::{Signature as PssSignature, SigningKey, VerifyingKey},
+    pss::{SigningKey, VerifyingKey},
     rand_core::{OsRng, RngCore},
-    Oaep, RsaPrivateKey, RsaPublicKey,
+    Oaep,
 };
 use std::marker::PhantomData;
-use zeroize::Zeroizing;
-use crate::traits::hash::Sha256;
+use zeroize::{Zeroize, Zeroizing};
+use std::convert::TryFrom;
 // ------------------- Marker Structs and Trait for RSA Parameters -------------------
 // ------------------- 用于 RSA 参数的标记结构体和 Trait -------------------
 
@@ -68,6 +69,65 @@ impl RsaKeyParams for Rsa4096 {
     const KEY_BITS: usize = 4096;
 }
 
+// ------------------- Newtype Wrappers for RSA Keys -------------------
+// ------------------- RSA 密钥的 Newtype 包装器 -------------------
+
+#[derive(Clone, Debug)]
+pub struct RsaPublicKey(rsa::RsaPublicKey);
+
+#[derive(Debug, Zeroize, Clone, Eq, PartialEq)]
+#[zeroize(drop)]
+pub struct RsaPrivateKey(Zeroizing<Vec<u8>>);
+
+impl key::Key for RsaPublicKey {
+    fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
+        rsa::RsaPublicKey::from_public_key_der(bytes)
+            .map(RsaPublicKey)
+            .map_err(|e| Error::Rsa(rsa::pkcs8::Error::from(e).into()))
+    }
+
+    fn to_bytes(&self) -> Vec<u8> {
+        self.0
+            .to_public_key_der()
+            .expect("DER encoding of a valid key should not fail")
+            .as_bytes()
+            .to_vec()
+    }
+}
+impl key::PublicKey for RsaPublicKey {}
+impl<'a> From<&'a RsaPublicKey> for RsaPublicKey {
+    fn from(key: &'a RsaPublicKey) -> Self {
+        key.clone()
+    }
+}
+
+impl TryFrom<&[u8]> for RsaPublicKey {
+    type Error = Error;
+    fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
+        key::Key::from_bytes(bytes)
+    }
+}
+
+impl key::Key for RsaPrivateKey {
+    fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
+        // Just validate that it's a valid key, then store the bytes
+        rsa::RsaPrivateKey::from_pkcs8_der(bytes).map_err(|e| Error::Rsa(e.into()))?;
+        Ok(RsaPrivateKey(Zeroizing::new(bytes.to_vec())))
+    }
+
+    fn to_bytes(&self) -> Vec<u8> {
+        self.0.to_vec()
+    }
+}
+
+impl TryFrom<&[u8]> for RsaPrivateKey {
+    type Error = Error;
+    fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
+        key::Key::from_bytes(bytes)
+    }
+}
+
+impl key::PrivateKey<RsaPublicKey> for RsaPrivateKey {}
 // ------------------- Generic RSA Implementation -------------------
 // ------------------- 通用 RSA 实现 -------------------
 
@@ -84,35 +144,32 @@ pub struct RsaScheme<KP: RsaKeyParams, H: Hasher = Sha256> {
     _hasher: PhantomData<H>,
 }
 
+impl<KP: RsaKeyParams, H: Hasher + 'static> key::Algorithm for RsaScheme<KP, H> {
+    const NAME: &'static str = "RSA-PSS";
+    type PublicKey = RsaPublicKey;
+    type PrivateKey = RsaPrivateKey;
+}
+
 impl<KP: RsaKeyParams, H: Hasher> KeyGenerator for RsaScheme<KP, H> {
-    fn generate_keypair() -> Result<(PublicKey, PrivateKey), Error> {
+    fn generate_keypair() -> Result<(RsaPublicKey, RsaPrivateKey), Error> {
         let mut rng = OsRng;
-        let private_key = RsaPrivateKey::new(&mut rng, KP::KEY_BITS).map_err(Error::Rsa)?;
-        let public_key = private_key.to_public_key();
-
-        let private_key_der = private_key
-            .to_pkcs8_der()
-            .map_err(|e| Error::Rsa(e.into()))?;
-        let public_key_der = public_key
-            .to_public_key_der()
-            .map_err(|e| Error::Rsa(rsa::pkcs8::Error::from(e).into()))?;
-
+        let private_key =
+            rsa::RsaPrivateKey::new(&mut rng, KP::KEY_BITS).map_err(Error::Rsa)?;
+        let public_key = RsaPublicKey(private_key.to_public_key());
+        let private_key_der = private_key.to_pkcs8_der().map_err(|e| Error::Rsa(e.into()))?;
         Ok((
-            public_key_der.as_bytes().to_vec(),
-            Zeroizing::new(private_key_der.as_bytes().to_vec()),
+            public_key,
+            RsaPrivateKey(Zeroizing::new(private_key_der.as_bytes().to_vec())),
         ))
     }
 }
 
 impl<KP: RsaKeyParams, H: Hasher> Kem for RsaScheme<KP, H> {
-    type PublicKey = PublicKey;
-    type PrivateKey = PrivateKey;
     type EncapsulatedKey = EncapsulatedKey;
 
-    fn encapsulate(public_key: &PublicKey) -> Result<(SharedSecret, EncapsulatedKey), Error> {
+    fn encapsulate(public_key: &RsaPublicKey) -> Result<(SharedSecret, EncapsulatedKey), Error> {
         let mut rng = OsRng;
-        let rsa_public_key = RsaPublicKey::from_public_key_der(public_key)
-            .map_err(|_| KemError::InvalidPublicKey)?;
+        let rsa_public_key = &public_key.0;
 
         let mut shared_secret_bytes = vec![0u8; SHARED_SECRET_SIZE];
         rng.fill_bytes(&mut shared_secret_bytes);
@@ -126,11 +183,11 @@ impl<KP: RsaKeyParams, H: Hasher> Kem for RsaScheme<KP, H> {
     }
 
     fn decapsulate(
-        private_key: &PrivateKey,
+        private_key: &RsaPrivateKey,
         encapsulated_key: &EncapsulatedKey,
     ) -> Result<SharedSecret, Error> {
-        let rsa_private_key =
-            RsaPrivateKey::from_pkcs8_der(private_key).map_err(|_| KemError::InvalidPrivateKey)?;
+        let rsa_private_key = rsa::RsaPrivateKey::from_pkcs8_der(&private_key.0)
+            .map_err(|_| KemError::InvalidPrivateKey)?;
 
         let padding = Oaep::new::<H::Digest>();
         let shared_secret_bytes = rsa_private_key
@@ -142,28 +199,24 @@ impl<KP: RsaKeyParams, H: Hasher> Kem for RsaScheme<KP, H> {
 }
 
 impl<KP: RsaKeyParams, H: Hasher> Signer for RsaScheme<KP, H> {
-    type PrivateKey = PrivateKey;
-    type Signature = Signature;
-
-    fn sign(private_key: &PrivateKey, message: &[u8]) -> Result<Signature, Error> {
-        let rsa_private_key = RsaPrivateKey::from_pkcs8_der(private_key)
-            .map_err(|_| SignatureError::InvalidPrivateKey)?;
+    fn sign(private_key: &RsaPrivateKey, message: &[u8]) -> Result<Signature, Error> {
+        let rsa_private_key = rsa::RsaPrivateKey::from_pkcs8_der(&private_key.0)
+            .map_err(|e| Error::Rsa(e.into()))?;
         let signing_key = SigningKey::<H::Digest>::new(rsa_private_key);
         let mut rng = OsRng;
         let signature = signing_key.sign_with_rng(&mut rng, message);
-        Ok(signature.to_vec())
+        Ok(sign::Signature(signature.to_vec()))
     }
 }
 
 impl<KP: RsaKeyParams, H: Hasher> Verifier for RsaScheme<KP, H> {
-    type PublicKey = PublicKey;
-    type Signature = Signature;
-
-    fn verify(public_key: &PublicKey, message: &[u8], signature: &Signature) -> Result<(), Error> {
-        let rsa_public_key = RsaPublicKey::from_public_key_der(public_key)
-            .map_err(|_| SignatureError::InvalidPublicKey)?;
-        let verifying_key = VerifyingKey::<H::Digest>::new(rsa_public_key);
-        let pss_signature = PssSignature::try_from(signature.as_slice())
+    fn verify(
+        public_key: &RsaPublicKey,
+        message: &[u8],
+        signature: &Signature,
+    ) -> Result<(), Error> {
+        let verifying_key = VerifyingKey::<H::Digest>::new(public_key.0.clone());
+        let pss_signature = rsa::pss::Signature::try_from(signature.as_ref())
             .map_err(|_| SignatureError::InvalidSignature)?;
         use rsa::signature::Verifier;
         Ok(verifying_key
@@ -176,13 +229,14 @@ impl<KP: RsaKeyParams, H: Hasher> Verifier for RsaScheme<KP, H> {
 mod tests {
     use super::*;
     use crate::schemes::hash::{Sha256, Sha512};
+    use crate::traits::key::Key;
 
     fn run_rsa_tests<KP: RsaKeyParams, H: Hasher>()
     where
-        RsaScheme<KP, H>: KeyGenerator
-            + Kem<PublicKey = Vec<u8>, PrivateKey = Zeroizing<Vec<u8>>>
-            + Signer<PrivateKey = PrivateKey, Signature = Signature>
-            + Verifier<PublicKey = PublicKey, Signature = Signature>,
+        RsaScheme<KP, H>: KeyGenerator<PublicKey = RsaPublicKey, PrivateKey = RsaPrivateKey>
+            + Kem<PublicKey = RsaPublicKey, PrivateKey = RsaPrivateKey>
+            + Signer<PrivateKey = RsaPrivateKey>
+            + Verifier<PublicKey = RsaPublicKey>,
     {
         // Define the scheme to be tested based on the generic parameters.
         // 根据泛型参数定义要测试的方案。
@@ -191,8 +245,15 @@ mod tests {
         // Test key generation
         // 测试密钥生成
         let (pk, sk) = TestScheme::generate_keypair().unwrap();
-        assert!(!pk.is_empty());
-        assert!(!sk.is_empty());
+
+        // Test key serialization/deserialization
+        // 测试密钥序列化/反序列化
+        let pk_bytes = pk.to_bytes();
+        let sk_bytes = sk.to_bytes();
+        let pk2 = RsaPublicKey::from_bytes(&pk_bytes).unwrap();
+        let sk2 = RsaPrivateKey::from_bytes(&sk_bytes).unwrap();
+        assert_eq!(pk.to_bytes(), pk2.to_bytes());
+        assert_eq!(sk.to_bytes(), sk2.to_bytes());
 
         // Test KEM roundtrip
         // 测试 KEM 往返

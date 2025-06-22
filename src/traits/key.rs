@@ -1,33 +1,70 @@
-//! Defines the core trait for key generation.
+//! Defines the core traits for cryptographic keys.
 //!
-//! 定义了密钥生成的核心 trait。
+//! 定义了加密密钥的核心 trait。
 use crate::errors::Error;
-use zeroize::Zeroizing;
+use zeroize::Zeroize;
 
-/// Represents a generic public key.
+/// A blanket trait for all key types, defining common properties and behaviors.
 ///
-/// 代表一个通用的公钥。
-pub type PublicKey = Vec<u8>;
+/// 适用于所有密钥类型的通用 trait，定义了通用的属性和行为。
+pub trait Key: Sized + Send + Sync + 'static {
+    /// Deserializes a key from its byte representation.
+    ///
+    /// 从字节表示反序列化密钥。
+    fn from_bytes(bytes: &[u8]) -> Result<Self, Error>;
 
-/// Represents a generic private key, which will be zeroized on drop.
-///
-/// 代表一个通用的私钥，它在被丢弃时将被清零。
-pub type PrivateKey = Zeroizing<Vec<u8>>;
+    /// Serializes the key into its byte representation.
+    ///
+    /// 将密钥序列化为字节表示。
+    fn to_bytes(&self) -> Vec<u8>;
+}
 
-/// A trait for cryptographic schemes that can generate key pairs.
+/// A marker trait for public keys.
 ///
-/// 用于可生成密钥对的加密方案的 trait。
-pub trait KeyGenerator {
-    /// Generates a new key pair.
+/// 公钥的标记 trait。
+pub trait PublicKey: Key + Clone + for<'a> From<&'a Self> {}
+
+/// A marker trait for private keys, generic over its corresponding public key type.
+///
+/// 私钥的标记 trait，它对其对应的公钥类型是通用的。
+pub trait PrivateKey<P: PublicKey>: Key + Zeroize + Clone {}
+
+/// A trait for schemes that can generate a new cryptographic key pair.
+///
+/// 用于可生成新加密密钥对的方案的 trait。
+pub trait KeyGenerator: Algorithm {
+    /// Generates a new key pair (public and private key).
     ///
-    /// The `config` parameter is currently a placeholder and not used,
-    /// allowing for future extensions where generation might be configurable
-    /// (e.g., specifying key size).
+    /// # Returns
+    /// A result containing the key pair, or an error if generation fails.
     ///
-    /// 生成一个新的密钥对。
+    /// 生成一个新的密钥对（公钥和私钥）。
     ///
-    /// `config` 参数当前是一个占位符并未使用，
-    /// 以便未来进行扩展，使密钥生成过程可以配置
-    /// （例如，指定密钥大小）。
-    fn generate_keypair() -> Result<(PublicKey, PrivateKey), Error>;
+    /// # 返回
+    /// 一个包含密钥对的 `Result`，如果生成失败则返回错误。
+    fn generate_keypair() -> Result<(Self::PublicKey, Self::PrivateKey), Error>;
+}
+
+/// A unified trait for a complete signature scheme.
+///
+/// It combines key generation, signing, and verification capabilities.
+///
+/// 一个完整的签名方案的统一 trait。
+///
+/// 它结合了密钥生成、签名和验证的能力。
+pub trait Algorithm: 'static + Sized {
+    /// The unique name of the signature algorithm (e.g., "RSA-PSS-SHA256").
+    ///
+    /// 签名算法的唯一名称（例如，"RSA-PSS-SHA256"）。
+    const NAME: &'static str;
+    type PublicKey: PublicKey;
+    type PrivateKey: PrivateKey<Self::PublicKey>;
+}
+
+/// A trait that associates a private key with its corresponding public key.
+///
+/// 将私钥与其对应公钥关联的 trait。
+pub trait KeyPair<P: PublicKey>: PrivateKey<P> {
+    /// Returns a reference to the public key.
+    fn public_key(&self) -> P;
 }

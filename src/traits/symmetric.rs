@@ -157,3 +157,30 @@ pub trait SymmetricKeyGenerator {
     /// 生成一个新的对称密钥。
     fn generate_key() -> Result<Self::Key, Error>;
 }
+
+/// A unified trait for a complete symmetric AEAD scheme.
+///
+/// This trait combines key generation, encryption, and decryption capabilities.
+///
+/// 一个完整的对称 AEAD 方案的统一 trait。
+///
+/// 该 trait 结合了密钥生成、加密和解密的能力。
+pub trait AeadScheme:
+    SymmetricKeyGenerator
+    + SymmetricEncryptor<Key = <Self as SymmetricKeyGenerator>::Key>
+    + SymmetricDecryptor<Key = <Self as SymmetricKeyGenerator>::Key>
+    + SymmetricCipher
+    + Send
+    + Sync
+{
+}
+
+impl<T> AeadScheme for T where
+    T: SymmetricKeyGenerator
+        + SymmetricEncryptor<Key = <Self as SymmetricKeyGenerator>::Key>
+        + SymmetricDecryptor<Key = <Self as SymmetricKeyGenerator>::Key>
+        + SymmetricCipher
+        + Send
+        + Sync
+{
+}

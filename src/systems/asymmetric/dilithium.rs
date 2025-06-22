@@ -4,15 +4,16 @@
 
 use crate::errors::Error;
 use crate::traits::{
-    key::{KeyGenerator, PrivateKey, PublicKey},
+    key::{self, KeyGenerator},
     sign::{Signature, SignatureError, Signer, Verifier},
 };
 use pqcrypto_dilithium::{dilithium2, dilithium3, dilithium5};
 use pqcrypto_traits::sign::{
     DetachedSignature as PqDetachedSignature, PublicKey as PqPublicKey, SecretKey as PqSecretKey,
 };
+use std::convert::TryFrom;
 use std::marker::PhantomData;
-use zeroize::Zeroizing;
+use zeroize::{Zeroize, Zeroizing};
 
 // ------------------- Marker Structs and Trait for Dilithium Parameters -------------------
 // ------------------- 用于 Dilithium 参数的标记结构体和 Trait -------------------
@@ -44,7 +45,7 @@ pub trait DilithiumParams: private::Sealed + Send + Sync + 'static {
 }
 
 /// Marker struct for Dilithium2.
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct Dilithium2;
 impl private::Sealed for Dilithium2 {}
 impl DilithiumParams for Dilithium2 {
@@ -76,7 +77,7 @@ impl DilithiumParams for Dilithium2 {
 }
 
 /// Marker struct for Dilithium3.
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct Dilithium3;
 impl private::Sealed for Dilithium3 {}
 impl DilithiumParams for Dilithium3 {
@@ -108,7 +109,7 @@ impl DilithiumParams for Dilithium3 {
 }
 
 /// Marker struct for Dilithium5.
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct Dilithium5;
 impl private::Sealed for Dilithium5 {}
 impl DilithiumParams for Dilithium5 {
@@ -139,6 +140,90 @@ impl DilithiumParams for Dilithium5 {
     }
 }
 
+// ------------------- Newtype Wrappers for Dilithium Keys -------------------
+// ------------------- Dilithium 密钥的 Newtype 包装器 -------------------
+
+#[derive(Debug, Eq)]
+pub struct DilithiumPublicKey<P: DilithiumParams> {
+    bytes: Vec<u8>,
+    _params: PhantomData<P>,
+}
+
+impl<P: DilithiumParams> Clone for DilithiumPublicKey<P> {
+    fn clone(&self) -> Self {
+        Self {
+            bytes: self.bytes.clone(),
+            _params: PhantomData,
+        }
+    }
+}
+
+impl<P: DilithiumParams> PartialEq for DilithiumPublicKey<P> {
+    fn eq(&self, other: &Self) -> bool {
+        self.bytes == other.bytes
+    }
+}
+
+impl<'a, P: DilithiumParams> From<&'a DilithiumPublicKey<P>> for DilithiumPublicKey<P> {
+    fn from(key: &'a DilithiumPublicKey<P>) -> Self {
+        key.clone()
+    }
+}
+
+impl<P: DilithiumParams> TryFrom<&[u8]> for DilithiumPublicKey<P> {
+    type Error = Error;
+    fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
+        key::Key::from_bytes(bytes)
+    }
+}
+
+#[derive(Debug, Zeroize, Clone, Eq, PartialEq)]
+#[zeroize(drop)]
+pub struct DilithiumSecretKey<P: DilithiumParams + Clone> {
+    bytes: Zeroizing<Vec<u8>>,
+    _params: PhantomData<P>,
+}
+
+impl<P: DilithiumParams> key::Key for DilithiumPublicKey<P> {
+    fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
+        if bytes.len() != P::public_key_bytes() {
+            return Err(Error::from(SignatureError::InvalidSignature));
+        }
+        Ok(Self {
+            bytes: bytes.to_vec(),
+            _params: PhantomData,
+        })
+    }
+    fn to_bytes(&self) -> Vec<u8> {
+        self.bytes.clone()
+    }
+}
+impl<P: DilithiumParams> key::PublicKey for DilithiumPublicKey<P> {}
+
+impl<P: DilithiumParams + Clone> key::Key for DilithiumSecretKey<P> {
+    fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
+        if bytes.len() != P::secret_key_bytes() {
+            return Err(Error::from(SignatureError::InvalidSignature));
+        }
+        Ok(Self {
+            bytes: Zeroizing::new(bytes.to_vec()),
+            _params: PhantomData,
+        })
+    }
+    fn to_bytes(&self) -> Vec<u8> {
+        self.bytes.to_vec()
+    }
+}
+
+impl<P: DilithiumParams + Clone> TryFrom<&[u8]> for DilithiumSecretKey<P> {
+    type Error = Error;
+    fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
+        key::Key::from_bytes(bytes)
+    }
+}
+
+impl<P: DilithiumParams + Clone> key::PrivateKey<DilithiumPublicKey<P>> for DilithiumSecretKey<P> {}
+
 // ------------------- Generic Dilithium Implementation -------------------
 // ------------------- 通用 Dilithium 实现 -------------------
 
@@ -148,44 +233,47 @@ pub struct DilithiumScheme<P: DilithiumParams> {
     _params: PhantomData<P>,
 }
 
-impl<P: DilithiumParams> KeyGenerator for DilithiumScheme<P> {
-    fn generate_keypair() -> Result<(PublicKey, PrivateKey), Error> {
+impl<P: DilithiumParams + 'static + Clone> key::Algorithm for DilithiumScheme<P> {
+    const NAME: &'static str = "Dilithium";
+    type PublicKey = DilithiumPublicKey<P>;
+    type PrivateKey = DilithiumSecretKey<P>;
+}
+
+impl<P: DilithiumParams + Clone> KeyGenerator for DilithiumScheme<P> {
+    fn generate_keypair() -> Result<(Self::PublicKey, Self::PrivateKey), Error> {
         let (pk, sk) = P::keypair();
         Ok((
-            pk.as_bytes().to_vec(),
-            Zeroizing::new(sk.as_bytes().to_vec()),
+            DilithiumPublicKey {
+                bytes: pk.as_bytes().to_vec(),
+                _params: PhantomData,
+            },
+            DilithiumSecretKey {
+                bytes: Zeroizing::new(sk.as_bytes().to_vec()),
+                _params: PhantomData,
+            },
         ))
     }
 }
 
-impl<P: DilithiumParams> Signer for DilithiumScheme<P> {
-    type PrivateKey = PrivateKey;
-    type Signature = Signature;
-
-    fn sign(private_key: &PrivateKey, message: &[u8]) -> Result<Signature, Error> {
-        if private_key.len() != P::secret_key_bytes() {
-            return Err(SignatureError::InvalidPrivateKey.into());
-        }
-        let sk = P::PqSecretKey::from_bytes(private_key)
-            .map_err(|_| SignatureError::InvalidPrivateKey)?;
-        let signature = P::sign(&sk, message);
-        Ok(signature.as_bytes().to_vec())
+impl<P: DilithiumParams + Clone> Signer for DilithiumScheme<P> {
+    fn sign(private_key: &Self::PrivateKey, message: &[u8]) -> Result<Signature, Error> {
+        let sk = P::PqSecretKey::from_bytes(&private_key.bytes)
+            .map_err(|_| Error::from(SignatureError::Signing))?;
+        let sig = P::sign(&sk, message);
+        Ok(Signature(sig.as_bytes().to_vec()))
     }
 }
 
-impl<P: DilithiumParams> Verifier for DilithiumScheme<P> {
-    type PublicKey = PublicKey;
-    type Signature = Signature;
-
-    fn verify(public_key: &PublicKey, message: &[u8], signature: &Signature) -> Result<(), Error> {
-        if public_key.len() != P::public_key_bytes() {
-            return Err(SignatureError::InvalidPublicKey.into());
-        }
-        let pk =
-            P::PqPublicKey::from_bytes(public_key).map_err(|_| SignatureError::InvalidPublicKey)?;
-        let sig = P::PqDetachedSignature::from_bytes(signature)
-            .map_err(|_| SignatureError::InvalidSignature)?;
-
+impl<P: DilithiumParams + Clone> Verifier for DilithiumScheme<P> {
+    fn verify(
+        public_key: &Self::PublicKey,
+        message: &[u8],
+        signature: &Signature,
+    ) -> Result<(), Error> {
+        let pk = P::PqPublicKey::from_bytes(&public_key.bytes)
+            .map_err(|_| Error::from(SignatureError::Verification))?;
+        let sig = P::PqDetachedSignature::from_bytes(signature.as_ref())
+            .map_err(|_| Error::from(SignatureError::InvalidSignature))?;
         P::verify(&sig, message, &pk)
     }
 }
@@ -196,28 +284,35 @@ impl<P: DilithiumParams> Verifier for DilithiumScheme<P> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::traits::key::Key;
 
-    fn run_dilithium_tests<P: DilithiumParams>() {
-        type TestScheme<P> = DilithiumScheme<P>;
-
+    fn run_dilithium_tests<P: DilithiumParams + Default + Clone + std::fmt::Debug>() {
         // Test key generation
-        let (pk, sk) = TestScheme::<P>::generate_keypair().unwrap();
-        assert_eq!(pk.len(), P::public_key_bytes());
-        assert_eq!(sk.len(), P::secret_key_bytes());
+        let (pk, sk) = DilithiumScheme::<P>::generate_keypair().unwrap();
+        assert_eq!(pk.to_bytes().len(), P::public_key_bytes());
+        assert_eq!(sk.to_bytes().len(), P::secret_key_bytes());
+
+        // Test key serialization
+        let pk_bytes = pk.to_bytes();
+        let sk_bytes = sk.to_bytes();
+        let pk2 = DilithiumPublicKey::<P>::from_bytes(&pk_bytes).unwrap();
+        let sk2 = DilithiumSecretKey::<P>::from_bytes(&sk_bytes).unwrap();
+        assert_eq!(pk, pk2);
+        assert_eq!(sk.to_bytes(), sk2.to_bytes());
 
         // Test sign/verify roundtrip
         let message = b"this is the message to be signed";
-        let signature = TestScheme::<P>::sign(&sk, message).unwrap();
-        assert!(TestScheme::<P>::verify(&pk, message, &signature).is_ok());
+        let signature = DilithiumScheme::<P>::sign(&sk, message).unwrap();
+        assert!(DilithiumScheme::<P>::verify(&pk, message, &signature).is_ok());
 
         // Test tampered message verification fails
         let tampered_message = b"this is a different message";
-        assert!(TestScheme::<P>::verify(&pk, tampered_message, &signature).is_err());
+        assert!(DilithiumScheme::<P>::verify(&pk, tampered_message, &signature).is_err());
 
         // Test with empty message
         let empty_message = b"";
-        let signature_empty = TestScheme::<P>::sign(&sk, empty_message).unwrap();
-        assert!(TestScheme::<P>::verify(&pk, empty_message, &signature_empty).is_ok());
+        let signature_empty = DilithiumScheme::<P>::sign(&sk, empty_message).unwrap();
+        assert!(DilithiumScheme::<P>::verify(&pk, empty_message, &signature_empty).is_ok());
     }
 
     #[test]

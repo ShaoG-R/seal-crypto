@@ -9,7 +9,9 @@ use crate::traits::symmetric::{
 };
 use aes_gcm::aead::rand_core::RngCore;
 use aes_gcm::aead::{Aead, KeyInit, OsRng, Payload};
-use aes_gcm::{Aes128Gcm, Aes256Gcm, Nonce};
+use aes_gcm::{
+    Aes128Gcm as Aes128GcmCore, Aes256Gcm as Aes256GcmCore, Nonce as NonceCore,
+};
 use std::marker::PhantomData;
 
 // ------------------- Marker Structs and Trait for AES-GCM Parameters -------------------
@@ -48,7 +50,7 @@ pub trait AesGcmParams: private::Sealed + Send + Sync + 'static {
 pub struct Aes128;
 impl private::Sealed for Aes128 {}
 impl AesGcmParams for Aes128 {
-    type AeadCipher = Aes128Gcm;
+    type AeadCipher = Aes128GcmCore;
     const KEY_SIZE: usize = 16;
     const NONCE_SIZE: usize = 12;
     const TAG_SIZE: usize = 16;
@@ -61,7 +63,7 @@ impl AesGcmParams for Aes128 {
 pub struct Aes256;
 impl private::Sealed for Aes256 {}
 impl AesGcmParams for Aes256 {
-    type AeadCipher = Aes256Gcm;
+    type AeadCipher = Aes256GcmCore;
     const KEY_SIZE: usize = 32;
     const NONCE_SIZE: usize = 12;
     const TAG_SIZE: usize = 16;
@@ -114,7 +116,7 @@ impl<P: AesGcmParams> SymmetricEncryptor for AesGcmScheme<P> {
         }
         let key = aes_gcm::Key::<P::AeadCipher>::from_slice(key);
         let cipher = P::AeadCipher::new(key);
-        let nonce = Nonce::from_slice(nonce);
+        let nonce = NonceCore::from_slice(nonce);
 
         let payload = Payload {
             msg: plaintext,
@@ -144,7 +146,7 @@ impl<P: AesGcmParams> SymmetricDecryptor for AesGcmScheme<P> {
 
         let key = aes_gcm::Key::<P::AeadCipher>::from_slice(key);
         let cipher = P::AeadCipher::new(key);
-        let nonce = Nonce::from_slice(nonce);
+        let nonce = NonceCore::from_slice(nonce);
 
         let payload = Payload {
             msg: ciphertext_with_tag,
@@ -308,3 +310,26 @@ mod tests {
         test_invalid_inputs::<AesGcmScheme<Aes256>>();
     }
 }
+
+// ------------------- Type Aliases -------------------
+// ------------------- 类型别名 -------------------
+
+/// A type alias for the AES-128-GCM scheme.
+///
+/// AES-128-GCM 方案的类型别名。
+pub type Aes128Gcm = AesGcmScheme<Aes128>;
+
+/// A type alias for the AES-256-GCM scheme.
+///
+/// AES-256-GCM 方案的类型别名。
+pub type Aes256Gcm = AesGcmScheme<Aes256>;
+
+/// A type alias for the nonce used in AES-GCM.
+///
+/// AES-GCM 中使用的 Nonce 的类型别名。
+pub type Nonce<'a> = &'a [u8];
+
+/// A type alias for the authentication tag used in AES-GCM.
+///
+/// AES-GCM 中使用的认证标签的类型别名。
+pub type Tag<'a> = &'a [u8];

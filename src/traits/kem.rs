@@ -2,7 +2,7 @@
 //!
 //! 为密钥封装机制 (KEM) 定义了 trait。
 
-use crate::errors::Error;
+use crate::{errors::Error, traits::key::Algorithm as CoreSignatureScheme};
 #[cfg(feature = "std")]
 use thiserror::Error;
 use zeroize::Zeroizing;
@@ -65,9 +65,7 @@ pub enum KemError {
 /// 密钥封装机制 (KEM) 的 trait。
 ///
 /// KEM 是一类用于安全建立共享密钥的公钥密码系统。
-pub trait Kem {
-    type PublicKey;
-    type PrivateKey;
+pub trait Kem: CoreSignatureScheme {
     type EncapsulatedKey;
 
     /// Generates and encapsulates a shared secret using the recipient's public key.

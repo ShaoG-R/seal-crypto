@@ -38,12 +38,13 @@ seal-crypto = { version = "0.1.0", features = ["full"] }
 
 ```rust
 use seal_crypto::prelude::*;
-use seal_crypto::schemes::sign::{self, RsaScheme};
+use seal_crypto::schemes::asymmetric::rsa::{Rsa4096, RsaScheme};
 // use seal_crypto::schemes::hash::Sha256;
 
 fn main() -> Result<(), CryptoError> {
     // 1. 通过密钥参数来定义方案。
-    type MyRsaScheme = RsaScheme<sign::rsa::Rsa4096>; // 相当于 RsaScheme<sign::rsa::Rsa4096, Sha256>
+    // RsaScheme 默认使用 Sha256 作为哈希函数。
+    type MyRsaScheme = RsaScheme<Rsa4096>;
 
     // 2. 生成密钥对。
     let (public_key, private_key) = MyRsaScheme::generate_keypair()?;

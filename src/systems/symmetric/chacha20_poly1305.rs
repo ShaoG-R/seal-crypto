@@ -9,7 +9,10 @@ use crate::traits::symmetric::{
 };
 use chacha20poly1305::aead::rand_core::RngCore;
 use chacha20poly1305::aead::{Aead, Key, KeyInit, Nonce, OsRng, Payload};
-use chacha20poly1305::ChaCha20Poly1305;
+use chacha20poly1305::{
+    ChaCha20Poly1305 as ChaCha20Poly1305Core,
+    XChaCha20Poly1305 as XChaCha20Poly1305Core,
+};
 use std::marker::PhantomData;
 
 // ------------------- Marker Structs and Trait for ChaCha20-Poly1305 Parameters -------------------
@@ -48,9 +51,22 @@ pub trait Chacha20Poly1305Params: private::Sealed + Send + Sync + 'static {
 pub struct Chacha20;
 impl private::Sealed for Chacha20 {}
 impl Chacha20Poly1305Params for Chacha20 {
-    type AeadCipher = ChaCha20Poly1305;
+    type AeadCipher = ChaCha20Poly1305Core;
     const KEY_SIZE: usize = 32;
     const NONCE_SIZE: usize = 12;
+    const TAG_SIZE: usize = 16;
+}
+
+/// Marker struct for XChaCha20-Poly1305.
+///
+/// XChaCha20-Poly1305 的标记结构体。
+#[derive(Debug, Default)]
+pub struct XChacha20;
+impl private::Sealed for XChacha20 {}
+impl Chacha20Poly1305Params for XChacha20 {
+    type AeadCipher = XChaCha20Poly1305Core;
+    const KEY_SIZE: usize = 32;
+    const NONCE_SIZE: usize = 24;
     const TAG_SIZE: usize = 16;
 }
 
@@ -249,4 +265,27 @@ mod tests {
     fn test_chacha20_poly1305_invalid_inputs() {
         test_invalid_inputs::<Chacha20Poly1305Scheme<Chacha20>>();
     }
+
+    #[test]
+    fn test_xchacha20_poly1305_invalid_inputs() {
+        test_invalid_inputs::<Chacha20Poly1305Scheme<XChacha20>>();
+    }
 }
+
+// ------------------- Type Aliases -------------------
+// ------------------- 类型别名 -------------------
+
+/// A type alias for the ChaCha20-Poly1305 scheme.
+///
+/// ChaCha20-Poly1305 方案的类型别名。
+pub type ChaCha20Poly1305Scheme = self::Chacha20Poly1305Scheme<Chacha20>;
+
+/// A type alias for the XChaCha20-Poly1305 scheme.
+///
+/// XChaCha20-Poly1305 方案的类型别名。
+pub type XChaCha20Poly1305Scheme = self::Chacha20Poly1305Scheme<XChacha20>;
+
+/// A type alias for the authentication tag used in ChaCha20-Poly1305.
+///
+/// ChaCha20-Poly1305 中使用的认证标签的类型别名。
+pub type Tag<'a> = &'a [u8];

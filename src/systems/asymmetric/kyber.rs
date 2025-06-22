@@ -5,15 +5,16 @@
 use crate::errors::Error;
 use crate::traits::{
     kem::{EncapsulatedKey, Kem, KemError, SharedSecret},
-    key::{KeyGenerator, PrivateKey, PublicKey},
+    key::{self, KeyGenerator},
 };
 use pqcrypto_kyber::{kyber1024, kyber512, kyber768};
 use pqcrypto_traits::kem::{
     Ciphertext as PqCiphertext, PublicKey as PqPublicKey, SecretKey as PqSecretKey,
     SharedSecret as PqSharedSecret,
 };
+use std::convert::TryFrom;
 use std::marker::PhantomData;
-use zeroize::Zeroizing;
+use zeroize::{Zeroize, Zeroizing};
 
 // ------------------- Marker Structs and Trait for Kyber Parameters -------------------
 // ------------------- 用于 Kyber 参数的标记结构体和 Trait -------------------
@@ -45,7 +46,7 @@ pub trait KyberParams: private::Sealed + Send + Sync + 'static {
 /// Marker struct for Kyber-512 parameters.
 ///
 /// Kyber-512 参数的标记结构体。
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct Kyber512;
 impl private::Sealed for Kyber512 {}
 impl KyberParams for Kyber512 {
@@ -72,7 +73,7 @@ impl KyberParams for Kyber512 {
 /// Marker struct for Kyber-768 parameters.
 ///
 /// Kyber-768 参数的标记结构体。
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct Kyber768;
 impl private::Sealed for Kyber768 {}
 impl KyberParams for Kyber768 {
@@ -99,7 +100,7 @@ impl KyberParams for Kyber768 {
 /// Marker struct for Kyber-1024 parameters.
 ///
 /// Kyber-1024 参数的标记结构体。
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct Kyber1024;
 impl private::Sealed for Kyber1024 {}
 impl KyberParams for Kyber1024 {
@@ -123,6 +124,107 @@ impl KyberParams for Kyber1024 {
     }
 }
 
+// ------------------- Newtype Wrappers for Kyber Keys -------------------
+// ------------------- Kyber 密钥的 Newtype 包装器 -------------------
+
+#[derive(Debug)]
+pub struct KyberPublicKey<P: KyberParams> {
+    bytes: Vec<u8>,
+    _params: PhantomData<P>,
+}
+
+impl<P: KyberParams> KyberPublicKey<P> {
+    pub fn len(&self) -> usize {
+        self.bytes.len()
+    }
+}
+
+impl<P: KyberParams> PartialEq for KyberPublicKey<P> {
+    fn eq(&self, other: &Self) -> bool {
+        self.bytes == other.bytes
+    }
+}
+
+impl<P: KyberParams> Eq for KyberPublicKey<P> {}
+
+impl<P: KyberParams> Clone for KyberPublicKey<P> {
+    fn clone(&self) -> Self {
+        Self {
+            bytes: self.bytes.clone(),
+            _params: PhantomData,
+        }
+    }
+}
+
+impl<'a, P: KyberParams> From<&'a KyberPublicKey<P>> for KyberPublicKey<P> {
+    fn from(key: &'a KyberPublicKey<P>) -> Self {
+        key.clone()
+    }
+}
+
+impl<P: KyberParams> TryFrom<&[u8]> for KyberPublicKey<P> {
+    type Error = Error;
+    fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
+        key::Key::from_bytes(bytes)
+    }
+}
+
+impl<P: KyberParams> key::Key for KyberPublicKey<P> {
+    fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
+        if bytes.len() != P::PUBLIC_KEY_BYTES {
+            return Err(KemError::InvalidPublicKey.into());
+        }
+        Ok(Self {
+            bytes: bytes.to_vec(),
+            _params: PhantomData,
+        })
+    }
+
+    fn to_bytes(&self) -> Vec<u8> {
+        self.bytes.clone()
+    }
+}
+
+impl<P: KyberParams> key::PublicKey for KyberPublicKey<P> {}
+
+#[derive(Debug, Zeroize, Clone, Eq, PartialEq)]
+#[zeroize(drop)]
+pub struct KyberSecretKey<P: KyberParams> {
+    bytes: Zeroizing<Vec<u8>>,
+    _params: PhantomData<P>,
+}
+
+impl<P: KyberParams> KyberSecretKey<P> {
+    pub fn len(&self) -> usize {
+        self.bytes.len()
+    }
+}
+
+impl<P: KyberParams> key::Key for KyberSecretKey<P> {
+    fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
+        if bytes.len() != P::SECRET_KEY_BYTES {
+            return Err(KemError::InvalidPrivateKey.into());
+        }
+        Ok(Self {
+            bytes: Zeroizing::new(bytes.to_vec()),
+            _params: PhantomData,
+        })
+    }
+
+    fn to_bytes(&self) -> Vec<u8> {
+        self.bytes.to_vec()
+    }
+}
+
+impl<P: KyberParams> TryFrom<&[u8]> for KyberSecretKey<P> {
+    type Error = Error;
+    fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
+        key::Key::from_bytes(bytes)
+    }
+}
+
+impl<P: KyberParams + Clone> key::PrivateKey<KyberPublicKey<P>> for KyberSecretKey<P> {}
+
 // ------------------- Generic Kyber KEM Implementation -------------------
 // ------------------- 通用 Kyber KEM 实现 -------------------
 
@@ -134,26 +236,36 @@ pub struct KyberScheme<P: KyberParams> {
     _params: PhantomData<P>,
 }
 
-impl<P: KyberParams> KeyGenerator for KyberScheme<P> {
-    fn generate_keypair() -> Result<(PublicKey, PrivateKey), Error> {
+impl<P: KyberParams + Clone> key::Algorithm for KyberScheme<P> {
+    const NAME: &'static str = "KYBER-KEM";
+    type PublicKey = KyberPublicKey<P>;
+    type PrivateKey = KyberSecretKey<P>;
+}
+
+impl<P: KyberParams + Clone> KeyGenerator for KyberScheme<P> {
+    fn generate_keypair() -> Result<(Self::PublicKey, Self::PrivateKey), Error> {
         let (pk, sk) = P::keypair();
         Ok((
-            pk.as_bytes().to_vec(),
-            Zeroizing::new(sk.as_bytes().to_vec()),
+            KyberPublicKey {
+                bytes: pk.as_bytes().to_vec(),
+                _params: PhantomData,
+            },
+            KyberSecretKey {
+                bytes: Zeroizing::new(sk.as_bytes().to_vec()),
+                _params: PhantomData,
+            },
         ))
     }
 }
 
-impl<P: KyberParams> Kem for KyberScheme<P> {
-    type PublicKey = PublicKey;
-    type PrivateKey = PrivateKey;
+impl<P: KyberParams + Clone> Kem for KyberScheme<P> {
     type EncapsulatedKey = EncapsulatedKey;
 
-    fn encapsulate(public_key: &PublicKey) -> Result<(SharedSecret, EncapsulatedKey), Error> {
-        if public_key.len() != P::PUBLIC_KEY_BYTES {
-            return Err(KemError::InvalidPublicKey.into());
-        }
-        let pk = PqPublicKey::from_bytes(public_key).map_err(|_| KemError::InvalidPublicKey)?;
+    fn encapsulate(
+        public_key: &Self::PublicKey,
+    ) -> Result<(SharedSecret, EncapsulatedKey), Error> {
+        let pk = P::PqPublicKey::from_bytes(&public_key.bytes)
+            .map_err(|_| KemError::InvalidPublicKey)?;
         let (ss, ct) = P::encapsulate(&pk);
         Ok((
             Zeroizing::new(ss.as_bytes().to_vec()),
@@ -162,17 +274,14 @@ impl<P: KyberParams> Kem for KyberScheme<P> {
     }
 
     fn decapsulate(
-        private_key: &PrivateKey,
+        private_key: &Self::PrivateKey,
         encapsulated_key: &EncapsulatedKey,
     ) -> Result<SharedSecret, Error> {
-        if private_key.len() != P::SECRET_KEY_BYTES {
-            return Err(KemError::InvalidPrivateKey.into());
-        }
         if encapsulated_key.len() != P::CIPHERTEXT_BYTES {
             return Err(KemError::InvalidEncapsulatedKey.into());
         }
-        let sk =
-            P::PqSecretKey::from_bytes(private_key).map_err(|_| KemError::InvalidPrivateKey)?;
+        let sk = P::PqSecretKey::from_bytes(&private_key.bytes)
+            .map_err(|_| KemError::InvalidPrivateKey)?;
         let ct = P::PqCiphertext::from_bytes(encapsulated_key)
             .map_err(|_| KemError::InvalidEncapsulatedKey)?;
 
@@ -187,34 +296,37 @@ impl<P: KyberParams> Kem for KyberScheme<P> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::traits::key::Key;
 
-    fn run_kyber_tests<P: KyberParams>() {
-        type TestScheme<P> = KyberScheme<P>;
+    fn run_kyber_tests<P: KyberParams + Default + std::fmt::Debug>() where P: Clone {
+        let (pk, sk) = KyberScheme::<P>::generate_keypair().unwrap();
+        assert_eq!(pk.to_bytes().len(), P::PUBLIC_KEY_BYTES);
+        assert_eq!(sk.to_bytes().len(), P::SECRET_KEY_BYTES);
 
-        // Test key generation
-        // 测试密钥生成
-        let (pk, sk) = TestScheme::<P>::generate_keypair().unwrap();
-        assert_eq!(pk.len(), P::PUBLIC_KEY_BYTES);
-        assert_eq!(sk.len(), P::SECRET_KEY_BYTES);
+        // Test key serialization
+        let pk_bytes = pk.to_bytes();
+        let sk_bytes = sk.to_bytes();
+        let pk2 = KyberPublicKey::<P>::from_bytes(&pk_bytes).unwrap();
+        let sk2 = KyberSecretKey::<P>::from_bytes(&sk_bytes).unwrap();
+        assert_eq!(pk, pk2);
+        assert_eq!(sk.to_bytes(), sk2.to_bytes());
 
         // Test KEM roundtrip
-        // 测试 KEM 往返操作
-        let (ss1, encapsulated_key) = TestScheme::<P>::encapsulate(&pk).unwrap();
-        let ss2 = TestScheme::<P>::decapsulate(&sk, &encapsulated_key).unwrap();
+        let (ss1, encapsulated_key) = KyberScheme::<P>::encapsulate(&pk).unwrap();
+        let ss2 = KyberScheme::<P>::decapsulate(&sk, &encapsulated_key).unwrap();
         assert_eq!(ss1, ss2);
 
         // Test wrong key decapsulation
-        // 测试使用错误密钥进行解封装
-        let (pk2, _sk2) = TestScheme::<P>::generate_keypair().unwrap();
-        let (ss_for_pk2, encapsulated_key_for_pk2) = TestScheme::<P>::encapsulate(&pk2).unwrap();
-        let wrong_ss = TestScheme::<P>::decapsulate(&sk, &encapsulated_key_for_pk2).unwrap();
+        let (pk2, _sk2) = KyberScheme::<P>::generate_keypair().unwrap();
+        let (ss_for_pk2, encapsulated_key_for_pk2) =
+            KyberScheme::<P>::encapsulate(&pk2).unwrap();
+        let wrong_ss = KyberScheme::<P>::decapsulate(&sk, &encapsulated_key_for_pk2).unwrap();
         assert_ne!(ss_for_pk2, wrong_ss);
 
         // Test tampered ciphertext
-        // 测试篡改后的密文
-        let (ss_orig, mut tampered_ct) = TestScheme::<P>::encapsulate(&pk).unwrap();
+        let (ss_orig, mut tampered_ct) = KyberScheme::<P>::encapsulate(&pk).unwrap();
         tampered_ct[0] ^= 1;
-        let tampered_ss = TestScheme::<P>::decapsulate(&sk, &tampered_ct).unwrap();
+        let tampered_ss = KyberScheme::<P>::decapsulate(&sk, &tampered_ct).unwrap();
         assert_ne!(ss_orig, tampered_ss);
     }
 
