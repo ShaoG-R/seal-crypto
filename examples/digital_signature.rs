@@ -3,7 +3,7 @@
 //! 一个演示数字签名的示例，使用带 PSS 填充和 SHA-256 的 RSA-4096。
 
 use seal_crypto::prelude::*;
-use seal_crypto::schemes::asymmetric::rsa::{Rsa4096, RsaScheme};
+use seal_crypto::schemes::asymmetric::traditional::rsa::{Rsa4096, RsaScheme};
 
 fn main() -> Result<(), CryptoError> {
     // Define the concrete RSA scheme we want to use.

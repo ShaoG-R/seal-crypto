@@ -2,7 +2,7 @@
 //!
 //! 为 `seal-crypto` crate 定义了顶层错误类型。
 
-use crate::traits::{kem::KemError, sign::SignatureError, symmetric::SymmetricError};
+use crate::traits::{KemError, SignatureError, SymmetricError};
 
 #[cfg(feature = "std")]
 use thiserror::Error;

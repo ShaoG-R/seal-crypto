@@ -4,8 +4,8 @@
 
 use crate::errors::Error;
 use crate::traits::{
-    key::{self, KeyGenerator},
-    sign::{Signature, SignatureError, Signer, Verifier},
+    Algorithm, AsymmetricKeySet, Key, KeyGenerator, PrivateKey, PublicKey, Signature,
+    SignatureError, Signer, Verifier,
 };
 use pqcrypto_dilithium::{dilithium2, dilithium3, dilithium5};
 use pqcrypto_traits::sign::{
@@ -173,7 +173,7 @@ impl<'a, P: DilithiumParams> From<&'a DilithiumPublicKey<P>> for DilithiumPublic
 impl<P: DilithiumParams> TryFrom<&[u8]> for DilithiumPublicKey<P> {
     type Error = Error;
     fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
-        key::Key::from_bytes(bytes)
+        Key::from_bytes(bytes)
     }
 }
 
@@ -184,7 +184,7 @@ pub struct DilithiumSecretKey<P: DilithiumParams + Clone> {
     _params: PhantomData<P>,
 }
 
-impl<P: DilithiumParams> key::Key for DilithiumPublicKey<P> {
+impl<P: DilithiumParams> Key for DilithiumPublicKey<P> {
     fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
         if bytes.len() != P::public_key_bytes() {
             return Err(Error::from(SignatureError::InvalidSignature));
@@ -198,9 +198,9 @@ impl<P: DilithiumParams> key::Key for DilithiumPublicKey<P> {
         self.bytes.clone()
     }
 }
-impl<P: DilithiumParams> key::PublicKey for DilithiumPublicKey<P> {}
+impl<P: DilithiumParams> PublicKey for DilithiumPublicKey<P> {}
 
-impl<P: DilithiumParams + Clone> key::Key for DilithiumSecretKey<P> {
+impl<P: DilithiumParams + Clone> Key for DilithiumSecretKey<P> {
     fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
         if bytes.len() != P::secret_key_bytes() {
             return Err(Error::from(SignatureError::InvalidSignature));
@@ -218,11 +218,11 @@ impl<P: DilithiumParams + Clone> key::Key for DilithiumSecretKey<P> {
 impl<P: DilithiumParams + Clone> TryFrom<&[u8]> for DilithiumSecretKey<P> {
     type Error = Error;
     fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
-        key::Key::from_bytes(bytes)
+        Key::from_bytes(bytes)
     }
 }
 
-impl<P: DilithiumParams + Clone> key::PrivateKey<DilithiumPublicKey<P>> for DilithiumSecretKey<P> {}
+impl<P: DilithiumParams + Clone> PrivateKey<DilithiumPublicKey<P>> for DilithiumSecretKey<P> {}
 
 // ------------------- Generic Dilithium Implementation -------------------
 // ------------------- 通用 Dilithium 实现 -------------------
@@ -233,12 +233,12 @@ pub struct DilithiumScheme<P: DilithiumParams> {
     _params: PhantomData<P>,
 }
 
-impl<P: DilithiumParams + Clone> key::AsymmetricKeySet for DilithiumScheme<P> {
+impl<P: DilithiumParams + Clone> AsymmetricKeySet for DilithiumScheme<P> {
     type PublicKey = DilithiumPublicKey<P>;
     type PrivateKey = DilithiumSecretKey<P>;
 }
 
-impl<P: DilithiumParams + Clone + 'static> key::Algorithm for DilithiumScheme<P> {
+impl<P: DilithiumParams + Clone + 'static> Algorithm for DilithiumScheme<P> {
     const NAME: &'static str = "Dilithium";
 }
 
@@ -287,7 +287,7 @@ impl<P: DilithiumParams + Clone> Verifier for DilithiumScheme<P> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::traits::key::Key;
+    use crate::traits::Key;
 
     fn run_dilithium_tests<P: DilithiumParams + Default + Clone + std::fmt::Debug>() {
         // Test key generation

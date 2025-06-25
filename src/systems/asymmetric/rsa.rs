@@ -13,12 +13,9 @@
 //! 密钥应为 PKCS#8 DER 格式。
 
 use crate::errors::Error;
-use crate::traits::hash::Sha256;
 use crate::traits::{
-    hash::Hasher,
-    kem::{EncapsulatedKey, Kem, KemError, SharedSecret},
-    key::{self, KeyGenerator},
-    sign::{Signature, SignatureError, Signer, Verifier},
+    Algorithm, AsymmetricKeySet, EncapsulatedKey, Hasher, Kem, KemError, Key, KeyGenerator,
+    PrivateKey, PublicKey, Sha256, SharedSecret, Signature, SignatureError, Signer, Verifier,
 };
 use rsa::signature::{RandomizedSigner, SignatureEncoding};
 use rsa::{
@@ -79,7 +76,7 @@ pub struct RsaPublicKey(rsa::RsaPublicKey);
 #[zeroize(drop)]
 pub struct RsaPrivateKey(Zeroizing<Vec<u8>>);
 
-impl key::Key for RsaPublicKey {
+impl Key for RsaPublicKey {
     fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
         rsa::RsaPublicKey::from_public_key_der(bytes)
             .map(RsaPublicKey)
@@ -94,7 +91,7 @@ impl key::Key for RsaPublicKey {
             .to_vec()
     }
 }
-impl key::PublicKey for RsaPublicKey {}
+impl PublicKey for RsaPublicKey {}
 impl<'a> From<&'a RsaPublicKey> for RsaPublicKey {
     fn from(key: &'a RsaPublicKey) -> Self {
         key.clone()
@@ -104,11 +101,11 @@ impl<'a> From<&'a RsaPublicKey> for RsaPublicKey {
 impl TryFrom<&[u8]> for RsaPublicKey {
     type Error = Error;
     fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
-        key::Key::from_bytes(bytes)
+        Key::from_bytes(bytes)
     }
 }
 
-impl key::Key for RsaPrivateKey {
+impl Key for RsaPrivateKey {
     fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
         // Just validate that it's a valid key, then store the bytes
         rsa::RsaPrivateKey::from_pkcs8_der(bytes).map_err(|e| Error::Rsa(e.into()))?;
@@ -123,11 +120,11 @@ impl key::Key for RsaPrivateKey {
 impl TryFrom<&[u8]> for RsaPrivateKey {
     type Error = Error;
     fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
-        key::Key::from_bytes(bytes)
+        Key::from_bytes(bytes)
     }
 }
 
-impl key::PrivateKey<RsaPublicKey> for RsaPrivateKey {}
+impl PrivateKey<RsaPublicKey> for RsaPrivateKey {}
 // ------------------- Generic RSA Implementation -------------------
 // ------------------- 通用 RSA 实现 -------------------
 
@@ -144,12 +141,12 @@ pub struct RsaScheme<KP: RsaKeyParams, H: Hasher = Sha256> {
     _hasher: PhantomData<H>,
 }
 
-impl<KP: RsaKeyParams, H: Hasher + 'static> key::AsymmetricKeySet for RsaScheme<KP, H> {
+impl<KP: RsaKeyParams, H: Hasher + 'static> AsymmetricKeySet for RsaScheme<KP, H> {
     type PublicKey = RsaPublicKey;
     type PrivateKey = RsaPrivateKey;
 }
 
-impl<KP: RsaKeyParams, H: Hasher + 'static> key::Algorithm for RsaScheme<KP, H> {
+impl<KP: RsaKeyParams, H: Hasher + 'static> Algorithm for RsaScheme<KP, H> {
     const NAME: &'static str = "RSA-PSS";
 }
 
@@ -232,8 +229,8 @@ impl<KP: RsaKeyParams, H: Hasher> Verifier for RsaScheme<KP, H> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::traits::hash::{Sha256, Sha512};
-    use crate::traits::key::Key;
+    use crate::traits::{Sha256, Sha512};
+    use crate::traits::Key;
 
     fn run_rsa_tests<KP: RsaKeyParams, H: Hasher>()
     where

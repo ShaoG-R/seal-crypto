@@ -3,10 +3,9 @@
 //! 提供了使用 ChaCha20-Poly1305 的对称 AEAD 加密实现。
 
 use crate::errors::Error;
-use crate::traits::key::SymmetricKeySet;
-use crate::traits::symmetric::{
-    AssociatedData, SymmetricCipher, SymmetricDecryptor, SymmetricEncryptor, SymmetricError,
-    SymmetricKey, SymmetricKeyGenerator,
+use crate::traits::{
+    Algorithm, AssociatedData, SymmetricCipher, SymmetricDecryptor, SymmetricEncryptor,
+    SymmetricError, SymmetricKey, SymmetricKeyGenerator, SymmetricKeySet,
 };
 use chacha20poly1305::aead::rand_core::RngCore;
 use chacha20poly1305::aead::{Aead, Key, KeyInit, Nonce, OsRng, Payload};
@@ -26,6 +25,10 @@ mod private {
 ///
 /// 一个密封的 trait，用于定义 ChaCha20-Poly1305 方案的参数。
 pub trait Chacha20Poly1305Params: private::Sealed + Send + Sync + 'static {
+    /// The unique name of the signature algorithm (e.g., "ChaCha20-Poly1305").
+    ///
+    /// 签名算法的唯一名称（例如，"ChaCha20-Poly1305"）。
+    const NAME: &'static str;
     /// The underlying `chacha20poly1305` AEAD cipher type.
     ///
     /// 底层的 `chacha20poly1305` AEAD 密码类型。
@@ -51,6 +54,7 @@ pub trait Chacha20Poly1305Params: private::Sealed + Send + Sync + 'static {
 pub struct Chacha20;
 impl private::Sealed for Chacha20 {}
 impl Chacha20Poly1305Params for Chacha20 {
+    const NAME: &'static str = "ChaCha20-Poly1305";
     type AeadCipher = ChaCha20Poly1305Core;
     const KEY_SIZE: usize = 32;
     const NONCE_SIZE: usize = 12;
@@ -64,6 +68,7 @@ impl Chacha20Poly1305Params for Chacha20 {
 pub struct XChacha20;
 impl private::Sealed for XChacha20 {}
 impl Chacha20Poly1305Params for XChacha20 {
+    const NAME: &'static str = "XChaCha20-Poly1305";
     type AeadCipher = XChaCha20Poly1305Core;
     const KEY_SIZE: usize = 32;
     const NONCE_SIZE: usize = 24;
@@ -79,6 +84,10 @@ impl Chacha20Poly1305Params for XChacha20 {
 #[derive(Debug, Default)]
 pub struct Chacha20Poly1305Scheme<P: Chacha20Poly1305Params> {
     _params: PhantomData<P>,
+}
+
+impl<P: Chacha20Poly1305Params> Algorithm for Chacha20Poly1305Scheme<P> {
+    const NAME: &'static str = P::NAME;
 }
 
 impl<P: Chacha20Poly1305Params> SymmetricKeySet for Chacha20Poly1305Scheme<P> {

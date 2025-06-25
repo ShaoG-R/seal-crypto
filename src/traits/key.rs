@@ -2,6 +2,7 @@
 //!
 //! 定义了加密密钥的核心 trait。
 use crate::errors::Error;
+use crate::traits::algorithm::Algorithm;
 use zeroize::Zeroize;
 
 /// A blanket trait for all key types, defining common properties and behaviors.
@@ -32,7 +33,7 @@ pub trait PrivateKey<P: PublicKey>: Key + Zeroize {}
 /// Defines the set of keys used in an asymmetric cryptographic scheme.
 ///
 /// 定义非对称加密方案中使用的密钥集。
-pub trait AsymmetricKeySet: 'static + Sized {
+pub trait AsymmetricKeySet: Algorithm {
     type PublicKey: PublicKey;
     type PrivateKey: PrivateKey<Self::PublicKey>;
 }
@@ -40,34 +41,8 @@ pub trait AsymmetricKeySet: 'static + Sized {
 /// Defines the key used in a symmetric cryptographic scheme.
 ///
 /// 定义对称加密方案中使用的密钥。
-pub trait SymmetricKeySet: 'static + Sized {
+pub trait SymmetricKeySet: Algorithm {
     type Key: 'static;
-}
-
-/// A trait that provides a unique name for a cryptographic algorithm.
-///
-/// 为加密算法提供唯一名称的 trait。
-pub trait Algorithm: AsymmetricKeySet {
-    /// The unique name of the signature algorithm (e.g., "RSA-PSS-SHA256").
-    ///
-    /// 签名算法的唯一名称（例如，"RSA-PSS-SHA256"）。
-    const NAME: &'static str;
-}
-
-/// A trait for schemes that can generate a new cryptographic key pair.
-///
-/// 用于可生成新加密密钥对的方案的 trait。
-pub trait KeyGenerator: Algorithm {
-    /// Generates a new key pair (public and private key).
-    ///
-    /// # Returns
-    /// A result containing the key pair, or an error if generation fails.
-    ///
-    /// 生成一个新的密钥对（公钥和私钥）。
-    ///
-    /// # 返回
-    /// 一个包含密钥对的 `Result`，如果生成失败则返回错误。
-    fn generate_keypair() -> Result<(Self::PublicKey, Self::PrivateKey), Error>;
 }
 
 /// A trait that associates a private key with its corresponding public key.

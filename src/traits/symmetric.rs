@@ -10,6 +10,7 @@ use zeroize::Zeroizing;
 /// A key for a symmetric cipher.
 ///
 /// 对称密码的密钥。
+#[allow(dead_code)]
 pub type SymmetricKey = Zeroizing<Vec<u8>>;
 
 /// Authenticated associated data (AAD).

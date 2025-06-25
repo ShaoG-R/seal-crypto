@@ -5,7 +5,7 @@
 
 use seal_crypto::prelude::*;
 use seal_crypto::schemes::{
-    asymmetric::kyber::{Kyber1024, KyberScheme},
+    asymmetric::pq::kyber::{Kyber1024, KyberScheme},
     symmetric::aes_gcm::Aes256Gcm,
 };
 

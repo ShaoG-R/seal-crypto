@@ -3,10 +3,9 @@
 //! 提供了使用 AES-GCM 的对称 AEAD 加密实现。
 
 use crate::errors::Error;
-use crate::traits::key::SymmetricKeySet;
-use crate::traits::symmetric::{
-    AssociatedData, SymmetricCipher, SymmetricDecryptor, SymmetricEncryptor, SymmetricError,
-    SymmetricKey, SymmetricKeyGenerator,
+use crate::traits::{
+    Algorithm, AssociatedData, SymmetricCipher, SymmetricDecryptor, SymmetricEncryptor,
+    SymmetricError, SymmetricKey, SymmetricKeyGenerator, SymmetricKeySet,
 };
 use aes_gcm::aead::rand_core::RngCore;
 use aes_gcm::aead::{Aead, KeyInit, OsRng, Payload};
@@ -24,6 +23,10 @@ mod private {
 ///
 /// 一个密封的 trait，用于定义 AES-GCM 方案的参数。
 pub trait AesGcmParams: private::Sealed + Send + Sync + 'static {
+    /// The unique name of the signature algorithm (e.g., "AES-128-GCM").
+    ///
+    /// 签名算法的唯一名称（例如，"AES-128-GCM"）。
+    const NAME: &'static str;
     /// The underlying `aes_gcm` AEAD cipher type.
     ///
     /// 底层的 `aes_gcm` AEAD 密码类型。
@@ -49,6 +52,7 @@ pub trait AesGcmParams: private::Sealed + Send + Sync + 'static {
 pub struct Aes128;
 impl private::Sealed for Aes128 {}
 impl AesGcmParams for Aes128 {
+    const NAME: &'static str = "AES-128-GCM";
     type AeadCipher = Aes128GcmCore;
     const KEY_SIZE: usize = 16;
     const NONCE_SIZE: usize = 12;
@@ -62,6 +66,7 @@ impl AesGcmParams for Aes128 {
 pub struct Aes256;
 impl private::Sealed for Aes256 {}
 impl AesGcmParams for Aes256 {
+    const NAME: &'static str = "AES-256-GCM";
     type AeadCipher = Aes256GcmCore;
     const KEY_SIZE: usize = 32;
     const NONCE_SIZE: usize = 12;
@@ -77,6 +82,10 @@ impl AesGcmParams for Aes256 {
 #[derive(Debug, Default)]
 pub struct AesGcmScheme<P: AesGcmParams> {
     _params: PhantomData<P>,
+}
+
+impl<P: AesGcmParams> Algorithm for AesGcmScheme<P> {
+    const NAME: &'static str = P::NAME;
 }
 
 impl<P: AesGcmParams> SymmetricKeySet for AesGcmScheme<P> {

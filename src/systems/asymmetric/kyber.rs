@@ -4,8 +4,8 @@
 
 use crate::errors::Error;
 use crate::traits::{
-    kem::{EncapsulatedKey, Kem, KemError, SharedSecret},
-    key::{self, KeyGenerator},
+    Algorithm, AsymmetricKeySet, EncapsulatedKey, Kem, KemError, Key, KeyGenerator, PrivateKey,
+    PublicKey, SharedSecret,
 };
 use pqcrypto_kyber::{kyber1024, kyber512, kyber768};
 use pqcrypto_traits::kem::{
@@ -165,11 +165,11 @@ impl<'a, P: KyberParams> From<&'a KyberPublicKey<P>> for KyberPublicKey<P> {
 impl<P: KyberParams> TryFrom<&[u8]> for KyberPublicKey<P> {
     type Error = Error;
     fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
-        key::Key::from_bytes(bytes)
+        Key::from_bytes(bytes)
     }
 }
 
-impl<P: KyberParams> key::Key for KyberPublicKey<P> {
+impl<P: KyberParams> Key for KyberPublicKey<P> {
     fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
         if bytes.len() != P::PUBLIC_KEY_BYTES {
             return Err(KemError::InvalidPublicKey.into());
@@ -185,7 +185,7 @@ impl<P: KyberParams> key::Key for KyberPublicKey<P> {
     }
 }
 
-impl<P: KyberParams> key::PublicKey for KyberPublicKey<P> {}
+impl<P: KyberParams> PublicKey for KyberPublicKey<P> {}
 
 #[derive(Debug, Zeroize, Clone, Eq, PartialEq)]
 #[zeroize(drop)]
@@ -200,7 +200,7 @@ impl<P: KyberParams> KyberSecretKey<P> {
     }
 }
 
-impl<P: KyberParams> key::Key for KyberSecretKey<P> {
+impl<P: KyberParams> Key for KyberSecretKey<P> {
     fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
         if bytes.len() != P::SECRET_KEY_BYTES {
             return Err(KemError::InvalidPrivateKey.into());
@@ -219,11 +219,11 @@ impl<P: KyberParams> key::Key for KyberSecretKey<P> {
 impl<P: KyberParams> TryFrom<&[u8]> for KyberSecretKey<P> {
     type Error = Error;
     fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
-        key::Key::from_bytes(bytes)
+        Key::from_bytes(bytes)
     }
 }
 
-impl<P: KyberParams + Clone> key::PrivateKey<KyberPublicKey<P>> for KyberSecretKey<P> {}
+impl<P: KyberParams + Clone> PrivateKey<KyberPublicKey<P>> for KyberSecretKey<P> {}
 
 // ------------------- Generic Kyber KEM Implementation -------------------
 // ------------------- 通用 Kyber KEM 实现 -------------------
@@ -236,12 +236,12 @@ pub struct KyberScheme<P: KyberParams> {
     _params: PhantomData<P>,
 }
 
-impl<P: KyberParams + Clone> key::AsymmetricKeySet for KyberScheme<P> {
+impl<P: KyberParams + Clone> AsymmetricKeySet for KyberScheme<P> {
     type PublicKey = KyberPublicKey<P>;
     type PrivateKey = KyberSecretKey<P>;
 }
 
-impl<P: KyberParams + Clone> key::Algorithm for KyberScheme<P> {
+impl<P: KyberParams + Clone> Algorithm for KyberScheme<P> {
     const NAME: &'static str = "KYBER-KEM";
 }
 
@@ -294,7 +294,7 @@ impl<P: KyberParams + Clone> Kem for KyberScheme<P> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::traits::key::Key;
+    use crate::traits::Key;
 
     fn run_kyber_tests<P: KyberParams + Default + std::fmt::Debug>()
     where
