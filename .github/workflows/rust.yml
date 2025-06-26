@@ -55,7 +55,7 @@ jobs:
           ~/.cargo/registry/cache/
           ~/.cargo/git/db/
           target/
-        key: ${{ runner.os }}-cargo-${{ matrix.config.name }}-${{ hashFiles('**/Cargo.lock') }}
+        key: v2-${{ runner.os }}-cargo-${{ matrix.config.name }}-${{ hashFiles('**/Cargo.lock') }}
 
     - name: Run tests
       run: cargo test --lib ${{ matrix.config.args }} 
