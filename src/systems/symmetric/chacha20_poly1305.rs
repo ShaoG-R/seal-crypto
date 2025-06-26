@@ -51,9 +51,9 @@ pub trait Chacha20Poly1305Params: private::Sealed + Send + Sync + 'static {
 ///
 /// ChaCha20-Poly1305 的标记结构体。
 #[derive(Debug, Default)]
-pub struct Chacha20;
-impl private::Sealed for Chacha20 {}
-impl Chacha20Poly1305Params for Chacha20 {
+pub struct ChaCha20Poly1305Params;
+impl private::Sealed for ChaCha20Poly1305Params {}
+impl Chacha20Poly1305Params for ChaCha20Poly1305Params {
     const NAME: &'static str = "ChaCha20-Poly1305";
     type AeadCipher = ChaCha20Poly1305Core;
     const KEY_SIZE: usize = 32;
@@ -65,9 +65,9 @@ impl Chacha20Poly1305Params for Chacha20 {
 ///
 /// XChaCha20-Poly1305 的标记结构体。
 #[derive(Debug, Default)]
-pub struct XChacha20;
-impl private::Sealed for XChacha20 {}
-impl Chacha20Poly1305Params for XChacha20 {
+pub struct XChaCha20Poly1305Params;
+impl private::Sealed for XChaCha20Poly1305Params {}
+impl Chacha20Poly1305Params for XChaCha20Poly1305Params {
     const NAME: &'static str = "XChaCha20-Poly1305";
     type AeadCipher = XChaCha20Poly1305Core;
     const KEY_SIZE: usize = 32;
@@ -127,14 +127,14 @@ impl<P: Chacha20Poly1305Params> SymmetricEncryptor for Chacha20Poly1305Scheme<P>
         }
         let key = Key::<P::AeadCipher>::from_slice(key);
         let cipher = P::AeadCipher::new(key);
-        let nonce = Nonce::<P::AeadCipher>::from_slice(nonce);
+        let nonce_core = chacha20poly1305::aead::Nonce::<P::AeadCipher>::from_slice(nonce);
 
         let payload = Payload {
             msg: plaintext,
             aad: aad.unwrap_or_default(),
         };
         cipher
-            .encrypt(nonce, payload)
+            .encrypt(nonce_core, payload)
             .map_err(|_| Error::Symmetric(SymmetricError::Encryption))
     }
 }
@@ -155,14 +155,14 @@ impl<P: Chacha20Poly1305Params> SymmetricDecryptor for Chacha20Poly1305Scheme<P>
 
         let key = Key::<P::AeadCipher>::from_slice(key);
         let cipher = P::AeadCipher::new(key);
-        let nonce = Nonce::<P::AeadCipher>::from_slice(nonce);
+        let nonce_core = chacha20poly1305::aead::Nonce::<P::AeadCipher>::from_slice(nonce);
 
         let payload = Payload {
             msg: ciphertext_with_tag,
             aad: aad.unwrap_or_default(),
         };
         cipher
-            .decrypt(nonce, payload)
+            .decrypt(nonce_core, payload)
             .map_err(|_| Error::Symmetric(SymmetricError::Decryption))
     }
 }
@@ -222,7 +222,7 @@ mod tests {
 
     #[test]
     fn test_chacha20_poly1305_scheme() {
-        test_roundtrip::<Chacha20Poly1305Scheme<Chacha20>>();
+        test_roundtrip::<Chacha20Poly1305Scheme<ChaCha20Poly1305Params>>();
     }
 
     fn test_invalid_inputs<S>()
@@ -271,12 +271,12 @@ mod tests {
 
     #[test]
     fn test_chacha20_poly1305_invalid_inputs() {
-        test_invalid_inputs::<Chacha20Poly1305Scheme<Chacha20>>();
+        test_invalid_inputs::<Chacha20Poly1305Scheme<ChaCha20Poly1305Params>>();
     }
 
     #[test]
     fn test_xchacha20_poly1305_invalid_inputs() {
-        test_invalid_inputs::<Chacha20Poly1305Scheme<XChacha20>>();
+        test_invalid_inputs::<Chacha20Poly1305Scheme<XChaCha20Poly1305Params>>();
     }
 }
 
@@ -286,12 +286,13 @@ mod tests {
 /// A type alias for the ChaCha20-Poly1305 scheme.
 ///
 /// ChaCha20-Poly1305 方案的类型别名。
-pub type ChaCha20Poly1305Scheme = Chacha20Poly1305Scheme<Chacha20>;
+pub type ChaCha20Poly1305 = Chacha20Poly1305Scheme<ChaCha20Poly1305Params>;
 
 /// A type alias for the XChaCha20-Poly1305 scheme.
 ///
 /// XChaCha20-Poly1305 方案的类型别名。
-pub type XChaCha20Poly1305Scheme = Chacha20Poly1305Scheme<XChacha20>;
+pub type XChaCha20Poly1305 = Chacha20Poly1305Scheme<XChaCha20Poly1305Params>;
+
 
 /// A type alias for the authentication tag used in ChaCha20-Poly1305.
 ///

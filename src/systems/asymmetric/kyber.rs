@@ -47,9 +47,9 @@ pub trait KyberParams: private::Sealed + Send + Sync + 'static {
 ///
 /// Kyber-512 参数的标记结构体。
 #[derive(Debug, Default, Clone)]
-pub struct Kyber512;
-impl private::Sealed for Kyber512 {}
-impl KyberParams for Kyber512 {
+pub struct Kyber512Params;
+impl private::Sealed for Kyber512Params {}
+impl KyberParams for Kyber512Params {
     type PqPublicKey = kyber512::PublicKey;
     type PqSecretKey = kyber512::SecretKey;
     type PqCiphertext = kyber512::Ciphertext;
@@ -74,9 +74,9 @@ impl KyberParams for Kyber512 {
 ///
 /// Kyber-768 参数的标记结构体。
 #[derive(Debug, Default, Clone)]
-pub struct Kyber768;
-impl private::Sealed for Kyber768 {}
-impl KyberParams for Kyber768 {
+pub struct Kyber768Params;
+impl private::Sealed for Kyber768Params {}
+impl KyberParams for Kyber768Params {
     type PqPublicKey = kyber768::PublicKey;
     type PqSecretKey = kyber768::SecretKey;
     type PqCiphertext = kyber768::Ciphertext;
@@ -101,9 +101,9 @@ impl KyberParams for Kyber768 {
 ///
 /// Kyber-1024 参数的标记结构体。
 #[derive(Debug, Default, Clone)]
-pub struct Kyber1024;
-impl private::Sealed for Kyber1024 {}
-impl KyberParams for Kyber1024 {
+pub struct Kyber1024Params;
+impl private::Sealed for Kyber1024Params {}
+impl KyberParams for Kyber1024Params {
     type PqPublicKey = kyber1024::PublicKey;
     type PqSecretKey = kyber1024::SecretKey;
     type PqCiphertext = kyber1024::Ciphertext;
@@ -288,6 +288,24 @@ impl<P: KyberParams + Clone> Kem for KyberScheme<P> {
     }
 }
 
+// ------------------- Type Aliases for Specific Kyber Schemes -------------------
+// ------------------- 特定 Kyber 方案的类型别名 -------------------
+
+/// A type alias for the Kyber-512 scheme.
+///
+/// Kyber-512 方案的类型别名。
+pub type Kyber512 = KyberScheme<Kyber512Params>;
+
+/// A type alias for the Kyber-768 scheme.
+///
+/// Kyber-768 方案的类型别名。
+pub type Kyber768 = KyberScheme<Kyber768Params>;
+
+/// A type alias for the Kyber-1024 scheme.
+///
+/// Kyber-1024 方案的类型别名。
+pub type Kyber1024 = KyberScheme<Kyber1024Params>;
+
 // ------------------- Tests -------------------
 // ------------------- 测试 -------------------
 
@@ -332,16 +350,16 @@ mod tests {
 
     #[test]
     fn test_kyber_512() {
-        run_kyber_tests::<Kyber512>();
+        run_kyber_tests::<Kyber512Params>();
     }
 
     #[test]
     fn test_kyber_768() {
-        run_kyber_tests::<Kyber768>();
+        run_kyber_tests::<Kyber768Params>();
     }
 
     #[test]
     fn test_kyber_1024() {
-        run_kyber_tests::<Kyber1024>();
+        run_kyber_tests::<Kyber1024Params>();
     }
 }

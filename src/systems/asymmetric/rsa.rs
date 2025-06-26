@@ -50,9 +50,9 @@ pub trait RsaKeyParams: private::Sealed + Send + Sync + 'static {
 ///
 /// RSA-2048 的标记结构体。
 #[derive(Debug, Clone, Default)]
-pub struct Rsa2048;
-impl private::Sealed for Rsa2048 {}
-impl RsaKeyParams for Rsa2048 {
+pub struct Rsa2048Params;
+impl private::Sealed for Rsa2048Params {}
+impl RsaKeyParams for Rsa2048Params {
     const KEY_BITS: usize = 2048;
 }
 
@@ -60,9 +60,9 @@ impl RsaKeyParams for Rsa2048 {
 ///
 /// RSA-4096 的标记结构体。
 #[derive(Debug, Clone, Default)]
-pub struct Rsa4096;
-impl private::Sealed for Rsa4096 {}
-impl RsaKeyParams for Rsa4096 {
+pub struct Rsa4096Params;
+impl private::Sealed for Rsa4096Params {}
+impl RsaKeyParams for Rsa4096Params {
     const KEY_BITS: usize = 4096;
 }
 
@@ -226,6 +226,20 @@ impl<KP: RsaKeyParams, H: Hasher> Verifier for RsaScheme<KP, H> {
     }
 }
 
+// ------------------- Type Aliases for Specific RSA Schemes -------------------
+// ------------------- 特定 RSA 方案的类型别名 -------------------
+
+/// A type alias for the RSA-2048 scheme with SHA-256.
+///
+/// 使用 SHA-256 的 RSA-2048 方案的类型别名。
+pub type Rsa2048<Sha = Sha256> = RsaScheme<Rsa2048Params, Sha>;
+
+/// A type alias for the RSA-4096 scheme with SHA-512.
+///
+/// 使用 SHA-512 的 RSA-4096 方案的类型别名。
+#[cfg(all(feature = "sha2"))]
+pub type Rsa4096<Sha = Sha256> = RsaScheme<Rsa4096Params, Sha>;
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -277,12 +291,12 @@ mod tests {
     #[test]
     #[cfg(all(feature = "sha2"))]
     fn test_rsa_2048_sha256() {
-        run_rsa_tests::<Rsa2048, Sha256>();
+        run_rsa_tests::<Rsa2048Params, Sha256>();
     }
 
     #[test]
     #[cfg(all(feature = "sha2"))]
     fn test_rsa_4096_sha512() {
-        run_rsa_tests::<Rsa4096, Sha512>();
+        run_rsa_tests::<Rsa4096Params, Sha512>();
     }
 }

@@ -5,13 +5,13 @@
 
 use seal_crypto::prelude::*;
 use seal_crypto::schemes::{
-    asymmetric::pq::kyber::{Kyber1024, KyberScheme},
+    asymmetric::pq::kyber::{Kyber1024Params, KyberScheme},
     symmetric::aes_gcm::Aes256Gcm,
 };
 
 fn main() -> Result<(), CryptoError> {
     // Define the concrete schemes we want to use.
-    type MyKEM = KyberScheme<Kyber1024>;
+    type MyKEM = KyberScheme<Kyber1024Params>;
     type MyAEAD = Aes256Gcm;
 
     println!("Running hybrid encryption example... / 正在运行混合加密示例...");

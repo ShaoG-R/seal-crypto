@@ -11,9 +11,7 @@ pub mod traditional {
     /// 基于 RSA 的方案。
     pub mod rsa {
         #[cfg(feature = "rsa")]
-        pub use crate::systems::asymmetric::rsa::{
-            Rsa2048, Rsa4096, RsaKeyParams, RsaPrivateKey, RsaPublicKey, RsaScheme,
-        };
+        pub use crate::systems::asymmetric::rsa::*;
     }
 }
 
@@ -26,9 +24,7 @@ pub mod pq {
     /// Kyber KEM，一种后量子密钥封装方法。
     #[cfg(feature = "kyber")]
     pub mod kyber {
-        pub use crate::systems::asymmetric::kyber::{
-            Kyber1024, Kyber512, Kyber768, KyberParams, KyberScheme, KyberSecretKey,
-        };
+        pub use crate::systems::asymmetric::kyber::*;
     }
 
     /// Dilithium, a post-quantum signature scheme.
@@ -36,8 +32,6 @@ pub mod pq {
     /// Dilithium，一种后量子签名方案。
     #[cfg(feature = "dilithium")]
     pub mod dilithium {
-        pub use crate::systems::asymmetric::dilithium::{
-            Dilithium2, Dilithium3, Dilithium5, DilithiumParams, DilithiumScheme, DilithiumSecretKey,
-        };
+        pub use crate::systems::asymmetric::dilithium::*;
     }
 }

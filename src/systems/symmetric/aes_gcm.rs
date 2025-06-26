@@ -49,9 +49,9 @@ pub trait AesGcmParams: private::Sealed + Send + Sync + 'static {
 ///
 /// AES-128-GCM 的标记结构体。
 #[derive(Debug, Default)]
-pub struct Aes128;
-impl private::Sealed for Aes128 {}
-impl AesGcmParams for Aes128 {
+pub struct Aes128Params;
+impl private::Sealed for Aes128Params {}
+impl AesGcmParams for Aes128Params {
     const NAME: &'static str = "AES-128-GCM";
     type AeadCipher = Aes128GcmCore;
     const KEY_SIZE: usize = 16;
@@ -63,9 +63,9 @@ impl AesGcmParams for Aes128 {
 ///
 /// AES-256-GCM 的标记结构体。
 #[derive(Debug, Default)]
-pub struct Aes256;
-impl private::Sealed for Aes256 {}
-impl AesGcmParams for Aes256 {
+pub struct Aes256GcmParams;
+impl private::Sealed for Aes256GcmParams {}
+impl AesGcmParams for Aes256GcmParams {
     const NAME: &'static str = "AES-256-GCM";
     type AeadCipher = Aes256GcmCore;
     const KEY_SIZE: usize = 32;
@@ -246,12 +246,12 @@ mod tests {
 
     #[test]
     fn test_aes128gcm_scheme() {
-        test_roundtrip::<AesGcmScheme<Aes128>>();
+        test_roundtrip::<AesGcmScheme<Aes128Params>>();
     }
 
     #[test]
     fn test_aes256gcm_scheme() {
-        test_roundtrip::<AesGcmScheme<Aes256>>();
+        test_roundtrip::<AesGcmScheme<Aes256GcmParams>>();
     }
 
     fn test_invalid_inputs<S>()
@@ -309,12 +309,12 @@ mod tests {
 
     #[test]
     fn test_aes128gcm_invalid_inputs() {
-        test_invalid_inputs::<AesGcmScheme<Aes128>>();
+        test_invalid_inputs::<AesGcmScheme<Aes128Params>>();
     }
 
     #[test]
     fn test_aes256gcm_invalid_inputs() {
-        test_invalid_inputs::<AesGcmScheme<Aes256>>();
+        test_invalid_inputs::<AesGcmScheme<Aes256GcmParams>>();
     }
 }
 
@@ -324,12 +324,12 @@ mod tests {
 /// A type alias for the AES-128-GCM scheme.
 ///
 /// AES-128-GCM 方案的类型别名。
-pub type Aes128Gcm = AesGcmScheme<Aes128>;
+pub type Aes128Gcm = AesGcmScheme<Aes128Params>;
 
 /// A type alias for the AES-256-GCM scheme.
 ///
 /// AES-256-GCM 方案的类型别名。
-pub type Aes256Gcm = AesGcmScheme<Aes256>;
+pub type Aes256Gcm = AesGcmScheme<Aes256GcmParams>;
 
 /// A type alias for the nonce used in AES-GCM.
 ///

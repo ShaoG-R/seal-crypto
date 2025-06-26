@@ -46,9 +46,9 @@ pub trait DilithiumParams: private::Sealed + Send + Sync + 'static {
 
 /// Marker struct for Dilithium2.
 #[derive(Debug, Default, Clone)]
-pub struct Dilithium2;
-impl private::Sealed for Dilithium2 {}
-impl DilithiumParams for Dilithium2 {
+pub struct Dilithium2Params;
+impl private::Sealed for Dilithium2Params {}
+impl DilithiumParams for Dilithium2Params {
     type PqPublicKey = dilithium2::PublicKey;
     type PqSecretKey = dilithium2::SecretKey;
     type PqDetachedSignature = dilithium2::DetachedSignature;
@@ -78,9 +78,9 @@ impl DilithiumParams for Dilithium2 {
 
 /// Marker struct for Dilithium3.
 #[derive(Debug, Default, Clone)]
-pub struct Dilithium3;
-impl private::Sealed for Dilithium3 {}
-impl DilithiumParams for Dilithium3 {
+pub struct Dilithium3Params;
+impl private::Sealed for Dilithium3Params {}
+impl DilithiumParams for Dilithium3Params {
     type PqPublicKey = dilithium3::PublicKey;
     type PqSecretKey = dilithium3::SecretKey;
     type PqDetachedSignature = dilithium3::DetachedSignature;
@@ -110,9 +110,9 @@ impl DilithiumParams for Dilithium3 {
 
 /// Marker struct for Dilithium5.
 #[derive(Debug, Default, Clone)]
-pub struct Dilithium5;
-impl private::Sealed for Dilithium5 {}
-impl DilithiumParams for Dilithium5 {
+pub struct Dilithium5Params;
+impl private::Sealed for Dilithium5Params {}
+impl DilithiumParams for Dilithium5Params {
     type PqPublicKey = dilithium5::PublicKey;
     type PqSecretKey = dilithium5::SecretKey;
     type PqDetachedSignature = dilithium5::DetachedSignature;
@@ -281,6 +281,24 @@ impl<P: DilithiumParams + Clone> Verifier for DilithiumScheme<P> {
     }
 }
 
+// ------------------- Type Aliases for Specific Dilithium Schemes -------------------
+// ------------------- 特定 Dilithium 方案的类型别名 -------------------
+
+/// A type alias for the Dilithium2 scheme.
+///
+/// Dilithium2 方案的类型别名。
+pub type Dilithium2 = DilithiumScheme<Dilithium2Params>;
+
+/// A type alias for the Dilithium3 scheme.
+///
+/// Dilithium3 方案的类型别名。
+pub type Dilithium3 = DilithiumScheme<Dilithium3Params>;
+
+/// A type alias for the Dilithium5 scheme.
+///
+/// Dilithium5 方案的类型别名。
+pub type Dilithium5 = DilithiumScheme<Dilithium5Params>;
+
 // ------------------- Tests -------------------
 // ------------------- 测试 -------------------
 
@@ -320,16 +338,16 @@ mod tests {
 
     #[test]
     fn test_dilithium2() {
-        run_dilithium_tests::<Dilithium2>();
+        run_dilithium_tests::<Dilithium2Params>();
     }
 
     #[test]
     fn test_dilithium3() {
-        run_dilithium_tests::<Dilithium3>();
+        run_dilithium_tests::<Dilithium3Params>();
     }
 
     #[test]
     fn test_dilithium5() {
-        run_dilithium_tests::<Dilithium5>();
+        run_dilithium_tests::<Dilithium5Params>();
     }
 }
