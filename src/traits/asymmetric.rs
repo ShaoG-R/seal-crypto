@@ -207,4 +207,4 @@ pub trait Kem: AsymmetricKeySet {
         private_key: &Self::PrivateKey,
         encapsulated_key: &Self::EncapsulatedKey,
     ) -> Result<SharedSecret, Error>;
-} 
+}

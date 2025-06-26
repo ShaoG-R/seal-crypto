@@ -49,9 +49,9 @@ pub trait AesGcmParams: private::Sealed + Send + Sync + 'static {
 ///
 /// AES-128-GCM 的标记结构体。
 #[derive(Debug, Default)]
-pub struct Aes128Params;
-impl private::Sealed for Aes128Params {}
-impl AesGcmParams for Aes128Params {
+pub struct Aes128GcmParams;
+impl private::Sealed for Aes128GcmParams {}
+impl AesGcmParams for Aes128GcmParams {
     const NAME: &'static str = "AES-128-GCM";
     type AeadCipher = Aes128GcmCore;
     const KEY_SIZE: usize = 16;
@@ -246,7 +246,7 @@ mod tests {
 
     #[test]
     fn test_aes128gcm_scheme() {
-        test_roundtrip::<AesGcmScheme<Aes128Params>>();
+        test_roundtrip::<AesGcmScheme<Aes128GcmParams>>();
     }
 
     #[test]
@@ -311,7 +311,7 @@ mod tests {
 
     #[test]
     fn test_aes128gcm_invalid_inputs() {
-        test_invalid_inputs::<AesGcmScheme<Aes128Params>>();
+        test_invalid_inputs::<AesGcmScheme<Aes128GcmParams>>();
     }
 
     #[test]
@@ -326,7 +326,7 @@ mod tests {
 /// A type alias for the AES-128-GCM scheme.
 ///
 /// AES-128-GCM 方案的类型别名。
-pub type Aes128Gcm = AesGcmScheme<Aes128Params>;
+pub type Aes128Gcm = AesGcmScheme<Aes128GcmParams>;
 
 /// A type alias for the AES-256-GCM scheme.
 ///

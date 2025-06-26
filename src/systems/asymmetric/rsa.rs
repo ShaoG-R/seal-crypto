@@ -243,8 +243,8 @@ pub type Rsa4096<Sha = Sha256> = RsaScheme<Rsa4096Params, Sha>;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::traits::{Sha256, Sha512};
     use crate::traits::Key;
+    use crate::traits::{Sha256, Sha512};
 
     fn run_rsa_tests<KP: RsaKeyParams, H: Hasher>()
     where

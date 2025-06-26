@@ -301,7 +301,6 @@ pub type ChaCha20Poly1305 = Chacha20Poly1305Scheme<ChaCha20Poly1305Params>;
 /// XChaCha20-Poly1305 方案的类型别名。
 pub type XChaCha20Poly1305 = Chacha20Poly1305Scheme<XChaCha20Poly1305Params>;
 
-
 /// A type alias for the authentication tag used in ChaCha20-Poly1305.
 ///
 /// ChaCha20-Poly1305 中使用的认证标签的类型别名。
