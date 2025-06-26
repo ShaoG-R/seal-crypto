@@ -17,7 +17,7 @@
 use crate::errors::Error;
 use crate::traits::{
     Algorithm, AsymmetricKeySet, Key, KeyGenerator, PrivateKey, PublicKey, Signature,
-    SignatureError, Signer, SymmetricError, Verifier,
+    SignatureError, Signer, Verifier, KeyError,
 };
 use ecdsa::{signature::RandomizedSigner, Signature as EcdsaSignature, SigningKey, VerifyingKey};
 use ed25519_dalek::{
@@ -68,10 +68,10 @@ impl EccParams for EcdsaP256Params {
 
         let private_key_der = private_key
             .to_pkcs8_der()
-            .map_err(|_| SignatureError::Signing)?;
+            .map_err(|_| Error::Key(KeyError::GenerationFailed))?;
         let public_key_der = public_key
             .to_public_key_der()
-            .map_err(|_| SignatureError::Signing)?;
+            .map_err(|_| Error::Key(KeyError::GenerationFailed))?;
 
         Ok((
             public_key_der.as_bytes().to_vec(),
@@ -80,8 +80,8 @@ impl EccParams for EcdsaP256Params {
     }
 
     fn sign(private_key_der: &[u8], message: &[u8]) -> Result<Signature, Error> {
-        let secret_key =
-            SecretKey::from_pkcs8_der(private_key_der).map_err(|_| SignatureError::Signing)?;
+        let secret_key = SecretKey::from_pkcs8_der(private_key_der)
+            .map_err(|_| Error::Signature(SignatureError::Signing))?;
         let signing_key: SigningKey<NistP256> = SigningKey::from(&secret_key);
         let mut rng = OsRng;
         let signature: P256Signature = signing_key.sign_with_rng(&mut rng, message);
@@ -90,26 +90,26 @@ impl EccParams for EcdsaP256Params {
 
     fn verify(public_key_der: &[u8], message: &[u8], signature: &Signature) -> Result<(), Error> {
         let verifying_key = VerifyingKey::<NistP256>::from_public_key_der(public_key_der)
-            .map_err(|_| SignatureError::Verification)?;
+            .map_err(|_| Error::Signature(SignatureError::Verification))?;
         let ecdsa_signature = EcdsaSignature::from_slice(signature.as_ref())
-            .map_err(|_| SignatureError::InvalidSignature)?;
+            .map_err(|_| Error::Signature(SignatureError::InvalidSignature))?;
 
         use signature::Verifier as _;
         verifying_key
             .verify(message, &ecdsa_signature)
-            .map_err(|_| SignatureError::Verification.into())
+            .map_err(|_| Error::Signature(SignatureError::Verification))
     }
 
     fn validate_public_key(bytes: &[u8]) -> Result<(), Error> {
         VerifyingKey::<NistP256>::from_public_key_der(bytes)
             .map(|_| ())
-            .map_err(|_| SignatureError::Verification.into())
+            .map_err(|_| Error::Key(KeyError::InvalidEncoding))
     }
 
     fn validate_private_key(bytes: &[u8]) -> Result<(), Error> {
         SecretKey::from_pkcs8_der(bytes)
             .map(|_| ())
-            .map_err(|_| SignatureError::Signing.into())
+            .map_err(|_| Error::Key(KeyError::InvalidEncoding))
     }
 }
 
@@ -126,16 +126,16 @@ impl EccParams for Ed25519Params {
         let mut secret_bytes = [0u8; 32];
         OsRng
             .try_fill_bytes(&mut secret_bytes)
-            .map_err(|_| Error::Symmetric(SymmetricError::InvalidKeySize))?;
+            .map_err(|_| Error::Key(KeyError::GenerationFailed))?;
         let signing_key = Ed25519SigningKey::from_bytes(&secret_bytes);
         let public_key = signing_key.verifying_key();
 
         let private_key_der = signing_key
             .to_pkcs8_der()
-            .map_err(|_| SignatureError::Signing)?;
+            .map_err(|_| Error::Key(KeyError::GenerationFailed))?;
         let public_key_der = public_key
             .to_public_key_der()
-            .map_err(|_| SignatureError::Signing)?;
+            .map_err(|_| Error::Key(KeyError::GenerationFailed))?;
 
         Ok((
             public_key_der.as_bytes().to_vec(),
@@ -145,33 +145,33 @@ impl EccParams for Ed25519Params {
 
     fn sign(private_key_der: &[u8], message: &[u8]) -> Result<Signature, Error> {
         let signing_key = Ed25519SigningKey::from_pkcs8_der(private_key_der)
-            .map_err(|_| SignatureError::Signing)?;
+            .map_err(|_| Error::Signature(SignatureError::Signing))?;
         let signature = signing_key.sign(message);
         Ok(Signature(signature.to_bytes().to_vec()))
     }
 
     fn verify(public_key_der: &[u8], message: &[u8], signature: &Signature) -> Result<(), Error> {
         let verifying_key = Ed25519VerifyingKey::from_public_key_der(public_key_der)
-            .map_err(|_| SignatureError::Verification)?;
+            .map_err(|_| Error::Signature(SignatureError::Verification))?;
         let ed_signature = Ed25519Signature::from_slice(signature.as_ref())
-            .map_err(|_| SignatureError::InvalidSignature)?;
+            .map_err(|_| Error::Signature(SignatureError::InvalidSignature))?;
 
         use ed25519_dalek::Verifier as _;
         verifying_key
             .verify(message, &ed_signature)
-            .map_err(|_| SignatureError::Verification.into())
+            .map_err(|_| Error::Signature(SignatureError::Verification))
     }
 
     fn validate_public_key(bytes: &[u8]) -> Result<(), Error> {
         Ed25519VerifyingKey::from_public_key_der(bytes)
             .map(|_| ())
-            .map_err(|_| SignatureError::Verification.into())
+            .map_err(|_| Error::Key(KeyError::InvalidEncoding))
     }
 
     fn validate_private_key(bytes: &[u8]) -> Result<(), Error> {
         Ed25519SigningKey::from_pkcs8_der(bytes)
             .map(|_| ())
-            .map_err(|_| SignatureError::Signing.into())
+            .map_err(|_| Error::Key(KeyError::InvalidEncoding))
     }
 }
 

@@ -5,7 +5,7 @@
 use crate::errors::Error;
 use crate::traits::{
     Algorithm, AsymmetricKeySet, Key, KeyGenerator, PrivateKey, PublicKey, Signature,
-    SignatureError, Signer, Verifier,
+    SignatureError, Signer, Verifier, KeyError,
 };
 use pqcrypto_dilithium::{dilithium2, dilithium3, dilithium5};
 use pqcrypto_traits::sign::{
@@ -74,7 +74,7 @@ impl DilithiumParams for Dilithium2Params {
         pk: &Self::PqPublicKey,
     ) -> Result<(), Error> {
         dilithium2::verify_detached_signature(sig, msg, pk)
-            .map_err(|_| SignatureError::Verification.into())
+            .map_err(|_| Error::Signature(SignatureError::Verification))
     }
 }
 
@@ -108,7 +108,7 @@ impl DilithiumParams for Dilithium3Params {
         pk: &Self::PqPublicKey,
     ) -> Result<(), Error> {
         dilithium3::verify_detached_signature(sig, msg, pk)
-            .map_err(|_| SignatureError::Verification.into())
+            .map_err(|_| Error::Signature(SignatureError::Verification))
     }
 }
 
@@ -142,7 +142,7 @@ impl DilithiumParams for Dilithium5Params {
         pk: &Self::PqPublicKey,
     ) -> Result<(), Error> {
         dilithium5::verify_detached_signature(sig, msg, pk)
-            .map_err(|_| SignatureError::Verification.into())
+            .map_err(|_| Error::Signature(SignatureError::Verification))
     }
 }
 
@@ -193,7 +193,7 @@ pub struct DilithiumSecretKey<P: DilithiumParams + Clone> {
 impl<P: DilithiumParams> Key for DilithiumPublicKey<P> {
     fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
         if bytes.len() != P::public_key_bytes() {
-            return Err(Error::from(SignatureError::InvalidSignature));
+            return Err(Error::Key(KeyError::InvalidEncoding));
         }
         Ok(Self {
             bytes: bytes.to_vec(),
@@ -209,7 +209,7 @@ impl<P: DilithiumParams> PublicKey for DilithiumPublicKey<P> {}
 impl<P: DilithiumParams + Clone> Key for DilithiumSecretKey<P> {
     fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
         if bytes.len() != P::secret_key_bytes() {
-            return Err(Error::from(SignatureError::InvalidSignature));
+            return Err(Error::Key(KeyError::InvalidEncoding));
         }
         Ok(Self {
             bytes: Zeroizing::new(bytes.to_vec()),
@@ -269,7 +269,7 @@ impl<P: DilithiumParams + Clone> KeyGenerator for DilithiumScheme<P> {
 impl<P: DilithiumParams + Clone> Signer for DilithiumScheme<P> {
     fn sign(private_key: &Self::PrivateKey, message: &[u8]) -> Result<Signature, Error> {
         let sk = PqSecretKey::from_bytes(&private_key.bytes)
-            .map_err(|_| Error::from(SignatureError::Signing))?;
+            .map_err(|_| Error::Signature(SignatureError::Signing))?;
         let sig = P::sign(&sk, message);
         Ok(Signature(sig.as_bytes().to_vec()))
     }
@@ -282,9 +282,9 @@ impl<P: DilithiumParams + Clone> Verifier for DilithiumScheme<P> {
         signature: &Signature,
     ) -> Result<(), Error> {
         let pk = PqPublicKey::from_bytes(&public_key.bytes)
-            .map_err(|_| Error::from(SignatureError::Verification))?;
+            .map_err(|_| Error::Key(KeyError::InvalidEncoding))?;
         let sig = PqDetachedSignature::from_bytes(signature.as_ref())
-            .map_err(|_| Error::from(SignatureError::InvalidSignature))?;
+            .map_err(|_| Error::Signature(SignatureError::InvalidSignature))?;
         P::verify(&sig, message, &pk)
     }
 }

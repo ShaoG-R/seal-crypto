@@ -2,7 +2,7 @@
 //!
 //! 为 `seal-crypto` crate 定义了顶层错误类型。
 
-use crate::traits::{KeyAgreementError, KemError, SignatureError, SymmetricError};
+use crate::traits::{KeyAgreementError, KemError, SignatureError, SymmetricError, KeyError};
 
 #[cfg(feature = "std")]
 use thiserror::Error;
@@ -18,6 +18,12 @@ use thiserror::Error;
 #[cfg_attr(feature = "std", derive(Error))]
 #[derive(Debug)]
 pub enum Error {
+    /// An error occurred during a key operation.
+    ///
+    /// 在密钥操作期间发生错误。
+    #[cfg_attr(feature = "std", error("Key operation failed"))]
+    Key(#[cfg_attr(feature = "std", from)] KeyError),
+
     /// An error occurred during a Key Encapsulation Mechanism (KEM) operation.
     ///
     /// 在密钥封装机制 (KEM) 操作期间发生错误。
@@ -41,20 +47,13 @@ pub enum Error {
     /// 在密钥协商操作期间发生错误。
     #[cfg_attr(feature = "std", error("Key agreement operation failed"))]
     KeyAgreement(#[cfg_attr(feature = "std", from)] KeyAgreementError),
-
-    /// An error from the underlying RSA implementation.
-    ///
-    /// 来自底层 RSA 实现的错误。
-    #[cfg(feature = "rsa")]
-    #[cfg_attr(feature = "std", error("RSA error: {0}"))]
-    Rsa(#[cfg_attr(feature = "std", from)] rsa::errors::Error),
 }
 
 // Manual From impls for no_std
-#[cfg(all(feature = "rsa", not(feature = "std")))]
-impl From<rsa::errors::Error> for Error {
-    fn from(e: rsa::errors::Error) -> Self {
-        Error::Rsa(e)
+#[cfg(not(feature = "std"))]
+impl From<KeyError> for Error {
+    fn from(e: KeyError) -> Self {
+        Error::Key(e)
     }
 }
 

@@ -1,9 +1,27 @@
-//! Defines the core traits for cryptographic keys.
+//! Defines traits for cryptographic keys.
 //!
 //! 定义了加密密钥的核心 trait。
 use crate::errors::Error;
 use crate::traits::algorithm::Algorithm;
 use zeroize::Zeroize;
+
+/// Defines errors that can occur during key operations.
+///
+/// 定义了在密钥操作期间可能发生的错误。
+#[derive(Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(thiserror::Error))]
+pub enum KeyError {
+    /// Failed to generate a key.
+    ///
+    /// 生成密钥失败。
+    #[cfg_attr(feature = "std", error("Key generation failed"))]
+    GenerationFailed,
+    /// The provided data is not a valid key encoding.
+    ///
+    /// 提供的密钥编码无效。
+    #[cfg_attr(feature = "std", error("Invalid key encoding"))]
+    InvalidEncoding,
+}
 
 /// A blanket trait for all key types, defining common properties and behaviors.
 ///

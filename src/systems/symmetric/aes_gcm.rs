@@ -5,7 +5,7 @@
 use crate::errors::Error;
 use crate::traits::{
     Algorithm, AssociatedData, SymmetricCipher, SymmetricDecryptor, SymmetricEncryptor,
-    SymmetricError, SymmetricKey, SymmetricKeyGenerator, SymmetricKeySet,
+    SymmetricError, SymmetricKey, SymmetricKeyGenerator, SymmetricKeySet, KeyError,
 };
 use aes_gcm::aead::rand_core::RngCore;
 use aes_gcm::aead::{Aead, KeyInit, OsRng, Payload};
@@ -105,7 +105,7 @@ impl<P: AesGcmParams> SymmetricKeyGenerator for AesGcmScheme<P> {
         let mut key_bytes = vec![0u8; P::KEY_SIZE];
         OsRng
             .try_fill_bytes(&mut key_bytes)
-            .map_err(|_| Error::Symmetric(SymmetricError::InvalidKeySize))?;
+            .map_err(|_| Error::Key(KeyError::GenerationFailed))?;
         Ok(SymmetricKey::new(key_bytes))
     }
 }
@@ -118,10 +118,10 @@ impl<P: AesGcmParams> SymmetricEncryptor for AesGcmScheme<P> {
         aad: Option<AssociatedData>,
     ) -> Result<Vec<u8>, Error> {
         if key.len() != P::KEY_SIZE {
-            return Err(SymmetricError::InvalidKeySize.into());
+            return Err(Error::Symmetric(SymmetricError::InvalidKeySize));
         }
         if nonce.len() != P::NONCE_SIZE {
-            return Err(SymmetricError::InvalidNonceSize.into());
+            return Err(Error::Symmetric(SymmetricError::InvalidNonceSize));
         }
         let key = aes_gcm::Key::<P::AeadCipher>::from_slice(key);
         let cipher = P::AeadCipher::new(key);
@@ -145,10 +145,10 @@ impl<P: AesGcmParams> SymmetricDecryptor for AesGcmScheme<P> {
         aad: Option<AssociatedData>,
     ) -> Result<Vec<u8>, Error> {
         if key.len() != P::KEY_SIZE {
-            return Err(SymmetricError::InvalidKeySize.into());
+            return Err(Error::Symmetric(SymmetricError::InvalidKeySize));
         }
         if nonce.len() != P::NONCE_SIZE {
-            return Err(SymmetricError::InvalidNonceSize.into());
+            return Err(Error::Symmetric(SymmetricError::InvalidNonceSize));
         }
 
         let key = aes_gcm::Key::<P::AeadCipher>::from_slice(key);

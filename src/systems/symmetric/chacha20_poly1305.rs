@@ -5,7 +5,7 @@
 use crate::errors::Error;
 use crate::traits::{
     Algorithm, AssociatedData, SymmetricCipher, SymmetricDecryptor, SymmetricEncryptor,
-    SymmetricError, SymmetricKey, SymmetricKeyGenerator, SymmetricKeySet,
+    SymmetricError, SymmetricKey, SymmetricKeyGenerator, SymmetricKeySet, KeyError,
 };
 use chacha20poly1305::aead::rand_core::RngCore;
 use chacha20poly1305::aead::{Aead, Key, KeyInit, OsRng, Payload};
@@ -107,7 +107,7 @@ impl<P: Chacha20Poly1305Params> SymmetricKeyGenerator for Chacha20Poly1305Scheme
         let mut key_bytes = vec![0u8; P::KEY_SIZE];
         OsRng
             .try_fill_bytes(&mut key_bytes)
-            .map_err(|_| Error::Symmetric(SymmetricError::InvalidKeySize))?;
+            .map_err(|_| Error::Key(KeyError::GenerationFailed))?;
         Ok(SymmetricKey::new(key_bytes))
     }
 }
@@ -120,10 +120,10 @@ impl<P: Chacha20Poly1305Params> SymmetricEncryptor for Chacha20Poly1305Scheme<P>
         aad: Option<AssociatedData>,
     ) -> Result<Vec<u8>, Error> {
         if key.len() != P::KEY_SIZE {
-            return Err(SymmetricError::InvalidKeySize.into());
+            return Err(Error::Symmetric(SymmetricError::InvalidKeySize));
         }
         if nonce.len() != P::NONCE_SIZE {
-            return Err(SymmetricError::InvalidNonceSize.into());
+            return Err(Error::Symmetric(SymmetricError::InvalidNonceSize));
         }
         let key = Key::<P::AeadCipher>::from_slice(key);
         let cipher = P::AeadCipher::new(key);
@@ -147,10 +147,10 @@ impl<P: Chacha20Poly1305Params> SymmetricDecryptor for Chacha20Poly1305Scheme<P>
         aad: Option<AssociatedData>,
     ) -> Result<Vec<u8>, Error> {
         if key.len() != P::KEY_SIZE {
-            return Err(SymmetricError::InvalidKeySize.into());
+            return Err(Error::Symmetric(SymmetricError::InvalidKeySize));
         }
         if nonce.len() != P::NONCE_SIZE {
-            return Err(SymmetricError::InvalidNonceSize.into());
+            return Err(Error::Symmetric(SymmetricError::InvalidNonceSize));
         }
 
         let key = Key::<P::AeadCipher>::from_slice(key);
