@@ -1,0 +1,2 @@
+[target.'cfg(all(target_arch = "x86_64", target_os = "windows", target_env = "msvc"))']
+sha2-asm = { rustc-link-lib = ["sha2-asm-sy"], rustc-link-search = ["sha2-asm-sy/lib"] } 
