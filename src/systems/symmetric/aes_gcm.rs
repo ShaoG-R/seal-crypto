@@ -291,6 +291,7 @@ mod tests {
         ));
 
         // Wrong size key
+        // 错误大小的密钥
         let wrong_size_key = Zeroizing::new(vec![0; <S as SymmetricCipher>::KEY_SIZE - 1]);
         let res = S::encrypt(&wrong_size_key, &nonce, plaintext, Some(aad));
         assert!(matches!(
@@ -299,6 +300,7 @@ mod tests {
         ));
 
         // Wrong size nonce
+        // 错误大小的 Nonce
         let wrong_size_nonce = vec![0; <S as SymmetricCipher>::NONCE_SIZE - 1];
         let res = S::encrypt(&key, &wrong_size_nonce, plaintext, Some(aad));
         assert!(matches!(

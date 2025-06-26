@@ -8,7 +8,7 @@ use crate::traits::{
     SymmetricError, SymmetricKey, SymmetricKeyGenerator, SymmetricKeySet,
 };
 use chacha20poly1305::aead::rand_core::RngCore;
-use chacha20poly1305::aead::{Aead, Key, KeyInit, Nonce, OsRng, Payload};
+use chacha20poly1305::aead::{Aead, Key, KeyInit, OsRng, Payload};
 use chacha20poly1305::{
     ChaCha20Poly1305 as ChaCha20Poly1305Core, XChaCha20Poly1305 as XChaCha20Poly1305Core,
 };
@@ -189,33 +189,39 @@ mod tests {
         OsRng.fill_bytes(&mut nonce);
 
         // With AAD
+        // 使用 AAD
         let ciphertext_aad = S::encrypt(&key, &nonce, &plaintext, Some(&aad)).unwrap();
         let decrypted_aad = S::decrypt(&key, &nonce, &ciphertext_aad, Some(&aad)).unwrap();
         assert_eq!(plaintext, decrypted_aad);
 
         // Without AAD
+        // 不使用 AAD
         let ciphertext_no_aad = S::encrypt(&key, &nonce, &plaintext, None).unwrap();
         let decrypted_no_aad = S::decrypt(&key, &nonce, &ciphertext_no_aad, None).unwrap();
         assert_eq!(plaintext, decrypted_no_aad);
 
         // Empty Plaintext with AAD
+        // 空明文和 AAD
         let ciphertext_empty_pt = S::encrypt(&key, &nonce, &empty_vec, Some(&aad)).unwrap();
         let decrypted_empty_pt =
             S::decrypt(&key, &nonce, &ciphertext_empty_pt, Some(&aad)).unwrap();
         assert_eq!(empty_vec, decrypted_empty_pt);
 
         // Plaintext with Empty AAD
+        // 明文和空 AAD
         let ciphertext_empty_aad = S::encrypt(&key, &nonce, &plaintext, Some(&[])).unwrap();
         let decrypted_empty_aad =
             S::decrypt(&key, &nonce, &ciphertext_empty_aad, Some(&[])).unwrap();
         assert_eq!(plaintext, decrypted_empty_aad);
 
         // Tampered Ciphertext
+        // 篡改密文
         let mut tampered_ciphertext = ciphertext_aad.clone();
         tampered_ciphertext[0] ^= 0xff;
         assert!(S::decrypt(&key, &nonce, &tampered_ciphertext, Some(&aad)).is_err());
 
         // Tampered AAD
+        // 篡改 AAD
         let tampered_aad = b"this is different authenticated data".to_vec();
         assert!(S::decrypt(&key, &nonce, &ciphertext_aad, Some(&tampered_aad)).is_err());
     }
@@ -245,6 +251,7 @@ mod tests {
         let ciphertext = S::encrypt(&key, &nonce, plaintext, None).unwrap();
 
         // Invalid key size
+        // 无效密钥大小
         let err = S::encrypt(&wrong_size_key, &nonce, plaintext, None).unwrap_err();
         assert!(matches!(
             err,
@@ -257,6 +264,7 @@ mod tests {
         ));
 
         // Invalid nonce size
+        // 无效 Nonce 大小
         let err = S::encrypt(&key, &wrong_size_nonce, plaintext, None).unwrap_err();
         assert!(matches!(
             err,

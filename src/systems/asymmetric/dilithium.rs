@@ -45,6 +45,8 @@ pub trait DilithiumParams: private::Sealed + Send + Sync + 'static {
 }
 
 /// Marker struct for Dilithium2.
+///
+/// Dilithium2 的标记结构体。
 #[derive(Debug, Default, Clone)]
 pub struct Dilithium2Params;
 impl private::Sealed for Dilithium2Params {}
@@ -77,6 +79,8 @@ impl DilithiumParams for Dilithium2Params {
 }
 
 /// Marker struct for Dilithium3.
+///
+/// Dilithium3 的标记结构体。
 #[derive(Debug, Default, Clone)]
 pub struct Dilithium3Params;
 impl private::Sealed for Dilithium3Params {}
@@ -109,6 +113,8 @@ impl DilithiumParams for Dilithium3Params {
 }
 
 /// Marker struct for Dilithium5.
+///
+/// Dilithium5 的标记结构体。
 #[derive(Debug, Default, Clone)]
 pub struct Dilithium5Params;
 impl private::Sealed for Dilithium5Params {}
@@ -228,6 +234,8 @@ impl<P: DilithiumParams + Clone> PrivateKey<DilithiumPublicKey<P>> for Dilithium
 // ------------------- 通用 Dilithium 实现 -------------------
 
 /// A generic struct representing the Dilithium cryptographic system.
+///
+/// 一个通用结构体，表示 Dilithium 密码系统。
 #[derive(Debug, Default)]
 pub struct DilithiumScheme<P: DilithiumParams> {
     _params: PhantomData<P>,
@@ -309,11 +317,13 @@ mod tests {
 
     fn run_dilithium_tests<P: DilithiumParams + Default + Clone + std::fmt::Debug>() {
         // Test key generation
+        // 测试密钥生成
         let (pk, sk) = DilithiumScheme::<P>::generate_keypair().unwrap();
         assert_eq!(pk.to_bytes().len(), P::public_key_bytes());
         assert_eq!(sk.to_bytes().len(), P::secret_key_bytes());
 
         // Test key serialization
+        // 测试密钥序列化
         let pk_bytes = pk.to_bytes();
         let sk_bytes = sk.to_bytes();
         let pk2 = DilithiumPublicKey::<P>::from_bytes(&pk_bytes).unwrap();
@@ -322,15 +332,18 @@ mod tests {
         assert_eq!(sk.to_bytes(), sk2.to_bytes());
 
         // Test sign/verify roundtrip
+        // 测试签名/验证往返
         let message = b"this is the message to be signed";
         let signature = DilithiumScheme::<P>::sign(&sk, message).unwrap();
         assert!(DilithiumScheme::<P>::verify(&pk, message, &signature).is_ok());
 
         // Test tampered message verification fails
+        // 测试篡改消息验证失败
         let tampered_message = b"this is a different message";
         assert!(DilithiumScheme::<P>::verify(&pk, tampered_message, &signature).is_err());
 
         // Test with empty message
+        // 测试空消息
         let empty_message = b"";
         let signature_empty = DilithiumScheme::<P>::sign(&sk, empty_message).unwrap();
         assert!(DilithiumScheme::<P>::verify(&pk, empty_message, &signature_empty).is_ok());

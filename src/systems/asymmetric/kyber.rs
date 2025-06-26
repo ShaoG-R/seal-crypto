@@ -134,6 +134,9 @@ pub struct KyberPublicKey<P: KyberParams> {
 }
 
 impl<P: KyberParams> KyberPublicKey<P> {
+    /// Returns the length of the public key in bytes.
+    ///
+    /// 返回公钥的字节长度。
     pub fn len(&self) -> usize {
         self.bytes.len()
     }
@@ -195,6 +198,9 @@ pub struct KyberSecretKey<P: KyberParams> {
 }
 
 impl<P: KyberParams> KyberSecretKey<P> {
+    /// Returns the length of the secret key in bytes.
+    ///
+    /// 返回私钥的字节长度。
     pub fn len(&self) -> usize {
         self.bytes.len()
     }
@@ -323,6 +329,7 @@ mod tests {
         assert_eq!(sk.to_bytes().len(), P::SECRET_KEY_BYTES);
 
         // Test key serialization
+        // 测试密钥序列化
         let pk_bytes = pk.to_bytes();
         let sk_bytes = sk.to_bytes();
         let pk2 = KyberPublicKey::<P>::from_bytes(&pk_bytes).unwrap();
@@ -331,17 +338,20 @@ mod tests {
         assert_eq!(sk.to_bytes(), sk2.to_bytes());
 
         // Test KEM roundtrip
+        // 测试 KEM 往返
         let (ss1, encapsulated_key) = KyberScheme::<P>::encapsulate(&pk).unwrap();
         let ss2 = KyberScheme::<P>::decapsulate(&sk, &encapsulated_key).unwrap();
         assert_eq!(ss1, ss2);
 
         // Test wrong key decapsulation
+        // 测试使用错误密钥解封装
         let (pk2, _sk2) = KyberScheme::<P>::generate_keypair().unwrap();
         let (ss_for_pk2, encapsulated_key_for_pk2) = KyberScheme::<P>::encapsulate(&pk2).unwrap();
         let wrong_ss = KyberScheme::<P>::decapsulate(&sk, &encapsulated_key_for_pk2).unwrap();
         assert_ne!(ss_for_pk2, wrong_ss);
 
         // Test tampered ciphertext
+        // 测试篡改密文
         let (ss_orig, mut tampered_ct) = KyberScheme::<P>::encapsulate(&pk).unwrap();
         tampered_ct[0] ^= 1;
         let tampered_ss = KyberScheme::<P>::decapsulate(&sk, &tampered_ct).unwrap();
