@@ -2,16 +2,15 @@
 //!
 //! 提供了使用 AES-GCM 的对称 AEAD 加密实现。
 
-use crate::errors::{Error, Error as CryptoError};
-use crate::traits::symmetric::{
-    AssociatedData, SymmetricCipher, SymmetricDecryptor, SymmetricEncryptor, SymmetricKey,
-    SymmetricKeyGenerator, SymmetricError,
+use crate::errors::Error;
+use crate::traits::{
+    Algorithm, AssociatedData, SymmetricCipher, SymmetricDecryptor, SymmetricEncryptor,
+    SymmetricError, SymmetricKey, SymmetricKeyGenerator, SymmetricKeySet,
 };
-use aes_gcm::aead::{Aead, KeyInit, OsRng, Payload};
 use aes_gcm::aead::rand_core::RngCore;
-use aes_gcm::{Aes128Gcm, Aes256Gcm, Nonce};
+use aes_gcm::aead::{Aead, KeyInit, OsRng, Payload};
+use aes_gcm::{Aes128Gcm as Aes128GcmCore, Aes256Gcm as Aes256GcmCore, Nonce as NonceCore};
 use std::marker::PhantomData;
-
 
 // ------------------- Marker Structs and Trait for AES-GCM Parameters -------------------
 // ------------------- 用于 AES-GCM 参数的标记结构体和 Trait -------------------
@@ -24,6 +23,10 @@ mod private {
 ///
 /// 一个密封的 trait，用于定义 AES-GCM 方案的参数。
 pub trait AesGcmParams: private::Sealed + Send + Sync + 'static {
+    /// The unique name of the signature algorithm (e.g., "AES-128-GCM").
+    ///
+    /// 签名算法的唯一名称（例如，"AES-128-GCM"）。
+    const NAME: &'static str;
     /// The underlying `aes_gcm` AEAD cipher type.
     ///
     /// 底层的 `aes_gcm` AEAD 密码类型。
@@ -46,10 +49,11 @@ pub trait AesGcmParams: private::Sealed + Send + Sync + 'static {
 ///
 /// AES-128-GCM 的标记结构体。
 #[derive(Debug, Default)]
-pub struct Aes128;
-impl private::Sealed for Aes128 {}
-impl AesGcmParams for Aes128 {
-    type AeadCipher = Aes128Gcm;
+pub struct Aes128Params;
+impl private::Sealed for Aes128Params {}
+impl AesGcmParams for Aes128Params {
+    const NAME: &'static str = "AES-128-GCM";
+    type AeadCipher = Aes128GcmCore;
     const KEY_SIZE: usize = 16;
     const NONCE_SIZE: usize = 12;
     const TAG_SIZE: usize = 16;
@@ -59,10 +63,11 @@ impl AesGcmParams for Aes128 {
 ///
 /// AES-256-GCM 的标记结构体。
 #[derive(Debug, Default)]
-pub struct Aes256;
-impl private::Sealed for Aes256 {}
-impl AesGcmParams for Aes256 {
-    type AeadCipher = Aes256Gcm;
+pub struct Aes256GcmParams;
+impl private::Sealed for Aes256GcmParams {}
+impl AesGcmParams for Aes256GcmParams {
+    const NAME: &'static str = "AES-256-GCM";
+    type AeadCipher = Aes256GcmCore;
     const KEY_SIZE: usize = 32;
     const NONCE_SIZE: usize = 12;
     const TAG_SIZE: usize = 16;
@@ -79,6 +84,14 @@ pub struct AesGcmScheme<P: AesGcmParams> {
     _params: PhantomData<P>,
 }
 
+impl<P: AesGcmParams> Algorithm for AesGcmScheme<P> {
+    const NAME: &'static str = P::NAME;
+}
+
+impl<P: AesGcmParams> SymmetricKeySet for AesGcmScheme<P> {
+    type Key = SymmetricKey;
+}
+
 impl<P: AesGcmParams> SymmetricCipher for AesGcmScheme<P> {
     const KEY_SIZE: usize = P::KEY_SIZE;
     const NONCE_SIZE: usize = P::NONCE_SIZE;
@@ -92,14 +105,12 @@ impl<P: AesGcmParams> SymmetricKeyGenerator for AesGcmScheme<P> {
         let mut key_bytes = vec![0u8; P::KEY_SIZE];
         OsRng
             .try_fill_bytes(&mut key_bytes)
-            .map_err(|e| CryptoError::KeyGeneration(e.to_string().into()))?;
+            .map_err(|_| Error::Symmetric(SymmetricError::InvalidKeySize))?;
         Ok(SymmetricKey::new(key_bytes))
     }
 }
 
 impl<P: AesGcmParams> SymmetricEncryptor for AesGcmScheme<P> {
-    type Key = SymmetricKey;
-
     fn encrypt(
         key: &Self::Key,
         nonce: &[u8],
@@ -114,21 +125,19 @@ impl<P: AesGcmParams> SymmetricEncryptor for AesGcmScheme<P> {
         }
         let key = aes_gcm::Key::<P::AeadCipher>::from_slice(key);
         let cipher = P::AeadCipher::new(key);
-        let nonce = Nonce::from_slice(nonce);
+        let nonce = NonceCore::from_slice(nonce);
 
         let payload = Payload {
             msg: plaintext,
-            aad: aad.unwrap_or(&[]),
+            aad: aad.unwrap_or_default(),
         };
         cipher
             .encrypt(nonce, payload)
-            .map_err(|e| SymmetricError::Encryption(Box::new(e)).into())
+            .map_err(|_| Error::Symmetric(SymmetricError::Encryption))
     }
 }
 
 impl<P: AesGcmParams> SymmetricDecryptor for AesGcmScheme<P> {
-    type Key = SymmetricKey;
-
     fn decrypt(
         key: &Self::Key,
         nonce: &[u8],
@@ -144,15 +153,15 @@ impl<P: AesGcmParams> SymmetricDecryptor for AesGcmScheme<P> {
 
         let key = aes_gcm::Key::<P::AeadCipher>::from_slice(key);
         let cipher = P::AeadCipher::new(key);
-        let nonce = Nonce::from_slice(nonce);
+        let nonce = NonceCore::from_slice(nonce);
 
         let payload = Payload {
             msg: ciphertext_with_tag,
-            aad: aad.unwrap_or(&[]),
+            aad: aad.unwrap_or_default(),
         };
         cipher
             .decrypt(nonce, payload)
-            .map_err(|e| SymmetricError::Decryption(Box::new(e)).into())
+            .map_err(|_| Error::Symmetric(SymmetricError::Decryption))
     }
 }
 
@@ -168,7 +177,7 @@ mod tests {
     where
         S: SymmetricEncryptor<Key = SymmetricKey>
             + SymmetricDecryptor<Key = SymmetricKey>
-            + SymmetricKeyGenerator,
+            + SymmetricKeyGenerator<Key = Zeroizing<Vec<u8>>>,
     {
         let key = S::generate_key().unwrap();
         let plaintext = b"this is a secret message".to_vec();
@@ -192,7 +201,8 @@ mod tests {
         // Empty Plaintext with AAD
         // 空明文和 AAD
         let ciphertext_empty_pt = S::encrypt(&key, &nonce, &empty_vec, Some(&aad)).unwrap();
-        let decrypted_empty_pt = S::decrypt(&key, &nonce, &ciphertext_empty_pt, Some(&aad)).unwrap();
+        let decrypted_empty_pt =
+            S::decrypt(&key, &nonce, &ciphertext_empty_pt, Some(&aad)).unwrap();
         assert_eq!(empty_vec, decrypted_empty_pt);
 
         // Plaintext with Empty AAD
@@ -204,8 +214,7 @@ mod tests {
 
         // Empty Plaintext and Empty AAD
         // 空明文和空 AAD
-        let ciphertext_all_empty =
-            S::encrypt(&key, &nonce, &empty_vec, Some(&empty_vec)).unwrap();
+        let ciphertext_all_empty = S::encrypt(&key, &nonce, &empty_vec, Some(&empty_vec)).unwrap();
         let decrypted_all_empty =
             S::decrypt(&key, &nonce, &ciphertext_all_empty, Some(&empty_vec)).unwrap();
         assert_eq!(empty_vec, decrypted_all_empty);
@@ -215,7 +224,7 @@ mod tests {
         let res = S::decrypt(&key, &nonce, &ciphertext_aad, None);
         assert!(matches!(
             res.unwrap_err(),
-            Error::Symmetric(SymmetricError::Decryption(_))
+            Error::Symmetric(SymmetricError::Decryption)
         ));
 
         let mut tampered_ciphertext = ciphertext_aad.clone();
@@ -223,7 +232,7 @@ mod tests {
         let res = S::decrypt(&key, &nonce, &tampered_ciphertext, Some(&aad));
         assert!(matches!(
             res.unwrap_err(),
-            Error::Symmetric(SymmetricError::Decryption(_))
+            Error::Symmetric(SymmetricError::Decryption)
         ));
 
         let mut tampered_aad = aad.clone();
@@ -231,25 +240,25 @@ mod tests {
         let res = S::decrypt(&key, &nonce, &ciphertext_aad, Some(&tampered_aad));
         assert!(matches!(
             res.unwrap_err(),
-            Error::Symmetric(SymmetricError::Decryption(_))
+            Error::Symmetric(SymmetricError::Decryption)
         ));
     }
 
     #[test]
     fn test_aes128gcm_scheme() {
-        test_roundtrip::<AesGcmScheme<Aes128>>();
+        test_roundtrip::<AesGcmScheme<Aes128Params>>();
     }
 
     #[test]
     fn test_aes256gcm_scheme() {
-        test_roundtrip::<AesGcmScheme<Aes256>>();
+        test_roundtrip::<AesGcmScheme<Aes256GcmParams>>();
     }
 
     fn test_invalid_inputs<S>()
     where
         S: SymmetricEncryptor<Key = SymmetricKey>
             + SymmetricDecryptor<Key = SymmetricKey>
-            + SymmetricKeyGenerator,
+            + SymmetricKeyGenerator<Key = SymmetricKey>,
     {
         let key = S::generate_key().unwrap();
         let mut wrong_key = key.clone();
@@ -262,7 +271,7 @@ mod tests {
 
         let plaintext = b"some data";
         let aad = b"some aad";
-        
+
         let ciphertext = S::encrypt(&key, &nonce, plaintext, Some(aad)).unwrap();
 
         // Wrong key
@@ -270,18 +279,19 @@ mod tests {
         let res = S::decrypt(&wrong_key, &nonce, &ciphertext, Some(aad));
         assert!(matches!(
             res.unwrap_err(),
-            Error::Symmetric(SymmetricError::Decryption(_))
+            Error::Symmetric(SymmetricError::Decryption)
         ));
 
         // Wrong nonce
         // 错误 Nonce
         let res = S::decrypt(&key, &wrong_nonce, &ciphertext, Some(aad));
-         assert!(matches!(
+        assert!(matches!(
             res.unwrap_err(),
-            Error::Symmetric(SymmetricError::Decryption(_))
+            Error::Symmetric(SymmetricError::Decryption)
         ));
 
         // Wrong size key
+        // 错误大小的密钥
         let wrong_size_key = Zeroizing::new(vec![0; <S as SymmetricCipher>::KEY_SIZE - 1]);
         let res = S::encrypt(&wrong_size_key, &nonce, plaintext, Some(aad));
         assert!(matches!(
@@ -290,6 +300,7 @@ mod tests {
         ));
 
         // Wrong size nonce
+        // 错误大小的 Nonce
         let wrong_size_nonce = vec![0; <S as SymmetricCipher>::NONCE_SIZE - 1];
         let res = S::encrypt(&key, &wrong_size_nonce, plaintext, Some(aad));
         assert!(matches!(
@@ -300,11 +311,34 @@ mod tests {
 
     #[test]
     fn test_aes128gcm_invalid_inputs() {
-        test_invalid_inputs::<AesGcmScheme<Aes128>>();
+        test_invalid_inputs::<AesGcmScheme<Aes128Params>>();
     }
 
     #[test]
     fn test_aes256gcm_invalid_inputs() {
-        test_invalid_inputs::<AesGcmScheme<Aes256>>();
+        test_invalid_inputs::<AesGcmScheme<Aes256GcmParams>>();
     }
-} 
+}
+
+// ------------------- Type Aliases -------------------
+// ------------------- 类型别名 -------------------
+
+/// A type alias for the AES-128-GCM scheme.
+///
+/// AES-128-GCM 方案的类型别名。
+pub type Aes128Gcm = AesGcmScheme<Aes128Params>;
+
+/// A type alias for the AES-256-GCM scheme.
+///
+/// AES-256-GCM 方案的类型别名。
+pub type Aes256Gcm = AesGcmScheme<Aes256GcmParams>;
+
+/// A type alias for the nonce used in AES-GCM.
+///
+/// AES-GCM 中使用的 Nonce 的类型别名。
+pub type Nonce<'a> = &'a [u8];
+
+/// A type alias for the authentication tag used in AES-GCM.
+///
+/// AES-GCM 中使用的认证标签的类型别名。
+pub type Tag<'a> = &'a [u8];

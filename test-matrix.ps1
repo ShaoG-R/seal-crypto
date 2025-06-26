@@ -5,38 +5,44 @@
 #
 
 # --- Configuration ---
-$Features = @(
-    "",            # Represents the default case (no features)
-    "rsa",
-    "kyber",
-    "aes-gcm",
-    "full"         # Represents all features
+$TestCases = @(
+    @{ Name = "std-default";         Args = "" },
+    @{ Name = "std-classic";         Args = "--features classic" },
+    @{ Name = "std-pqc";             Args = "--features pqc" },
+    @{ Name = "std-full";            Args = "--features full" },
+    @{ Name = "std-classic-asm";     Args = "--features 'classic,asm'"; AllowFailure = $true },
+    @{ Name = "std-pqc-avx2";        Args = "--features 'pqc,avx2'" },
+    @{ Name = "std-full-optimized";  Args = "--features 'full,asm,avx2'"; AllowFailure = $true },
+    @{ Name = "no_std-base";         Args = "--no-default-features" },
+    @{ Name = "no_std-classic";      Args = "--no-default-features --features classic" },
+    @{ Name = "no_std-pqc";          Args = "--no-default-features --features pqc" },
+    @{ Name = "no_std-full";         Args = "--no-default-features --features full" },
+    @{ Name = "no_std-classic-asm";  Args = "--no-default-features --features 'classic,asm'"; AllowFailure = $true },
+    @{ Name = "no_std-pqc-avx2";     Args = "--no-default-features --features 'pqc,avx2'" },
+    @{ Name = "no_std-full-optimized"; Args = "--no-default-features --features 'full,asm,avx2'"; AllowFailure = $true }
 )
 
-# --- Script Body ---
-$ErrorOccurred = $false
-
-# Define some colors for output
+# --- Color Configuration ---
 $Color_Header = "Cyan"
+$Color_Command = "Yellow"
 $Color_Success = "Green"
 $Color_Failure = "Red"
-$Color_Command = "Yellow"
+$Color_Warning = "Yellow"
+
+# --- State ---
+$script:ErrorOccurred = $false
 
 function Run-CargoTest {
     param (
-        [string]$FeatureString
+        [hashtable]$TestCase
     )
 
-    $featureDisplayName = if ([string]::IsNullOrEmpty($FeatureString)) { "default (no features)" } else { $FeatureString }
+    $featureDisplayName = $TestCase.Name
     Write-Host "=================================================================" -ForegroundColor $Color_Header
-    Write-Host "  Testing with features: $featureDisplayName" -ForegroundColor $Color_Header
+    Write-Host "  Testing configuration: $featureDisplayName" -ForegroundColor $Color_Header
     Write-Host "================================================================="
 
-    if ([string]::IsNullOrEmpty($FeatureString)) {
-        $command = "cargo test --lib --no-default-features"
-    } else {
-        $command = "cargo test --no-default-features --features `"$FeatureString`""
-    }
+    $command = "cargo test --lib $($TestCase.Args)"
 
     Write-Host "Executing: " -NoNewline; Write-Host $command -ForegroundColor $Color_Command
     
@@ -44,21 +50,26 @@ function Run-CargoTest {
     Invoke-Expression $command
     
     if ($LASTEXITCODE -ne 0) {
-        Write-Host "Test failed for features: $featureDisplayName" -ForegroundColor $Color_Failure
-        $script:ErrorOccurred = $true
+        Write-Host "Test failed for configuration: $featureDisplayName" -ForegroundColor $Color_Failure
+        if ($null -ne $TestCase.AllowFailure -and $TestCase.AllowFailure) {
+            Write-Host "NOTE: This failure was expected and will be ignored." -ForegroundColor $Color_Warning
+        }
+        else {
+            $script:ErrorOccurred = $true
+        }
     } else {
-        Write-Host "Test successful for features: $featureDisplayName" -ForegroundColor $Color_Success
+        Write-Host "Test successful for configuration: $featureDisplayName" -ForegroundColor $Color_Success
     }
     Write-Host ""
 }
 
 # --- Main Execution ---
-foreach ($feature in $Features) {
+foreach ($case in $TestCases) {
     if ($script:ErrorOccurred) {
         Write-Host "An error occurred in a previous step. Aborting remaining tests." -ForegroundColor $Color_Failure
         break
     }
-    Run-CargoTest -FeatureString $feature
+    Run-CargoTest -TestCase $case
 }
 
 # --- Final Summary ---

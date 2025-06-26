@@ -34,24 +34,29 @@ seal-crypto = { version = "0.1.0", features = ["full"] }
 
 ### Example Usage
 
-Here is a quick example of signing and verifying a message using RSA-4096.
+Here is a quick example of signing and verifying a message using RSA-4096 with SHA-256.
 
 ```rust
 use seal_crypto::prelude::*;
-use seal_crypto::systems::asymmetric::rsa::{Rsa4096, RsaScheme};
+use seal_crypto::schemes::asymmetric::traditional::rsa::Rsa4096;
+// use seal_crypto::schemes::hash::Sha256;
 
 fn main() -> Result<(), CryptoError> {
-    // 1. Generate a key pair using the RsaScheme with Rsa4096 parameters.
-    let (public_key, private_key) = RsaScheme::<Rsa4096>::generate_keypair()?;
+    // 1. Define the scheme by key parameters.
+    // By default, RsaScheme uses Sha256 as the hash function.
+    type MyRsaScheme = Rsa4096;
+
+    // 2. Generate a key pair.
+    let (public_key, private_key) = MyRsaScheme::generate_keypair()?;
     println!("Successfully generated RSA-4096 key pair.");
 
-    // 2. Prepare a message and sign it.
+    // 3. Prepare a message and sign it.
     let message = b"This is an important message.";
-    let signature = RsaScheme::<Rsa4096>::sign(&private_key, message)?;
+    let signature = MyRsaScheme::sign(&private_key, message)?;
     println!("Message signed successfully.");
 
-    // 3. Verify the signature.
-    RsaScheme::<Rsa4096>::verify(&public_key, message, &signature)?;
+    // 4. Verify the signature.
+    MyRsaScheme::verify(&public_key, message, &signature)?;
     println!("Signature verification successful!");
 
     Ok(())
@@ -68,14 +73,77 @@ cargo run --example hybrid_encryption --features "full"
 cargo run --example digital_signature --features "full"
 ```
 
+## Trait Design Philosophy
+
+The power and clarity of `seal-crypto` come from its layered, consistent, and single-responsibility trait architecture. This design makes the library both easy to use for common tasks and flexible enough for advanced generic programming.
+
+The hierarchy can be visualized as follows:
+
+```mermaid
+graph TD
+    subgraph "Top Layer: Algorithm Identity"
+        Z["Algorithm<br/><i>The top-level trait for all schemes,<br/>provides a 'NAME' constant.</i>"]
+    end
+
+    subgraph "Base Layer: Key Primitives"
+        A["Key<br/><i>Defines basic key behaviors like serialization.</i>"]
+        B["PublicKey / PrivateKey<br/><i>Marker traits for key types.</i>"]
+    end
+
+    subgraph "Layer 1: KeySet - The Single Source of Truth"
+        C["AsymmetricKeySet<br/><i>Inherits Algorithm<br/><b>- type PublicKey<br/>- type PrivateKey</b></i>"]
+        D["SymmetricKeySet<br/><i>Inherits Algorithm<br/><b>- type Key</b></i>"]
+    end
+
+    subgraph "Layer 2: Capabilities"
+        F["KeyGenerator<br/><i>Inherits AsymmetricKeySet,<br/>adds 'generate_keypair'.</i>"]
+        G["Signer / Verifier<br/><i>Inherit AsymmetricKeySet,<br/>add 'sign'/'verify'.</i>"]
+        H["Kem<br/><i>Inherits AsymmetricKeySet,<br/>adds 'encapsulate'/'decapsulate'.</i>"]
+        I["SymmetricKeyGenerator<br/><i>Inherits SymmetricKeySet,<br/>adds 'generate_key'.</i>"]
+        J["SymmetricEncryptor / Decryptor<br/><i>Inherit SymmetricKeySet,<br/>add 'encrypt'/'decrypt'.</i>"]
+    end
+    
+    subgraph "Layer 3: Scheme Bundles (for convenience)"
+        K["SignatureScheme<br/><i>Bundles KeyGenerator, Signer, Verifier.</i>"]
+        L["AeadScheme<br/><i>Bundles SymmetricKeySet, SymmetricKeyGenerator, etc.</i>"]
+    end
+
+    A --> B
+
+    Z --> C
+    Z --> D
+    
+    C --> F
+    C --> G
+    C --> H
+    
+    F & G --> K
+
+    D --> I
+    D --> J
+    I & J --> L
+```
+
+Here's a breakdown of the layers:
+
+1.  **Top Layer: Algorithm Identity (`Algorithm`)**: This is the unified top-level trait for all cryptographic schemes (both symmetric and asymmetric). It defines a single `NAME` constant to provide a unique, readable identifier for each algorithm (e.g., "RSA-PSS-SHA256").
+2.  **Base Layer: Key Primitives (`Key`)**: At the very bottom are fundamental traits like `Key`, `PublicKey`, and `PrivateKey`. They define the absolute basic properties of any key, such as serialization.
+3.  **Layer 1: The KeySet**: This is the core of the design. `AsymmetricKeySet` and `SymmetricKeySet` inherit from `Algorithm` and have a single responsibility: to define the associated key types for a cryptographic scheme. They are the **single source of truth** for `PublicKey`, `PrivateKey`, and `SymmetricKey`.
+4.  **Layer 2: Capabilities**: This layer defines actions. Traits like `KeyGenerator`, `Signer`, `Kem`, and `SymmetricEncryptor` inherit directly from their respective KeySet layer and add specific methods (`generate_keypair`, `sign`, `encapsulate`, etc.). They define *what you can do* with a scheme.
+5.  **Layer 3: Scheme Bundles**: For user convenience, we provide "supertraits" like `SignatureScheme` and `AeadScheme`. They don't add new methods but bundle all relevant capabilities into a single, easy-to-use trait.
+
+This layered approach ensures that every trait has a clear purpose, preventing ambiguity and making the entire library highly consistent and predictable.
+
 ## Supported Algorithms
 
 | Capability | Algorithm | Cargo Feature |
 | :--- | :--- | :--- |
-| **Signature** | RSA-PSS (2048/4096 bits) | `rsa` |
-| **KEM** | RSA-OAEP (2048/4096 bits) | `rsa` |
+| **Signature** | RSA-PSS (2048/4096 bits, configurable hash) | `rsa`, `sha256`, etc. |
+| **KEM** | RSA-OAEP (2048/4096 bits, configurable hash) | `rsa`, `sha256`, etc. |
 | | Kyber (512/768/1024) | `kyber` |
 | **AEAD** | AES-GCM (128/256 bits) | `aes-gcm` |
+| | ChaCha20-Poly1305 | `chacha20-poly1305` |
+| **Hashing** | SHA-2 (256, 384, 512) | `sha256`, `sha384`, `sha512` |
 
 ## License
 
