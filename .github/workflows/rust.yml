@@ -47,6 +47,7 @@ jobs:
         toolchain: ${{ matrix.rust }}
 
     - name: Cache dependencies
+      if: runner.os != 'Windows' || !contains(matrix.config.name, 'asm') && !contains(matrix.config.name, 'optimized')
       uses: actions/cache@v3
       with:
         path: |
