@@ -16,6 +16,7 @@ use crate::errors::Error;
 use crate::traits::{
     Algorithm, AsymmetricKeySet, EncapsulatedKey, Hasher, Kem, KemError, Key, KeyGenerator,
     PrivateKey, PublicKey, Sha256, SharedSecret, Signature, SignatureError, Signer, Verifier,
+    KeyError,
 };
 use rsa::signature::{RandomizedSigner, SignatureEncoding};
 use rsa::{
@@ -80,7 +81,7 @@ impl Key for RsaPublicKey {
     fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
         rsa::RsaPublicKey::from_public_key_der(bytes)
             .map(RsaPublicKey)
-            .map_err(|e| Error::Rsa(rsa::pkcs8::Error::from(e).into()))
+            .map_err(|_| KeyError::InvalidEncoding.into())
     }
 
     fn to_bytes(&self) -> Vec<u8> {
@@ -108,7 +109,8 @@ impl TryFrom<&[u8]> for RsaPublicKey {
 impl Key for RsaPrivateKey {
     fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
         // Just validate that it's a valid key, then store the bytes
-        rsa::RsaPrivateKey::from_pkcs8_der(bytes).map_err(|e| Error::Rsa(e.into()))?;
+        rsa::RsaPrivateKey::from_pkcs8_der(bytes)
+            .map_err(|_| Error::Key(KeyError::InvalidEncoding))?;
         Ok(RsaPrivateKey(Zeroizing::new(bytes.to_vec())))
     }
 
@@ -153,11 +155,12 @@ impl<KP: RsaKeyParams, H: Hasher + 'static> Algorithm for RsaScheme<KP, H> {
 impl<KP: RsaKeyParams, H: Hasher> KeyGenerator for RsaScheme<KP, H> {
     fn generate_keypair() -> Result<(RsaPublicKey, RsaPrivateKey), Error> {
         let mut rng = OsRng;
-        let private_key = rsa::RsaPrivateKey::new(&mut rng, KP::KEY_BITS).map_err(Error::Rsa)?;
+        let private_key = rsa::RsaPrivateKey::new(&mut rng, KP::KEY_BITS)
+            .map_err(|_| Error::Key(KeyError::GenerationFailed))?;
         let public_key = RsaPublicKey(private_key.to_public_key());
         let private_key_der = private_key
             .to_pkcs8_der()
-            .map_err(|e| Error::Rsa(e.into()))?;
+            .map_err(|_| Error::Key(KeyError::InvalidEncoding))?;
         Ok((
             public_key,
             RsaPrivateKey(Zeroizing::new(private_key_der.as_bytes().to_vec())),
@@ -201,8 +204,8 @@ impl<KP: RsaKeyParams, H: Hasher> Kem for RsaScheme<KP, H> {
 
 impl<KP: RsaKeyParams, H: Hasher> Signer for RsaScheme<KP, H> {
     fn sign(private_key: &RsaPrivateKey, message: &[u8]) -> Result<Signature, Error> {
-        let rsa_private_key =
-            rsa::RsaPrivateKey::from_pkcs8_der(&private_key.0).map_err(|e| Error::Rsa(e.into()))?;
+        let rsa_private_key = rsa::RsaPrivateKey::from_pkcs8_der(&private_key.0)
+            .map_err(|_| Error::Signature(SignatureError::Signing))?;
         let signing_key = SigningKey::<H::Digest>::new(rsa_private_key);
         let mut rng = OsRng;
         let signature = signing_key.sign_with_rng(&mut rng, message);

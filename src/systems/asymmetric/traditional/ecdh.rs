@@ -11,7 +11,7 @@
 use crate::errors::Error;
 use crate::traits::{
     Algorithm, AsymmetricKeySet, Key, KeyAgreement, KeyAgreementError, KeyGenerator, PrivateKey,
-    PublicKey, SharedSecret,
+    PublicKey, SharedSecret, KeyError,
 };
 use elliptic_curve::pkcs8::{DecodePrivateKey, DecodePublicKey, EncodePrivateKey, EncodePublicKey};
 use elliptic_curve::rand_core::OsRng;
@@ -55,13 +55,13 @@ impl EcdhParams for EcdhP256Params {
     fn validate_public_key(bytes: &[u8]) -> Result<(), Error> {
         P256PublicKey::from_public_key_der(bytes)
             .map(|_| ())
-            .map_err(|_| KeyAgreementError::InvalidPeerPublicKey.into())
+            .map_err(|_| Error::KeyAgreement(KeyAgreementError::InvalidPeerPublicKey))
     }
 
     fn validate_private_key(bytes: &[u8]) -> Result<(), Error> {
         p256::SecretKey::from_pkcs8_der(bytes)
             .map(|_| ())
-            .map_err(|_| KeyAgreementError::AgreementFailed.into())
+            .map_err(|_| Error::Key(KeyError::InvalidEncoding))
     }
 }
 
@@ -177,11 +177,11 @@ impl KeyGenerator for EcdhScheme<EcdhP256Params> {
 
         let private_key_der = secret
             .to_pkcs8_der()
-            .map_err(|_| KeyAgreementError::AgreementFailed)?;
+            .map_err(|_| Error::Key(KeyError::GenerationFailed))?;
 
         let public_key_der = public_key
             .to_public_key_der()
-            .map_err(|_| KeyAgreementError::AgreementFailed)?;
+            .map_err(|_| Error::Key(KeyError::GenerationFailed))?;
 
         Ok((
             EcdhPublicKey {
@@ -202,10 +202,10 @@ impl KeyAgreement for EcdhScheme<EcdhP256Params> {
         public_key: &Self::PublicKey,
     ) -> Result<SharedSecret, Error> {
         let pk = P256PublicKey::from_public_key_der(&public_key.bytes)
-            .map_err(|_| KeyAgreementError::InvalidPeerPublicKey)?;
+            .map_err(|_| Error::KeyAgreement(KeyAgreementError::InvalidPeerPublicKey))?;
 
         let sk = SecretKey::from_pkcs8_der(&private_key.bytes)
-            .map_err(|_| KeyAgreementError::AgreementFailed)?;
+            .map_err(|_| Error::Key(KeyError::InvalidEncoding))?;
         let shared_secret =
             ecdh::diffie_hellman(sk.to_nonzero_scalar(), pk.as_affine());
 
