@@ -99,6 +99,7 @@ graph TD
         F["KeyGenerator<br/><i>继承 AsymmetricKeySet,<br/>添加 'generate_keypair'</i>"]
         G["Signer / Verifier<br/><i>继承 AsymmetricKeySet,<br/>添加 'sign'/'verify'</i>"]
         H["Kem<br/><i>继承 AsymmetricKeySet,<br/>添加 'encapsulate'/'decapsulate'</i>"]
+        M["KeyAgreement<br/><i>Inherits AsymmetricKeySet,<br/>adds 'agree'.</i>"]
         I["SymmetricKeyGenerator<br/><i>继承 SymmetricKeySet,<br/>添加 'generate_key'</i>"]
         J["SymmetricEncryptor / Decryptor<br/><i>继承 SymmetricKeySet,<br/>添加 'encrypt'/'decrypt'</i>"]
     end
@@ -116,6 +117,7 @@ graph TD
     C --> F
     C --> G
     C --> H
+    C --> M
     
     F & G --> K
 
@@ -141,6 +143,7 @@ API 主要由以下几个核心 `trait` 组成，它们位于 `seal_crypto::trai
 -   `KeyGenerator`: 为非对称加密算法生成密钥对。
 -   `SymmetricEncryptor` / `SymmetricDecryptor`: 提供对称认证加密（AEAD）功能。
 -   `Kem` (Key Encapsulation Mechanism): 用于安全地交换密钥。
+-   `KeyAgreement`: 用于密钥协商以生成共享密钥。
 -   `Signer` / `Verifier`: 创建和验证数字签名。
 -   `Hasher`: 提供哈希摘要功能。
 
@@ -149,9 +152,12 @@ API 主要由以下几个核心 `trait` 组成，它们位于 `seal_crypto::trai
 | 功能 | 算法 | Cargo Feature |
 | :--- | :--- | :--- |
 | **签名** | RSA-PSS (2048/4096 位, 可配置哈希) | `rsa`, `sha256`, etc. |
+| | ECDSA (P-256) | `ecc` |
+| | EdDSA (Ed25519) | `ecc` |
 | | Dilithium (2/3/5) | `dilithium` |
 | **KEM** | RSA-OAEP (2048/4096 位, 可配置哈希) | `rsa`, `sha256`, etc. |
 | | Kyber (512/768/1024) | `kyber` |
+| **密钥协商** | ECDH (P-256) | `ecdh` |
 | **AEAD** | AES-GCM (128/256 位) | `aes-gcm` |
 | | ChaCha20-Poly1305 | `chacha20-poly1305` |
 | **哈希** | SHA-2 (256, 384, 512) | `sha256`, `sha384`, `sha512` |

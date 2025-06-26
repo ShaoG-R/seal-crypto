@@ -5,27 +5,31 @@
 //! 这个 prelude 设计为通过 glob 导入，即 `use seal_crypto::prelude::*;`。
 pub use crate::errors::Error as CryptoError;
 pub use crate::traits::{
+    AeadScheme,
     // core
     Algorithm,
-    Key,
-    PublicKey,
-    PrivateKey,
-    KeyPair,
     AsymmetricKeySet,
-    SymmetricKeySet,
-    // asymmetric
-    KeyGenerator,
-    Kem,
-    Signer,
-    Verifier,
-    SignatureScheme,
-    // symmetric
-    SymmetricKeyGenerator,
-    SymmetricCipher,
-    SymmetricEncryptor,
-    SymmetricDecryptor,
-    AeadScheme,
     // hash
     Hasher,
+    Kem,
+    Key,
+    // asymmetric
+    KeyGenerator,
+    KeyPair,
+    PrivateKey,
+    PublicKey,
+    SignatureScheme,
+    Signer,
+    SymmetricCipher,
+    SymmetricDecryptor,
+    SymmetricEncryptor,
+    // symmetric
+    SymmetricKeyGenerator,
+    SymmetricKeySet,
+    Verifier,
+    KeyAgreement,
+    KeyAgreementError,
+    Signature,
+    SignatureError,
 };
 pub use ::zeroize;

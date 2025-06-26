@@ -10,4 +10,4 @@ pub trait Algorithm: 'static + Sized {
     ///
     /// 签名算法的唯一名称（例如，"RSA-PSS-SHA256"）。
     const NAME: &'static str;
-} 
+}

@@ -1,81 +1,167 @@
+# [package] 区域定义了您的 crate（也就是您的 Rust 项目/库）的基本信息。
+# The [package] section defines basic information about your crate (your Rust project/library).
 [package]
+# crate 的名称，发布到 crates.io 或作为依赖项时使用。
+# The name of the crate, used when publishing to crates.io or as a dependency.
 name = "seal-crypto"
+# crate 的版本号，遵循语义化版本（Semantic Versioning）规范。
+# The version number of the crate, following Semantic Versioning.
 version = "0.1.1-rc"
+# 指定项目使用的 Rust edition。
+# Specifies the Rust edition used by the project.
 edition = "2021"
+# 项目作者列表。
+# A list of the project's authors.
 authors = ["GlorYouth <admin@gloryouth.com>"]
+# 项目的简短描述。
+# a short description of the project.
 description = "A crate providing pure cryptographic capability abstractions (traits) and implementations for the seal-kit ecosystem."
+# 项目的许可证。
+# The project's license.
 license = "MPL-2.0"
+# 指向项目 README 文件的路径。
+# The path to the project's README file.
 readme = "README.md"
+# 项目的代码仓库 URL。
+# The URL of the project's code repository.
 repository = "https://github.com/GlorYouth/seal-crypto"
+# 项目的主页 URL。
+# The URL of the project's homepage.
 homepage = "https://github.com/GlorYouth/seal-crypto"
+# 项目的文档 URL。
+# The URL of the project's documentation.
 documentation = "https://docs.rs/seal-crypto"
+# 在 crates.io 上用于搜索的关键字，有助于他人发现您的 crate。
+# Keywords used for searching on crates.io, helping others discover your crate.
 keywords = ["cryptography", "trait", "kem", "signature", "aead"]
+# 在 crates.io 上的分类，有助于组织和查找。
+# Categories on crates.io, used for organization and discoverability.
 categories = ["cryptography"]
 
+# [dependencies] 区域列出了项目所依赖的所有外部 crate。
+# The [dependencies] section lists all the external crates that the project depends on.
 [dependencies]
-# Cryptography Backends
+# --- 加密后端 ---
+# 这些是实际的加密算法实现库。它们是可选的，可以通过下面的 [features] 来启用。
+# --- Cryptography Backends ---
+# These are the actual cryptographic algorithm implementation libraries. They are optional and can be enabled via the [features] section below.
 rsa = { version = "0.9.8", optional = true, default-features = false }
 pqcrypto-kyber = { version = "0.8.1", optional = true }
 aes-gcm = { version = "0.10.3", optional = true, default-features = false, features = ["aes", "getrandom", "alloc"] }
-sha2 = { version = "0.10.9", optional = true } # RSA-PSS dependency
-chacha20poly1305 = { version = "0.10", optional = true, default-features = false, features = ["getrandom", "alloc"] }
+sha2 = { version = "0.10.9", optional = true } # RSA-PSS dependency / RSA-PSS 依赖
+chacha20poly1305 = { version = "0.10.1", optional = true, default-features = false, features = ["getrandom", "alloc"] }
 pqcrypto-dilithium = { version = "0.5.0", optional = true }
+elliptic-curve = { version = "0.13.8", optional = true, features = ["pkcs8"] }
+ecdsa = { version = "0.16.9", optional = true, features = ["der"] }
+p256 = { version = "0.13.2", optional = true, default-features = false }
+ed25519-dalek = { version = "2.1.1", optional = true, features = ["pkcs8"] }
+signature = { version = "2.2", optional = true, features = ["rand_core"] }
 digest = "0.10.7"
 
-# Helper Crates
-thiserror = { version = "2.0.12", optional = true }
-pqcrypto-traits = { version = "0.3.5", optional = true }
-rand_core = { version = "0.9.3", default-features = false }
-zeroize = { version = "1.8.1", features = ["derive"] }
+# --- 辅助 Crates ---
+# 这些 crate 提供了一些通用的辅助功能。
+# --- Helper Crates ---
+# These crates provide general helper functionalities.
+thiserror = { version = "2.0.12", optional = true } # 用于方便地定义错误类型。 / For easily defining error types.
+pqcrypto-traits = { version = "0.3.5", optional = true } # 后量子密码学算法所需的 traits。 / Traits required for post-quantum cryptography algorithms.
+rand_core = { version = "0.9.3", default-features = false } # 随机数生成器所需的核心 traits。 / Core traits for random number generators.
+zeroize = { version = "1.8.1", features = ["derive"] } # 用于从内存中安全地擦除敏感数据（如密钥）。/ For securely wiping sensitive data (like keys) from memory.
 
+# [features] 区域允许您定义条件编译的标志。
+# 这对于提供可选功能、支持不同环境（如 `std` vs `no_std`）或配置依赖项非常有用。
+# The [features] section allows you to define flags for conditional compilation.
+# This is very useful for providing optional functionality, supporting different environments (like `std` vs `no_std`), or configuring dependencies.
 [features]
+# --- 环境特性 ---
+# `std` 特性默认启用，为项目提供标准库支持。
+# 对于 `no_std` 环境，需要禁用默认特性来编译。
 # --- Environment Features ---
-# The `std` feature is enabled by default.
-# It provides `std` integration for various dependencies (like OsRng) and enables `thiserror`.
-# For `no_std` environments, disable default features: `seal-crypto = { version = "...", default-features = false }`
+# The `std` feature is enabled by default, providing standard library support for the project.
+# For `no_std` environments, you need to disable default features to compile.
 std = [
     "rand_core/std",
     "aes-gcm/std",
     "chacha20poly1305/std",
     "dep:thiserror",
     "rsa/std",
+    "elliptic-curve/std",
+    "ecdsa/std",
+    "p256/std",
+    "ed25519-dalek/std",
 ]
 
+# --- 默认特性 ---
+# 当用户不指定任何特性时，默认启用的特性集。
 # --- Default Features ---
+# The set of features that are enabled by default when a user doesn't specify any.
 default = ["std"]
 
+# --- 算法原语特性 ---
+# 第一级：单个算法特性。启用这些特性会引入对应的加密算法实现。
+# "dep:" 语法表示这是一个可选依赖。
 # --- Algorithm Primitive Features ---
-# Level 1: Individual algorithm features
+# Level 1: Individual algorithm features. Enabling these brings in the corresponding crypto algorithm implementations.
+# The "dep:" syntax indicates an optional dependency.
 rsa = ["dep:rsa", "sha2"]
 kyber = ["dep:pqcrypto-kyber", "dep:pqcrypto-traits"]
 dilithium = ["dep:pqcrypto-dilithium", "dep:pqcrypto-traits"]
 aes-gcm = ["dep:aes-gcm"]
 chacha20-poly1305 = ["dep:chacha20poly1305"]
 sha2 = ["dep:sha2"]
+ecc = [
+    "dep:elliptic-curve",
+    "dep:ecdsa",
+    "dep:p256",
+    "p256/alloc",
+    "p256/arithmetic",
+    "p256/ecdsa",
+    "dep:ed25519-dalek",
+    "dep:signature",
+]
+ecdh = ["elliptic-curve/ecdh", "dep:p256", "p256/ecdh", "p256/pkcs8"]
 
+# --- 算法集特性 ---
+# 第二级：为常用算法组合提供的便捷特性。
 # --- Algorithm Set Features ---
-# Level 2: Convenience features for algorithm sets
-classic = ["rsa", "aes-gcm", "chacha20-poly1305"]
-pqc = ["kyber", "dilithium"] # Post-Quantum Cryptography
+# Level 2: Convenience features for common combinations of algorithms.
+classic = ["rsa", "aes-gcm", "chacha20-poly1305", "ecc", "ecdh"] # 经典加密算法集 / Classic cryptographic algorithms set
+pqc = ["kyber", "dilithium"] # 后量子密码学算法集 / Post-Quantum Cryptography algorithms set
 
+# --- 硬件加速特性 ---
+# 启用特定 CPU 指令集（如 AVX2 或 sha-ni）以加速计算。
+# --- Hardware Acceleration Features ---
+# Enable specific CPU instruction sets (like AVX2 or sha-ni) to accelerate computations.
 avx2 = [
     "pqcrypto-dilithium/avx2",
     "pqcrypto-kyber/avx2"
 ]
 
+# ASM 不支持 Windows
+# ASM not support Windows
 asm = [
     "sha2/sha2-asm",
     "sha2/asm",
+    "ed25519-dalek/asm",
 ]
 
+# --- 完整特性 ---
+# 第三级：`full` 特性激活所有可用的算法实现。
 # --- Full Feature ---
 # Level 3: The `full` feature activates all available algorithm implementations.
 full = ["classic", "pqc"]
 
+# [[example]] 区域用于定义项目的示例代码。
+# 每个示例都可以有自己所需的特性。
+# The [[example]] section is used to define example code for the project.
+# Each example can have its own required features.
 [[example]]
+# 数字签名示例，需要 `rsa` 特性。
+# Digital signature example, requires the `rsa` feature.
 name = "digital_signature"
 required-features = ["rsa"]
 
 [[example]]
+# 混合加密示例，需要 `kyber` 和 `aes-gcm` 特性。
+# Hybrid encryption example, requires `kyber` and `aes-gcm` features.
 name = "hybrid_encryption"
 required-features = ["kyber", "aes-gcm"] 

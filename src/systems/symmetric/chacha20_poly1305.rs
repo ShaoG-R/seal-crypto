@@ -167,6 +167,24 @@ impl<P: Chacha20Poly1305Params> SymmetricDecryptor for Chacha20Poly1305Scheme<P>
     }
 }
 
+// ------------------- Type Aliases -------------------
+// ------------------- 类型别名 -------------------
+
+/// A type alias for the ChaCha20-Poly1305 scheme.
+///
+/// ChaCha20-Poly1305 方案的类型别名。
+pub type ChaCha20Poly1305 = Chacha20Poly1305Scheme<ChaCha20Poly1305Params>;
+
+/// A type alias for the XChaCha20-Poly1305 scheme.
+///
+/// XChaCha20-Poly1305 方案的类型别名。
+pub type XChaCha20Poly1305 = Chacha20Poly1305Scheme<XChaCha20Poly1305Params>;
+
+/// A type alias for the authentication tag used in ChaCha20-Poly1305.
+///
+/// ChaCha20-Poly1305 中使用的认证标签的类型别名。
+pub type Tag<'a> = &'a [u8];
+
 // ------------------- Tests -------------------
 // ------------------- 测试 -------------------
 
@@ -287,22 +305,3 @@ mod tests {
         test_invalid_inputs::<Chacha20Poly1305Scheme<XChaCha20Poly1305Params>>();
     }
 }
-
-// ------------------- Type Aliases -------------------
-// ------------------- 类型别名 -------------------
-
-/// A type alias for the ChaCha20-Poly1305 scheme.
-///
-/// ChaCha20-Poly1305 方案的类型别名。
-pub type ChaCha20Poly1305 = Chacha20Poly1305Scheme<ChaCha20Poly1305Params>;
-
-/// A type alias for the XChaCha20-Poly1305 scheme.
-///
-/// XChaCha20-Poly1305 方案的类型别名。
-pub type XChaCha20Poly1305 = Chacha20Poly1305Scheme<XChaCha20Poly1305Params>;
-
-
-/// A type alias for the authentication tag used in ChaCha20-Poly1305.
-///
-/// ChaCha20-Poly1305 中使用的认证标签的类型别名。
-pub type Tag<'a> = &'a [u8];

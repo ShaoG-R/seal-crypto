@@ -20,24 +20,24 @@ jobs:
         rust: [stable]
         config:
           - { name: "std-default",         args: "" }
-          - { name: "std-classic",         args: "--features classic" }
+          - { name: "std-classic",         args: "--features 'classic,ecdh'" }
           - { name: "std-pqc",             args: "--features pqc" }
           - { name: "std-full",            args: "--features full" }
-          - { name: "std-classic-asm",     args: "--features 'classic,asm'" }
+          - { name: "std-classic-asm",     args: "--features 'classic,ecdh,asm'" }
           - { name: "std-pqc-avx2",        args: "--features 'pqc,avx2'" }
           - { name: "std-full-optimized",  args: "--features 'full,asm,avx2'" }
           - { name: "no_std-base",         args: "--no-default-features" }
-          - { name: "no_std-classic",      args: "--no-default-features --features classic" }
+          - { name: "no_std-classic",      args: "--no-default-features --features 'classic,ecdh'" }
           - { name: "no_std-pqc",          args: "--no-default-features --features pqc" }
           - { name: "no_std-full",         args: "--no-default-features --features full" }
-          - { name: "no_std-classic-asm",  args: "--no-default-features --features 'classic,asm'" }
+          - { name: "no_std-classic-asm",  args: "--no-default-features --features 'classic,ecdh,asm'" }
           - { name: "no_std-pqc-avx2",     args: "--no-default-features --features 'pqc,avx2'" }
           - { name: "no_std-full-optimized", args: "--no-default-features --features 'full,asm,avx2'" }
         exclude:
           - os: windows-latest
             config:
               name: "std-classic-asm"
-              args: "--features 'classic,asm'"
+              args: "--features 'classic,ecdh,asm'"
           - os: windows-latest
             config:
               name: "std-full-optimized"
@@ -45,7 +45,7 @@ jobs:
           - os: windows-latest
             config:
               name: "no_std-classic-asm"
-              args: "--no-default-features --features 'classic,asm'"
+              args: "--no-default-features --features 'classic,ecdh,asm'"
           - os: windows-latest
             config:
               name: "no_std-full-optimized"

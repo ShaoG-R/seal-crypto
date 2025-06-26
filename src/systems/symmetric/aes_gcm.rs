@@ -49,9 +49,9 @@ pub trait AesGcmParams: private::Sealed + Send + Sync + 'static {
 ///
 /// AES-128-GCM 的标记结构体。
 #[derive(Debug, Default)]
-pub struct Aes128Params;
-impl private::Sealed for Aes128Params {}
-impl AesGcmParams for Aes128Params {
+pub struct Aes128GcmParams;
+impl private::Sealed for Aes128GcmParams {}
+impl AesGcmParams for Aes128GcmParams {
     const NAME: &'static str = "AES-128-GCM";
     type AeadCipher = Aes128GcmCore;
     const KEY_SIZE: usize = 16;
@@ -165,6 +165,29 @@ impl<P: AesGcmParams> SymmetricDecryptor for AesGcmScheme<P> {
     }
 }
 
+// ------------------- Type Aliases -------------------
+// ------------------- 类型别名 -------------------
+
+/// A type alias for the AES-128-GCM scheme.
+///
+/// AES-128-GCM 方案的类型别名。
+pub type Aes128Gcm = AesGcmScheme<Aes128GcmParams>;
+
+/// A type alias for the AES-256-GCM scheme.
+///
+/// AES-256-GCM 方案的类型别名。
+pub type Aes256Gcm = AesGcmScheme<Aes256GcmParams>;
+
+/// A type alias for the nonce used in AES-GCM.
+///
+/// AES-GCM 中使用的 Nonce 的类型别名。
+pub type Nonce<'a> = &'a [u8];
+
+/// A type alias for the authentication tag used in AES-GCM.
+///
+/// AES-GCM 中使用的认证标签的类型别名。
+pub type Tag<'a> = &'a [u8];
+
 // ------------------- Tests -------------------
 // ------------------- 测试 -------------------
 
@@ -246,7 +269,7 @@ mod tests {
 
     #[test]
     fn test_aes128gcm_scheme() {
-        test_roundtrip::<AesGcmScheme<Aes128Params>>();
+        test_roundtrip::<AesGcmScheme<Aes128GcmParams>>();
     }
 
     #[test]
@@ -311,7 +334,7 @@ mod tests {
 
     #[test]
     fn test_aes128gcm_invalid_inputs() {
-        test_invalid_inputs::<AesGcmScheme<Aes128Params>>();
+        test_invalid_inputs::<AesGcmScheme<Aes128GcmParams>>();
     }
 
     #[test]
@@ -319,26 +342,3 @@ mod tests {
         test_invalid_inputs::<AesGcmScheme<Aes256GcmParams>>();
     }
 }
-
-// ------------------- Type Aliases -------------------
-// ------------------- 类型别名 -------------------
-
-/// A type alias for the AES-128-GCM scheme.
-///
-/// AES-128-GCM 方案的类型别名。
-pub type Aes128Gcm = AesGcmScheme<Aes128Params>;
-
-/// A type alias for the AES-256-GCM scheme.
-///
-/// AES-256-GCM 方案的类型别名。
-pub type Aes256Gcm = AesGcmScheme<Aes256GcmParams>;
-
-/// A type alias for the nonce used in AES-GCM.
-///
-/// AES-GCM 中使用的 Nonce 的类型别名。
-pub type Nonce<'a> = &'a [u8];
-
-/// A type alias for the authentication tag used in AES-GCM.
-///
-/// AES-GCM 中使用的认证标签的类型别名。
-pub type Tag<'a> = &'a [u8];

@@ -2,7 +2,7 @@
 //!
 //! 为 `seal-crypto` crate 定义了顶层错误类型。
 
-use crate::traits::{KemError, SignatureError, SymmetricError};
+use crate::traits::{KeyAgreementError, KemError, SignatureError, SymmetricError};
 
 #[cfg(feature = "std")]
 use thiserror::Error;
@@ -35,6 +35,12 @@ pub enum Error {
     /// 在对称加密或解密操作期间发生错误。
     #[cfg_attr(feature = "std", error("Symmetric cipher operation failed"))]
     Symmetric(#[cfg_attr(feature = "std", from)] SymmetricError),
+
+    /// An error occurred during a key agreement operation.
+    ///
+    /// 在密钥协商操作期间发生错误。
+    #[cfg_attr(feature = "std", error("Key agreement operation failed"))]
+    KeyAgreement(#[cfg_attr(feature = "std", from)] KeyAgreementError),
 
     /// An error from the underlying RSA implementation.
     ///
@@ -70,5 +76,12 @@ impl From<SignatureError> for Error {
 impl From<SymmetricError> for Error {
     fn from(e: SymmetricError) -> Self {
         Error::Symmetric(e)
+    }
+}
+
+#[cfg(not(feature = "std"))]
+impl From<KeyAgreementError> for Error {
+    fn from(e: KeyAgreementError) -> Self {
+        Error::KeyAgreement(e)
     }
 }

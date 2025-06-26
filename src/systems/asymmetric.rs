@@ -2,11 +2,5 @@
 //!
 //! 非对称算法实现的入口点。
 
-#[cfg(feature = "rsa")]
-pub mod rsa;
-
-#[cfg(feature = "kyber")]
-pub mod kyber;
-
-#[cfg(feature = "dilithium")]
-pub mod dilithium;
+pub mod post_quantum;
+pub mod traditional;
