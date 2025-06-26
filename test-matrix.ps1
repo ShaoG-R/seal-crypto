@@ -7,17 +7,17 @@
 # --- Configuration ---
 $TestCases = @(
     @{ Name = "std-default";         Args = "" },
-    @{ Name = "std-classic";         Args = "--features classic" },
+    @{ Name = "std-classic";         Args = "--features 'classic,ecdh'" },
     @{ Name = "std-pqc";             Args = "--features pqc" },
     @{ Name = "std-full";            Args = "--features full" },
-    @{ Name = "std-classic-asm";     Args = "--features 'classic,asm'"; AllowFailure = $true },
+    @{ Name = "std-classic-asm";     Args = "--features 'classic,ecdh,asm'"; AllowFailure = $true },
     @{ Name = "std-pqc-avx2";        Args = "--features 'pqc,avx2'" },
     @{ Name = "std-full-optimized";  Args = "--features 'full,asm,avx2'"; AllowFailure = $true },
     @{ Name = "no_std-base";         Args = "--no-default-features" },
-    @{ Name = "no_std-classic";      Args = "--no-default-features --features classic" },
+    @{ Name = "no_std-classic";      Args = "--no-default-features --features 'classic,ecdh'" },
     @{ Name = "no_std-pqc";          Args = "--no-default-features --features pqc" },
     @{ Name = "no_std-full";         Args = "--no-default-features --features full" },
-    @{ Name = "no_std-classic-asm";  Args = "--no-default-features --features 'classic,asm'"; AllowFailure = $true },
+    @{ Name = "no_std-classic-asm";  Args = "--no-default-features --features 'classic,ecdh,asm'"; AllowFailure = $true },
     @{ Name = "no_std-pqc-avx2";     Args = "--no-default-features --features 'pqc,avx2'" },
     @{ Name = "no_std-full-optimized"; Args = "--no-default-features --features 'full,asm,avx2'"; AllowFailure = $true }
 )

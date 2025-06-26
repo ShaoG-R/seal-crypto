@@ -99,6 +99,7 @@ graph TD
         F["KeyGenerator<br/><i>Inherits AsymmetricKeySet,<br/>adds 'generate_keypair'.</i>"]
         G["Signer / Verifier<br/><i>Inherit AsymmetricKeySet,<br/>add 'sign'/'verify'.</i>"]
         H["Kem<br/><i>Inherits AsymmetricKeySet,<br/>adds 'encapsulate'/'decapsulate'.</i>"]
+        M["KeyAgreement<br/><i>Inherits AsymmetricKeySet,<br/>adds 'agree'.</i>"]
         I["SymmetricKeyGenerator<br/><i>Inherits SymmetricKeySet,<br/>adds 'generate_key'.</i>"]
         J["SymmetricEncryptor / Decryptor<br/><i>Inherit SymmetricKeySet,<br/>add 'encrypt'/'decrypt'.</i>"]
     end
@@ -116,6 +117,7 @@ graph TD
     C --> F
     C --> G
     C --> H
+    C --> M
     
     F & G --> K
 
@@ -129,7 +131,7 @@ Here's a breakdown of the layers:
 1.  **Top Layer: Algorithm Identity (`Algorithm`)**: This is the unified top-level trait for all cryptographic schemes (both symmetric and asymmetric). It defines a single `NAME` constant to provide a unique, readable identifier for each algorithm (e.g., "RSA-PSS-SHA256").
 2.  **Base Layer: Key Primitives (`Key`)**: At the very bottom are fundamental traits like `Key`, `PublicKey`, and `PrivateKey`. They define the absolute basic properties of any key, such as serialization.
 3.  **Layer 1: The KeySet**: This is the core of the design. `AsymmetricKeySet` and `SymmetricKeySet` inherit from `Algorithm` and have a single responsibility: to define the associated key types for a cryptographic scheme. They are the **single source of truth** for `PublicKey`, `PrivateKey`, and `SymmetricKey`.
-4.  **Layer 2: Capabilities**: This layer defines actions. Traits like `KeyGenerator`, `Signer`, `Kem`, and `SymmetricEncryptor` inherit directly from their respective KeySet layer and add specific methods (`generate_keypair`, `sign`, `encapsulate`, etc.). They define *what you can do* with a scheme.
+4.  **Layer 2: Capabilities**: This layer defines actions. Traits like `KeyGenerator`, `Signer`, `Kem`, `KeyAgreement`, and `SymmetricEncryptor` inherit directly from their respective KeySet layer and add specific methods (`generate_keypair`, `sign`, `encapsulate`, `agree`, etc.). They define *what you can do* with a scheme.
 5.  **Layer 3: Scheme Bundles**: For user convenience, we provide "supertraits" like `SignatureScheme` and `AeadScheme`. They don't add new methods but bundle all relevant capabilities into a single, easy-to-use trait.
 
 This layered approach ensures that every trait has a clear purpose, preventing ambiguity and making the entire library highly consistent and predictable.
@@ -139,8 +141,11 @@ This layered approach ensures that every trait has a clear purpose, preventing a
 | Capability | Algorithm | Cargo Feature |
 | :--- | :--- | :--- |
 | **Signature** | RSA-PSS (2048/4096 bits, configurable hash) | `rsa`, `sha256`, etc. |
+| | ECDSA (P-256) | `ecc` |
+| | EdDSA (Ed25519) | `ecc` |
 | **KEM** | RSA-OAEP (2048/4096 bits, configurable hash) | `rsa`, `sha256`, etc. |
 | | Kyber (512/768/1024) | `kyber` |
+| **Key Agreement** | ECDH (P-256) | `ecdh` |
 | **AEAD** | AES-GCM (128/256 bits) | `aes-gcm` |
 | | ChaCha20-Poly1305 | `chacha20-poly1305` |
 | **Hashing** | SHA-2 (256, 384, 512) | `sha256`, `sha384`, `sha512` |

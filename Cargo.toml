@@ -51,6 +51,11 @@ aes-gcm = { version = "0.10.3", optional = true, default-features = false, featu
 sha2 = { version = "0.10.9", optional = true } # RSA-PSS dependency / RSA-PSS 依赖
 chacha20poly1305 = { version = "0.10.1", optional = true, default-features = false, features = ["getrandom", "alloc"] }
 pqcrypto-dilithium = { version = "0.5.0", optional = true }
+elliptic-curve = { version = "0.13.8", optional = true, features = ["pkcs8"] }
+ecdsa = { version = "0.16.9", optional = true, features = ["der"] }
+p256 = { version = "0.13.2", optional = true, default-features = false }
+ed25519-dalek = { version = "2.1.1", optional = true, features = ["pkcs8"] }
+signature = { version = "2.2", optional = true, features = ["rand_core"] }
 digest = "0.10.7"
 
 # --- 辅助 Crates ---
@@ -79,6 +84,10 @@ std = [
     "chacha20poly1305/std",
     "dep:thiserror",
     "rsa/std",
+    "elliptic-curve/std",
+    "ecdsa/std",
+    "p256/std",
+    "ed25519-dalek/std",
 ]
 
 # --- 默认特性 ---
@@ -99,12 +108,23 @@ dilithium = ["dep:pqcrypto-dilithium", "dep:pqcrypto-traits"]
 aes-gcm = ["dep:aes-gcm"]
 chacha20-poly1305 = ["dep:chacha20poly1305"]
 sha2 = ["dep:sha2"]
+ecc = [
+    "dep:elliptic-curve",
+    "dep:ecdsa",
+    "dep:p256",
+    "p256/alloc",
+    "p256/arithmetic",
+    "p256/ecdsa",
+    "dep:ed25519-dalek",
+    "dep:signature",
+]
+ecdh = ["elliptic-curve/ecdh", "dep:p256", "p256/ecdh", "p256/pkcs8"]
 
 # --- 算法集特性 ---
 # 第二级：为常用算法组合提供的便捷特性。
 # --- Algorithm Set Features ---
 # Level 2: Convenience features for common combinations of algorithms.
-classic = ["rsa", "aes-gcm", "chacha20-poly1305"] # 经典加密算法集 / Classic cryptographic algorithms set
+classic = ["rsa", "aes-gcm", "chacha20-poly1305", "ecc", "ecdh"] # 经典加密算法集 / Classic cryptographic algorithms set
 pqc = ["kyber", "dilithium"] # 后量子密码学算法集 / Post-Quantum Cryptography algorithms set
 
 # --- 硬件加速特性 ---
@@ -121,6 +141,7 @@ avx2 = [
 asm = [
     "sha2/sha2-asm",
     "sha2/asm",
+    "ed25519-dalek/asm",
 ]
 
 # --- 完整特性 ---

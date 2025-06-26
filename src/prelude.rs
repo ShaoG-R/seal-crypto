@@ -27,5 +27,9 @@ pub use crate::traits::{
     SymmetricKeyGenerator,
     SymmetricKeySet,
     Verifier,
+    KeyAgreement,
+    KeyAgreementError,
+    Signature,
+    SignatureError,
 };
 pub use ::zeroize;

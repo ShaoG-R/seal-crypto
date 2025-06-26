@@ -208,3 +208,43 @@ pub trait Kem: AsymmetricKeySet {
         encapsulated_key: &Self::EncapsulatedKey,
     ) -> Result<SharedSecret, Error>;
 }
+
+// --- Key Agreement ---
+
+/// Defines the errors that can occur during key agreement.
+///
+/// 定义密钥协商期间可能发生的错误。
+#[cfg_attr(feature = "std", derive(Error))]
+#[derive(Debug)]
+pub enum KeyAgreementError {
+    /// Failed to derive the shared secret.
+    ///
+    /// 派生共享密钥失败。
+    #[cfg_attr(feature = "std", error("Key agreement failed"))]
+    AgreementFailed,
+
+    /// The peer's public key is invalid for this operation.
+    ///
+    /// 对方的公钥对于此操作无效。
+    #[cfg_attr(feature = "std", error("Invalid peer public key"))]
+    InvalidPeerPublicKey,
+}
+
+/// A trait for a Key Agreement scheme.
+///
+/// Key Agreement 方案的 trait。
+pub trait KeyAgreement: AsymmetricKeySet {
+    /// Derives a shared secret from one's own private key and a peer's public key.
+    ///
+    /// # Returns
+    /// The derived `SharedSecret`.
+    ///
+    /// 从自己的私钥和对方的公钥派生一个共享密钥。
+    ///
+    /// # 返回
+    /// 派生出的 `SharedSecret`。
+    fn agree(
+        private_key: &Self::PrivateKey,
+        public_key: &Self::PublicKey,
+    ) -> Result<SharedSecret, Error>;
+}
