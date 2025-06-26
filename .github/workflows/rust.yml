@@ -13,7 +13,6 @@ jobs:
   test:
     name: Test ${{ matrix.rust }} on ${{ matrix.os }} (${{ matrix.config.name }})
     runs-on: ${{ matrix.os }}
-    continue-on-error: ${{ matrix.os == 'macos-latest' && (contains(matrix.config.name, 'avx2') || contains(matrix.config.name, 'optimized')) }}
     strategy:
       fail-fast: false
       matrix:
@@ -40,7 +39,7 @@ jobs:
 
     - name: Install NASM
       if: runner.os == 'Windows'
-      run: choco install nasm --force
+      uses: ilammy/setup-nasm@v1
 
     - name: Install Rust toolchain
       uses: dtolnay/rust-toolchain@stable
