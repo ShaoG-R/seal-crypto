@@ -54,6 +54,12 @@ pub enum SymmetricError {
     /// 提供的密文格式错误或被截断。
     #[cfg_attr(feature = "std", error("Invalid ciphertext"))]
     InvalidCiphertext,
+
+    /// The provided output buffer is too small.
+    ///
+    /// 提供的输出缓冲区太小。
+    #[cfg_attr(feature = "std", error("Output buffer is too small"))]
+    OutputTooSmall,
 }
 
 /// A trait for a symmetric AEAD cipher system.
@@ -104,7 +110,33 @@ pub trait SymmetricEncryptor: SymmetricKeySet + SymmetricCipher {
         nonce: &[u8],
         plaintext: &[u8],
         aad: Option<AssociatedData>,
-    ) -> Result<Vec<u8>, Error>;
+    ) -> Result<Vec<u8>, Error> {
+        // The required buffer size is plaintext length + tag size.
+        // 所需缓冲区大小为明文长度 + 标签大小。
+        let mut buffer = vec![0u8; plaintext.len() + Self::TAG_SIZE];
+        let bytes_written = Self::encrypt_to_buffer(key, nonce, plaintext, &mut buffer, aad)?;
+        buffer.truncate(bytes_written);
+        Ok(buffer)
+    }
+
+    /// 使用给定的 nonce 加密明文，并将带标签的密文写入提供的缓冲区。
+    ///
+    /// # 参数
+    /// * `key` - 密钥。
+    /// * `nonce` - 本次加密操作的 nonce。对于同一密钥的每次调用都必须是唯一的。
+    /// * `plaintext` - 要加密的数据。
+    /// * `output` - 用于写入加密数据（密文 || 标签）的缓冲区。必须足够大以容纳密文和标签。
+    /// * `aad` - 可选的要认证的关联数据。
+    ///
+    /// # 返回
+    /// 如果加密成功，则返回写入 `output` 的字节数。
+    fn encrypt_to_buffer(
+        key: &Self::Key,
+        nonce: &[u8],
+        plaintext: &[u8],
+        output: &mut [u8],
+        aad: Option<AssociatedData>,
+    ) -> Result<usize, Error>;
 }
 
 /// A trait for AEAD ciphers that can decrypt a ciphertext.
@@ -137,7 +169,37 @@ pub trait SymmetricDecryptor: SymmetricKeySet + SymmetricCipher {
         nonce: &[u8],
         ciphertext_with_tag: &[u8],
         aad: Option<AssociatedData>,
-    ) -> Result<Vec<u8>, Error>;
+    ) -> Result<Vec<u8>, Error> {
+        if ciphertext_with_tag.len() < Self::TAG_SIZE {
+            return Err(Error::Symmetric(SymmetricError::InvalidCiphertext));
+        }
+        // The required buffer size is ciphertext length - tag size.
+        // 所需缓冲区大小为密文长度 - 标签大小。
+        let mut buffer = vec![0u8; ciphertext_with_tag.len() - Self::TAG_SIZE];
+        let bytes_written =
+            Self::decrypt_to_buffer(key, nonce, ciphertext_with_tag, &mut buffer, aad)?;
+        buffer.truncate(bytes_written);
+        Ok(buffer)
+    }
+
+    /// 解密密文，并将原始明文写入提供的缓冲区。
+    ///
+    /// # 参数
+    /// * `key` - 密钥。
+    /// * `nonce` - 用于加密数据的 nonce。
+    /// * `ciphertext_with_tag` - 加密数据与认证标签连接在一起。
+    /// * `output` - 用于写入解密后明文的缓冲区。必须足够大以容纳明文。
+    /// * `aad` - 可选的已认证的关联数据。
+    ///
+    /// # 返回
+    /// 如果解密和认证成功，则返回写入 `output` 的字节数。
+    fn decrypt_to_buffer(
+        key: &Self::Key,
+        nonce: &[u8],
+        ciphertext_with_tag: &[u8],
+        output: &mut [u8],
+        aad: Option<AssociatedData>,
+    ) -> Result<usize, Error>;
 }
 
 /// A trait for generating symmetric keys.

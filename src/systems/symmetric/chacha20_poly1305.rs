@@ -8,7 +8,7 @@ use crate::traits::{
     SymmetricError, SymmetricKey, SymmetricKeyGenerator, SymmetricKeySet, KeyError,
 };
 use chacha20poly1305::aead::rand_core::RngCore;
-use chacha20poly1305::aead::{Aead, Key, KeyInit, OsRng, Payload};
+use chacha20poly1305::aead::{Aead, AeadInPlace, Key, KeyInit, OsRng};
 use chacha20poly1305::{
     ChaCha20Poly1305 as ChaCha20Poly1305Core, XChaCha20Poly1305 as XChaCha20Poly1305Core,
 };
@@ -32,7 +32,7 @@ pub trait Chacha20Poly1305Params: private::Sealed + Send + Sync + 'static {
     /// The underlying `chacha20poly1305` AEAD cipher type.
     ///
     /// 底层的 `chacha20poly1305` AEAD 密码类型。
-    type AeadCipher: Aead + KeyInit;
+    type AeadCipher: Aead + AeadInPlace + KeyInit;
     /// The size of the key in bytes.
     ///
     /// 密钥的大小（以字节为单位）。
@@ -113,57 +113,80 @@ impl<P: Chacha20Poly1305Params> SymmetricKeyGenerator for Chacha20Poly1305Scheme
 }
 
 impl<P: Chacha20Poly1305Params> SymmetricEncryptor for Chacha20Poly1305Scheme<P> {
-    fn encrypt(
+    fn encrypt_to_buffer(
         key: &Self::Key,
         nonce: &[u8],
         plaintext: &[u8],
+        output: &mut [u8],
         aad: Option<AssociatedData>,
-    ) -> Result<Vec<u8>, Error> {
+    ) -> Result<usize, Error> {
         if key.len() != P::KEY_SIZE {
             return Err(Error::Symmetric(SymmetricError::InvalidKeySize));
         }
         if nonce.len() != P::NONCE_SIZE {
             return Err(Error::Symmetric(SymmetricError::InvalidNonceSize));
         }
+
+        let required_len = plaintext.len() + P::TAG_SIZE;
+        if output.len() < required_len {
+            return Err(Error::Symmetric(SymmetricError::OutputTooSmall));
+        }
+
         let key = Key::<P::AeadCipher>::from_slice(key);
         let cipher = P::AeadCipher::new(key);
         let nonce_core = chacha20poly1305::aead::Nonce::<P::AeadCipher>::from_slice(nonce);
 
-        let payload = Payload {
-            msg: plaintext,
-            aad: aad.unwrap_or_default(),
-        };
-        cipher
-            .encrypt(nonce_core, payload)
-            .map_err(|_| Error::Symmetric(SymmetricError::Encryption))
+        let (ciphertext_buf, tag_buf) = output.split_at_mut(plaintext.len());
+        ciphertext_buf.copy_from_slice(plaintext);
+
+        let tag = cipher
+            .encrypt_in_place_detached(nonce_core, aad.unwrap_or_default(), ciphertext_buf)
+            .map_err(|_| Error::Symmetric(SymmetricError::Encryption))?;
+
+        tag_buf[..P::TAG_SIZE].copy_from_slice(&tag);
+
+        Ok(required_len)
     }
 }
 
 impl<P: Chacha20Poly1305Params> SymmetricDecryptor for Chacha20Poly1305Scheme<P> {
-    fn decrypt(
+    fn decrypt_to_buffer(
         key: &Self::Key,
         nonce: &[u8],
         ciphertext_with_tag: &[u8],
+        output: &mut [u8],
         aad: Option<AssociatedData>,
-    ) -> Result<Vec<u8>, Error> {
+    ) -> Result<usize, Error> {
         if key.len() != P::KEY_SIZE {
             return Err(Error::Symmetric(SymmetricError::InvalidKeySize));
         }
         if nonce.len() != P::NONCE_SIZE {
             return Err(Error::Symmetric(SymmetricError::InvalidNonceSize));
         }
+        if ciphertext_with_tag.len() < P::TAG_SIZE {
+            return Err(Error::Symmetric(SymmetricError::InvalidCiphertext));
+        }
+
+        let (ciphertext, tag) =
+            ciphertext_with_tag.split_at(ciphertext_with_tag.len() - P::TAG_SIZE);
+
+        if output.len() < ciphertext.len() {
+            return Err(Error::Symmetric(SymmetricError::OutputTooSmall));
+        }
 
         let key = Key::<P::AeadCipher>::from_slice(key);
         let cipher = P::AeadCipher::new(key);
         let nonce_core = chacha20poly1305::aead::Nonce::<P::AeadCipher>::from_slice(nonce);
+        let tag = chacha20poly1305::aead::Tag::<P::AeadCipher>::from_slice(tag);
 
-        let payload = Payload {
-            msg: ciphertext_with_tag,
-            aad: aad.unwrap_or_default(),
-        };
+        let plaintext_buf = &mut output[..ciphertext.len()];
+        plaintext_buf.copy_from_slice(ciphertext);
+
         cipher
-            .decrypt(nonce_core, payload)
-            .map_err(|_| Error::Symmetric(SymmetricError::Decryption))
+            .decrypt_in_place_detached(nonce_core, aad.unwrap_or_default(), plaintext_buf, tag)
+            .map_err(|_| Error::Symmetric(SymmetricError::Decryption))?;
+
+        Ok(plaintext_buf.len())
     }
 }
 
@@ -212,11 +235,56 @@ mod tests {
         let decrypted_aad = S::decrypt(&key, &nonce, &ciphertext_aad, Some(&aad)).unwrap();
         assert_eq!(plaintext, decrypted_aad);
 
+        // Test buffer encryption with AAD
+        let mut encrypted_buffer_aad = vec![0u8; plaintext.len() + S::TAG_SIZE];
+        let bytes_written =
+            S::encrypt_to_buffer(&key, &nonce, &plaintext, &mut encrypted_buffer_aad, Some(&aad))
+                .unwrap();
+        assert_eq!(bytes_written, ciphertext_aad.len());
+        assert_eq!(ciphertext_aad, &encrypted_buffer_aad[..bytes_written]);
+
+        let mut decrypted_buffer_aad = vec![0u8; plaintext.len()];
+        let bytes_written = S::decrypt_to_buffer(
+            &key,
+            &nonce,
+            &encrypted_buffer_aad,
+            &mut decrypted_buffer_aad,
+            Some(&aad),
+        )
+        .unwrap();
+        assert_eq!(bytes_written, plaintext.len());
+        assert_eq!(plaintext, &decrypted_buffer_aad[..bytes_written]);
+
         // Without AAD
         // 不使用 AAD
         let ciphertext_no_aad = S::encrypt(&key, &nonce, &plaintext, None).unwrap();
         let decrypted_no_aad = S::decrypt(&key, &nonce, &ciphertext_no_aad, None).unwrap();
         assert_eq!(plaintext, decrypted_no_aad);
+
+        // Test buffer encryption without AAD
+        let mut encrypted_buffer_no_aad = vec![0u8; plaintext.len() + S::TAG_SIZE];
+        let bytes_written = S::encrypt_to_buffer(
+            &key,
+            &nonce,
+            &plaintext,
+            &mut encrypted_buffer_no_aad,
+            None,
+        )
+        .unwrap();
+        assert_eq!(bytes_written, ciphertext_no_aad.len());
+        assert_eq!(ciphertext_no_aad, &encrypted_buffer_no_aad[..bytes_written]);
+
+        let mut decrypted_buffer_no_aad = vec![0u8; plaintext.len()];
+        let bytes_written = S::decrypt_to_buffer(
+            &key,
+            &nonce,
+            &encrypted_buffer_no_aad,
+            &mut decrypted_buffer_no_aad,
+            None,
+        )
+        .unwrap();
+        assert_eq!(bytes_written, plaintext.len());
+        assert_eq!(plaintext, &decrypted_buffer_no_aad[..bytes_written]);
 
         // Empty Plaintext with AAD
         // 空明文和 AAD
