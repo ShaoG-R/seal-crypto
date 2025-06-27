@@ -4,8 +4,8 @@
 
 use crate::errors::Error;
 use crate::traits::{
-    Algorithm, AssociatedData, SymmetricCipher, SymmetricDecryptor, SymmetricEncryptor,
-    SymmetricError, SymmetricKey, SymmetricKeyGenerator, SymmetricKeySet, KeyError,
+    Algorithm, AssociatedData, KeyError, SymmetricCipher, SymmetricDecryptor, SymmetricEncryptor,
+    SymmetricError, SymmetricKey, SymmetricKeyGenerator, SymmetricKeySet,
 };
 use aes_gcm::aead::rand_core::RngCore;
 use aes_gcm::aead::{Aead, AeadInPlace, KeyInit, OsRng};
@@ -240,9 +240,14 @@ mod tests {
 
         // Test buffer encryption with AAD
         let mut encrypted_buffer_aad = vec![0u8; plaintext.len() + S::TAG_SIZE];
-        let bytes_written =
-            S::encrypt_to_buffer(&key, &nonce, &plaintext, &mut encrypted_buffer_aad, Some(&aad))
-                .unwrap();
+        let bytes_written = S::encrypt_to_buffer(
+            &key,
+            &nonce,
+            &plaintext,
+            &mut encrypted_buffer_aad,
+            Some(&aad),
+        )
+        .unwrap();
         assert_eq!(bytes_written, ciphertext_aad.len());
         assert_eq!(ciphertext_aad, &encrypted_buffer_aad[..bytes_written]);
 
@@ -266,14 +271,9 @@ mod tests {
 
         // Test buffer encryption without AAD
         let mut encrypted_buffer_no_aad = vec![0u8; plaintext.len() + S::TAG_SIZE];
-        let bytes_written = S::encrypt_to_buffer(
-            &key,
-            &nonce,
-            &plaintext,
-            &mut encrypted_buffer_no_aad,
-            None,
-        )
-        .unwrap();
+        let bytes_written =
+            S::encrypt_to_buffer(&key, &nonce, &plaintext, &mut encrypted_buffer_no_aad, None)
+                .unwrap();
         assert_eq!(bytes_written, ciphertext_no_aad.len());
         assert_eq!(ciphertext_no_aad, &encrypted_buffer_no_aad[..bytes_written]);
 

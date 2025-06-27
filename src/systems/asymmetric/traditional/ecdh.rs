@@ -10,14 +10,12 @@
 
 use crate::errors::Error;
 use crate::traits::{
-    Algorithm, AsymmetricKeySet, Key, KeyAgreement, KeyAgreementError, KeyGenerator, PrivateKey,
-    PublicKey, SharedSecret, KeyError,
+    Algorithm, AsymmetricKeySet, Key, KeyAgreement, KeyAgreementError, KeyError, KeyGenerator,
+    PrivateKey, PublicKey, SharedSecret,
 };
 use elliptic_curve::pkcs8::{DecodePrivateKey, DecodePublicKey, EncodePrivateKey, EncodePublicKey};
 use elliptic_curve::rand_core::OsRng;
-use p256::{
-    ecdh, NistP256, PublicKey as P256PublicKey, SecretKey,
-};
+use p256::{ecdh, NistP256, PublicKey as P256PublicKey, SecretKey};
 use std::convert::TryFrom;
 use std::marker::PhantomData;
 use zeroize::{Zeroize, Zeroizing};
@@ -206,8 +204,7 @@ impl KeyAgreement for EcdhScheme<EcdhP256Params> {
 
         let sk = SecretKey::from_pkcs8_der(&private_key.bytes)
             .map_err(|_| Error::Key(KeyError::InvalidEncoding))?;
-        let shared_secret =
-            ecdh::diffie_hellman(sk.to_nonzero_scalar(), pk.as_affine());
+        let shared_secret = ecdh::diffie_hellman(sk.to_nonzero_scalar(), pk.as_affine());
 
         Ok(Zeroizing::new(shared_secret.raw_secret_bytes().to_vec()))
     }
@@ -253,4 +250,4 @@ mod tests {
         let alice_shared2 = EcdhP256::agree(&alice_sk2, &bob_pk).unwrap();
         assert_eq!(alice_shared, alice_shared2);
     }
-} 
+}

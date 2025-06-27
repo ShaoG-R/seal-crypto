@@ -13,11 +13,15 @@ pub use crate::traits::{
     Hasher,
     Kem,
     Key,
+    KeyAgreement,
+    KeyAgreementError,
     // asymmetric
     KeyGenerator,
     KeyPair,
     PrivateKey,
     PublicKey,
+    Signature,
+    SignatureError,
     SignatureScheme,
     Signer,
     SymmetricCipher,
@@ -27,9 +31,5 @@ pub use crate::traits::{
     SymmetricKeyGenerator,
     SymmetricKeySet,
     Verifier,
-    KeyAgreement,
-    KeyAgreementError,
-    Signature,
-    SignatureError,
 };
 pub use ::zeroize;

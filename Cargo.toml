@@ -6,7 +6,7 @@
 name = "seal-crypto"
 # crate 的版本号，遵循语义化版本（Semantic Versioning）规范。
 # The version number of the crate, following Semantic Versioning.
-version = "0.1.1"
+version = "0.1.2-rc1"
 # 指定项目使用的 Rust edition。
 # Specifies the Rust edition used by the project.
 edition = "2021"
@@ -164,4 +164,11 @@ required-features = ["rsa"]
 # 混合加密示例，需要 `kyber` 和 `aes-gcm` 特性。
 # Hybrid encryption example, requires `kyber` and `aes-gcm` features.
 name = "hybrid_encryption"
-required-features = ["kyber", "aes-gcm"] 
+required-features = ["kyber", "aes-gcm"]
+
+[dev-dependencies]
+criterion = { version = "0.6.0", features = ["html_reports"] }
+
+[[bench]]
+name = "crypto_benches"
+harness = false 

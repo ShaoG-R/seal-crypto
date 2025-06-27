@@ -14,9 +14,9 @@
 
 use crate::errors::Error;
 use crate::traits::{
-    Algorithm, AsymmetricKeySet, EncapsulatedKey, Hasher, Kem, KemError, Key, KeyGenerator,
-    PrivateKey, PublicKey, Sha256, SharedSecret, Signature, SignatureError, Signer, Verifier,
-    KeyError,
+    Algorithm, AsymmetricKeySet, EncapsulatedKey, Hasher, Kem, KemError, Key, KeyError,
+    KeyGenerator, PrivateKey, PublicKey, Sha256, SharedSecret, Signature, SignatureError, Signer,
+    Verifier,
 };
 use rsa::signature::{RandomizedSigner, SignatureEncoding};
 use rsa::{

@@ -4,8 +4,8 @@
 
 use crate::errors::Error;
 use crate::traits::{
-    Algorithm, AsymmetricKeySet, EncapsulatedKey, Kem, KemError, Key, KeyGenerator, PrivateKey,
-    PublicKey, SharedSecret, KeyError,
+    Algorithm, AsymmetricKeySet, EncapsulatedKey, Kem, KemError, Key, KeyError, KeyGenerator,
+    PrivateKey, PublicKey, SharedSecret,
 };
 use pqcrypto_kyber::{kyber1024, kyber512, kyber768};
 use pqcrypto_traits::kem::{
@@ -271,8 +271,8 @@ impl<P: KyberParams + Clone> Kem for KyberScheme<P> {
     type EncapsulatedKey = EncapsulatedKey;
 
     fn encapsulate(public_key: &Self::PublicKey) -> Result<(SharedSecret, EncapsulatedKey), Error> {
-        let pk =
-            PqPublicKey::from_bytes(&public_key.bytes).map_err(|_| Error::Kem(KemError::InvalidPublicKey))?;
+        let pk = PqPublicKey::from_bytes(&public_key.bytes)
+            .map_err(|_| Error::Kem(KemError::InvalidPublicKey))?;
         let (ss, ct) = P::encapsulate(&pk);
         Ok((
             Zeroizing::new(ss.as_bytes().to_vec()),
@@ -284,8 +284,8 @@ impl<P: KyberParams + Clone> Kem for KyberScheme<P> {
         private_key: &Self::PrivateKey,
         encapsulated_key: &EncapsulatedKey,
     ) -> Result<SharedSecret, Error> {
-        let sk =
-            PqSecretKey::from_bytes(&private_key.bytes).map_err(|_| Error::Kem(KemError::InvalidPrivateKey))?;
+        let sk = PqSecretKey::from_bytes(&private_key.bytes)
+            .map_err(|_| Error::Kem(KemError::InvalidPrivateKey))?;
         let ct = PqCiphertext::from_bytes(encapsulated_key)
             .map_err(|_| Error::Kem(KemError::InvalidEncapsulatedKey))?;
 
