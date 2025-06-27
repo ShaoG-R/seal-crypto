@@ -16,13 +16,13 @@
 
 use crate::errors::Error;
 use crate::traits::{
-    Algorithm, AsymmetricKeySet, Key, KeyGenerator, PrivateKey, PublicKey, Signature,
-    SignatureError, Signer, Verifier, KeyError,
+    Algorithm, AsymmetricKeySet, Key, KeyError, KeyGenerator, PrivateKey, PublicKey, Signature,
+    SignatureError, Signer, Verifier,
 };
 use ecdsa::{signature::RandomizedSigner, Signature as EcdsaSignature, SigningKey, VerifyingKey};
 use ed25519_dalek::{
-    Signature as Ed25519Signature, Signer as Ed25519DalekSigner,
-    SigningKey as Ed25519SigningKey, VerifyingKey as Ed25519VerifyingKey,
+    Signature as Ed25519Signature, Signer as Ed25519DalekSigner, SigningKey as Ed25519SigningKey,
+    VerifyingKey as Ed25519VerifyingKey,
 };
 use elliptic_curve::pkcs8::{DecodePrivateKey, DecodePublicKey, EncodePrivateKey, EncodePublicKey};
 use elliptic_curve::rand_core::{OsRng, RngCore};

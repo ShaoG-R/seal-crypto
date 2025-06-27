@@ -4,8 +4,8 @@
 
 use crate::errors::Error;
 use crate::traits::{
-    Algorithm, AsymmetricKeySet, Key, KeyGenerator, PrivateKey, PublicKey, Signature,
-    SignatureError, Signer, Verifier, KeyError,
+    Algorithm, AsymmetricKeySet, Key, KeyError, KeyGenerator, PrivateKey, PublicKey, Signature,
+    SignatureError, Signer, Verifier,
 };
 use pqcrypto_dilithium::{dilithium2, dilithium3, dilithium5};
 use pqcrypto_traits::sign::{
