@@ -75,14 +75,19 @@ def format_change(change_percent):
 
 def main():
     artifacts_dir = Path("artifacts")
-    gh_pages_dir = Path("gh-pages")
+    benchmark_report_dir = Path("benchmark_report")
     
     # Load previous results
     previous_results = {}
-    previous_summary_file = gh_pages_dir / "latest_summary.json"
+    # The action will manage bringing the history, so we read from the current dir
+    previous_summary_file = benchmark_report_dir / "latest_summary.json"
     if previous_summary_file.exists():
         with open(previous_summary_file, 'r') as f:
-            previous_results = json.load(f)
+            try:
+                previous_results = json.load(f)
+            except json.JSONDecodeError:
+                print("Warning: Could not decode previous summary. Starting fresh.")
+                previous_results = {}
 
     # Process current results from artifacts
     current_results = {}
@@ -117,7 +122,7 @@ def main():
             markdown_reports.append("| " + " | ".join(row) + " |")
 
     # Save current results for the next run
-    output_dir = gh_pages_dir
+    output_dir = benchmark_report_dir
     output_dir.mkdir(exist_ok=True)
     with open(output_dir / "latest_summary.json", 'w') as f:
         json.dump(current_results, f, indent=2)
@@ -126,7 +131,7 @@ def main():
     with open(output_dir / "index.md", 'w') as f:
         f.write("\n".join(markdown_reports))
         
-    print("Benchmark report generated successfully at gh-pages/index.md")
+    print(f"Benchmark report generated successfully at {output_dir}/index.md")
 
 if __name__ == "__main__":
     main() 
