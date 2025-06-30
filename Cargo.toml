@@ -57,6 +57,9 @@ p256 = { version = "0.13.2", optional = true, default-features = false }
 ed25519-dalek = { version = "2.1.1", optional = true, features = ["pkcs8"] }
 signature = { version = "2.2", optional = true, features = ["rand_core"] }
 digest = "0.10.7"
+hkdf_p = { package = "hkdf", version = "0.12.4", optional = true, default-features = false }
+hmac = { version = "0.12.1", optional = true, default-features = false }
+pbkdf2_p = { package = "pbkdf2", version = "0.12.2", optional = true, default-features = false }
 
 # --- 辅助 Crates ---
 # 这些 crate 提供了一些通用的辅助功能。
@@ -88,6 +91,9 @@ std = [
     "ecdsa/std",
     "p256/std",
     "ed25519-dalek/std",
+    "hkdf_p/std",
+    "hmac/std",
+    "pbkdf2_p/std"
 ]
 
 # --- 默认特性 ---
@@ -119,6 +125,8 @@ ecc = [
     "dep:signature",
 ]
 ecdh = ["elliptic-curve/ecdh", "dep:p256", "p256/ecdh", "p256/pkcs8"]
+hkdf = ["dep:hkdf_p", "dep:hmac"]
+pbkdf2 = ["dep:pbkdf2_p", "pbkdf2_p/hmac"]
 
 # --- 算法集特性 ---
 # 第二级：为常用算法组合提供的便捷特性。
@@ -126,6 +134,7 @@ ecdh = ["elliptic-curve/ecdh", "dep:p256", "p256/ecdh", "p256/pkcs8"]
 # Level 2: Convenience features for common combinations of algorithms.
 classic = ["rsa", "aes-gcm", "chacha20-poly1305", "ecc", "ecdh"] # 经典加密算法集 / Classic cryptographic algorithms set
 pqc = ["kyber", "dilithium"] # 后量子密码学算法集 / Post-Quantum Cryptography algorithms set
+kdf = ["hkdf", "pbkdf2"]
 
 # --- 硬件加速特性 ---
 # 启用特定 CPU 指令集（如 AVX2 或 sha-ni）以加速计算。
@@ -148,7 +157,7 @@ asm = [
 # 第三级：`full` 特性激活所有可用的算法实现。
 # --- Full Feature ---
 # Level 3: The `full` feature activates all available algorithm implementations.
-full = ["classic", "pqc"]
+full = ["classic", "pqc", "kdf"]
 
 # [[example]] 区域用于定义项目的示例代码。
 # 每个示例都可以有自己所需的特性。
@@ -166,8 +175,15 @@ required-features = ["rsa"]
 name = "hybrid_encryption"
 required-features = ["kyber", "aes-gcm"]
 
+[[example]]
+# KDF 示例，需要 `kdf` 特性。
+# KDF example, requires `kdf` feature.
+name = "kdf"
+required-features = ["kdf"]
+
 [dev-dependencies]
 criterion = { version = "0.6.0", features = ["html_reports"] }
+hex = "0.4.3"
 
 [[bench]]
 name = "crypto_benches"

@@ -102,6 +102,7 @@ graph TD
         M["KeyAgreement<br/><i>Inherits AsymmetricKeySet,<br/>adds 'agree'.</i>"]
         I["SymmetricKeyGenerator<br/><i>Inherits SymmetricKeySet,<br/>adds 'generate_key'.</i>"]
         J["SymmetricEncryptor / Decryptor<br/><i>Inherit SymmetricKeySet,<br/>add 'encrypt'/'decrypt'.</i>"]
+        N["KeyDerivation<br/><i>Inherits Algorithm,<br/>adds 'derive'.</i>"]
     end
     
     subgraph "Layer 3: Scheme Bundles (for convenience)"
@@ -113,6 +114,7 @@ graph TD
 
     Z --> C
     Z --> D
+    Z --> N
     
     C --> F
     C --> G
@@ -148,6 +150,8 @@ This layered approach ensures that every trait has a clear purpose, preventing a
 | **Key Agreement** | ECDH (P-256) | `ecdh` |
 | **AEAD** | AES-GCM (128/256 bits) | `aes-gcm` |
 | | ChaCha20-Poly1305 | `chacha20-poly1305` |
+| **Key Derivation** | HKDF (SHA-256, SHA-512) | `hkdf` |
+| | PBKDF2 (SHA-256, SHA-512) | `pbkdf2` |
 | **Hashing** | SHA-2 (256, 384, 512) | `sha256`, `sha384`, `sha512` |
 
 ## License

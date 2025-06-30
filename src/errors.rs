@@ -2,7 +2,7 @@
 //!
 //! 为 `seal-crypto` crate 定义了顶层错误类型。
 
-use crate::traits::{KemError, KeyAgreementError, KeyError, SignatureError, SymmetricError};
+use crate::traits::{KemError, KeyAgreementError, KeyError, SignatureError, SymmetricError, KdfError};
 
 #[cfg(feature = "std")]
 use thiserror::Error;
@@ -47,6 +47,13 @@ pub enum Error {
     /// 在密钥协商操作期间发生错误。
     #[cfg_attr(feature = "std", error("Key agreement operation failed"))]
     KeyAgreement(#[cfg_attr(feature = "std", from)] KeyAgreementError),
+
+    /// Key Derivation Function (KDF) error.
+    ///
+    /// 密钥派生函数 (KDF) 错误。
+    #[cfg(feature = "kdf")]
+    #[error("KDF error")]
+    Kdf(#[from] KdfError),
 }
 
 // Manual From impls for no_std

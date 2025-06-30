@@ -1,4 +1,5 @@
 mod asymmetric;
+mod kdf;
 mod symmetric;
 
 use criterion::criterion_main;
@@ -11,4 +12,6 @@ criterion_main! {
     asymmetric::traditional::rsa::benches,
     asymmetric::post_quantum::dilithium::benches,
     asymmetric::post_quantum::kyber::benches,
+    kdf::hkdf::benches,
+    kdf::pbkdf2::benches,
 }

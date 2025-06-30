@@ -7,9 +7,11 @@ pub mod asymmetric;
 pub mod hash;
 pub mod key;
 pub mod symmetric;
+pub mod kdf;
 
 pub use algorithm::*;
 pub use asymmetric::*;
 pub use hash::*;
 pub use key::*;
 pub use symmetric::*;
+pub use kdf::*;

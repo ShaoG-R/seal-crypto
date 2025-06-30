@@ -102,6 +102,7 @@ graph TD
         M["KeyAgreement<br/><i>Inherits AsymmetricKeySet,<br/>adds 'agree'.</i>"]
         I["SymmetricKeyGenerator<br/><i>继承 SymmetricKeySet,<br/>添加 'generate_key'</i>"]
         J["SymmetricEncryptor / Decryptor<br/><i>继承 SymmetricKeySet,<br/>添加 'encrypt'/'decrypt'</i>"]
+        N["KeyDerivation<br/><i>直接继承 Algorithm,<br/>添加 'derive'</i>"]
     end
     
     subgraph "第三层：方案包 (为方便起见)"
@@ -113,11 +114,11 @@ graph TD
 
     Z --> C
     Z --> D
+    Z --> N
     
     C --> F
     C --> G
     C --> H
-    C --> M
     
     F & G --> K
 
@@ -146,12 +147,13 @@ API 主要由以下几个核心 `trait` 组成，它们位于 `seal_crypto::trai
 -   `KeyAgreement`: 用于密钥协商以生成共享密钥。
 -   `Signer` / `Verifier`: 创建和验证数字签名。
 -   `Hasher`: 提供哈希摘要功能。
+-   `KeyDerivation`: 从输入密钥材料中派生一个或多个安全密钥。
 
 ## 支持的算法
 
 | 功能 | 算法 | Cargo Feature |
 | :--- | :--- | :--- |
-| **签名** | RSA-PSS (2048/4096 位, 可配置哈希) | `rsa`, `sha256`, etc. |
+| **签名** | RSA-PSS (2048/4096 位, 可配置哈希) | `rsa`, `sha2`, etc. |
 | | ECDSA (P-256) | `ecc` |
 | | EdDSA (Ed25519) | `ecc` |
 | | Dilithium (2/3/5) | `dilithium` |
@@ -160,7 +162,9 @@ API 主要由以下几个核心 `trait` 组成，它们位于 `seal_crypto::trai
 | **密钥协商** | ECDH (P-256) | `ecdh` |
 | **AEAD** | AES-GCM (128/256 位) | `aes-gcm` |
 | | ChaCha20-Poly1305 | `chacha20-poly1305` |
-| **哈希** | SHA-2 (256, 384, 512) | `sha256`, `sha384`, `sha512` |
+| **密钥派生** | HKDF (SHA-256, SHA-512) | `hkdf` |
+| | PBKDF2 (SHA-256, SHA-512) | `pbkdf2` |
+| **哈希** | SHA-2 (256, 384, 512) | `sha2` |
 
 ## 许可证
 
