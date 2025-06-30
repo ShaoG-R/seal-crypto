@@ -39,7 +39,7 @@ pub enum Error {
     /// An error occurred during a symmetric encryption or decryption operation.
     ///
     /// 在对称加密或解密操作期间发生错误。
-    #[cfg_attr(feature = "std", error("Symmetric cipher operation failed"))]
+    #[cfg_attr(feature = "std", error("Symmetric encryption/decryption error"))]
     Symmetric(#[cfg_attr(feature = "std", from)] SymmetricError),
 
     /// An error occurred during a key agreement operation.
@@ -48,12 +48,12 @@ pub enum Error {
     #[cfg_attr(feature = "std", error("Key agreement operation failed"))]
     KeyAgreement(#[cfg_attr(feature = "std", from)] KeyAgreementError),
 
-    /// Key Derivation Function (KDF) error.
+    /// KDF error.
     ///
     /// 密钥派生函数 (KDF) 错误。
     #[cfg(feature = "kdf")]
-    #[error("KDF error")]
-    Kdf(#[from] KdfError),
+    #[cfg_attr(feature = "std", error("KDF error"))]
+    Kdf(#[cfg_attr(feature = "std", from)] KdfError),
 }
 
 // Manual From impls for no_std
@@ -89,5 +89,12 @@ impl From<SymmetricError> for Error {
 impl From<KeyAgreementError> for Error {
     fn from(e: KeyAgreementError) -> Self {
         Error::KeyAgreement(e)
+    }
+}
+
+#[cfg(all(not(feature = "std"), feature = "kdf"))]
+impl From<KdfError> for Error {
+    fn from(e: KdfError) -> Self {
+        Error::Kdf(e)
     }
 }
