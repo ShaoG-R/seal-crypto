@@ -46,7 +46,8 @@ fn bench_rsa(c: &mut Criterion) {
     // --- RSA-4096 with SHA-512 ---
     group.bench_function("Rsa4096<Sha512> KeyGen", |b| {
         b.iter(Rsa4096::<Sha512>::generate_keypair)
-    });
+    })
+    .sample_size(10);
 
     let (pk_4096, sk_4096) = Rsa4096::<Sha512>::generate_keypair().unwrap();
 
