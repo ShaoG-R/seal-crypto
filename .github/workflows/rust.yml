@@ -61,10 +61,10 @@ jobs:
 
     - name: Install NASM
       if: runner.os == 'Windows'
-      uses: ilammy/setup-nasm@v1
+      uses: ilammy/setup-nasm@72793074d3c8cdda771dba85f6deafe00623038b # v1.5.2
 
     - name: Install Rust toolchain
-      uses: dtolnay/rust-toolchain@stable
+      uses: dtolnay/rust-toolchain@b3b07ba8b418998c39fb20f53e8b695cdcc8de1b # master
       with:
         toolchain: ${{ matrix.rust }}
 
