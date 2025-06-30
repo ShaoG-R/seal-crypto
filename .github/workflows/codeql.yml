@@ -52,6 +52,7 @@ jobs:
     - name: Build for CodeQL
       run: cargo build --features full --verbose
 
-    # Perform the analysis
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v3
+      with:
+        category: "/language:${{matrix.language}}"
