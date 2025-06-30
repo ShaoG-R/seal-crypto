@@ -134,7 +134,7 @@ pbkdf2 = ["dep:pbkdf2_p", "pbkdf2_p/hmac"]
 # Level 2: Convenience features for common combinations of algorithms.
 classic = ["rsa", "aes-gcm", "chacha20-poly1305", "ecc", "ecdh"] # 经典加密算法集 / Classic cryptographic algorithms set
 pqc = ["kyber", "dilithium"] # 后量子密码学算法集 / Post-Quantum Cryptography algorithms set
-kdf = ["hkdf", "pbkdf2"]
+kdf = ["hkdf", "pbkdf2", "sha2"]
 
 # --- 硬件加速特性 ---
 # 启用特定 CPU 指令集（如 AVX2 或 sha-ni）以加速计算。
