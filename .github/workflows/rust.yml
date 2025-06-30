@@ -22,6 +22,7 @@ jobs:
           - { name: "std-default",         args: "" }
           - { name: "std-classic",         args: "--features 'classic,ecdh'" }
           - { name: "std-pqc",             args: "--features pqc" }
+          - { name: "std-kdf",             args: "--features kdf" }
           - { name: "std-full",            args: "--features full" }
           - { name: "std-classic-asm",     args: "--features 'classic,ecdh,asm'" }
           - { name: "std-pqc-avx2",        args: "--features 'pqc,avx2'" }
@@ -29,6 +30,7 @@ jobs:
           - { name: "no_std-base",         args: "--no-default-features" }
           - { name: "no_std-classic",      args: "--no-default-features --features 'classic,ecdh'" }
           - { name: "no_std-pqc",          args: "--no-default-features --features pqc" }
+          - { name: "no_std-kdf",          args: "--no-default-features --features kdf" }
           - { name: "no_std-full",         args: "--no-default-features --features full" }
           - { name: "no_std-classic-asm",  args: "--no-default-features --features 'classic,ecdh,asm'" }
           - { name: "no_std-pqc-avx2",     args: "--no-default-features --features 'pqc,avx2'" }
