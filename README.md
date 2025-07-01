@@ -85,68 +85,73 @@ graph TD
         Z["Algorithm<br/><i>The top-level trait for all schemes,<br/>provides a 'NAME' constant.</i>"]
     end
 
-    subgraph "Base Layer: Key Primitives"
-        A["Key<br/><i>Defines basic key behaviors like serialization.</i>"]
-        B["PublicKey / PrivateKey<br/><i>Marker traits for key types.</i>"]
-    end
+    subgraph "Layer 1: Core Capabilities"
+        subgraph "Core Cryptographic Schemes"
+            C["AsymmetricKeySet"]
+            D["SymmetricKeySet"]
 
-    subgraph "Layer 1: KeySet - The Single Source of Truth"
-        C["AsymmetricKeySet<br/><i>Inherits Algorithm<br/><b>- type PublicKey<br/>- type PrivateKey</b></i>"]
-        D["SymmetricKeySet<br/><i>Inherits Algorithm<br/><b>- type Key</b></i>"]
-    end
+            subgraph "Key Type Inheritance"
+                A["Key<br/><i>Defines basic key behaviors like serialization.</i>"]
+                PK["(type PublicKey)"]
+                SK["(type PrivateKey)"]
+                SymK["(type Key)"]
 
-    subgraph "Layer 2: Capabilities"
-        F["KeyGenerator<br/><i>Inherits AsymmetricKeySet,<br/>adds 'generate_keypair'.</i>"]
-        G["Signer / Verifier<br/><i>Inherit AsymmetricKeySet,<br/>add 'sign'/'verify'.</i>"]
-        H["Kem<br/><i>Inherits AsymmetricKeySet,<br/>adds 'encapsulate'/'decapsulate'.</i>"]
-        M["KeyAgreement<br/><i>Inherits AsymmetricKeySet,<br/>adds 'agree'.</i>"]
-        I["SymmetricKeyGenerator<br/><i>Inherits SymmetricKeySet,<br/>adds 'generate_key'.</i>"]
-        J["SymmetricEncryptor / Decryptor<br/><i>Inherit SymmetricKeySet,<br/>add 'encrypt'/'decrypt'.</i>"]
+                PK -- "inherits" --> A
+                SK -- "inherits" --> A
+                SymK -- "inherits" --> A
+            end
+            
+            C -. "defines" .-> PK
+            C -. "defines" .-> SK
+            D -. "defines" .-> SymK
+
+            F["KeyGenerator<br/><i>'generate_keypair'</i>"]
+            G["Signer / Verifier<br/><i>'sign'/'verify'</i>"]
+            H["Kem<br/><i>'encapsulate'/'decapsulate'</i>"]
+            M["KeyAgreement<br/><i>'agree'</i>"]
+            
+            I["SymmetricKeyGenerator<br/><i>'generate_key'</i>"]
+            J["SymmetricEncryptor / Decryptor<br/><i>'encrypt'/'decrypt'</i>"]
+        end
         
-        subgraph "Derivation"
+        subgraph "Derivation Schemes"
             N_BASE["Derivation<br/><i>Top-level trait for derivation</i>"]
             N_KEY["KeyBasedDerivation<br/><i>For high-entropy keys</i>"]
             N_PASS["PasswordBasedDerivation<br/><i>For low-entropy passwords</i>"]
         end
     end
     
-    subgraph "Layer 3: Scheme Bundles (for convenience)"
+    subgraph "Layer 2: Scheme Bundles (for convenience)"
         K["SignatureScheme<br/><i>Bundles KeyGenerator, Signer, Verifier.</i>"]
         L["AeadScheme<br/><i>Bundles SymmetricKeySet, SymmetricKeyGenerator, etc.</i>"]
     end
 
-    %% Links
-    Z --> A
-    A --> B
-
-    B --> C
-    B --> D
-    
+    Z --> C
+    Z --> D
     Z --> N_BASE
     
-    C --> F 
+    C --> F
     C --> G
     C --> H
     C --> M
-    D --> I
-    D --> J
     
     F & G --> K
-    I & J --> L
-    
-    N_BASE --> N_KEY & N_PASS
 
-    %% Layout direction
-    rankdir TD
+    D --> I
+    D --> J
+    I & J --> L
+
+    N_BASE --> N_KEY
+    N_BASE --> N_PASS
 ```
 
 Here's a breakdown of the layers:
 
 1.  **Top Layer: Algorithm Identity (`Algorithm`)**: This is the unified top-level trait for all cryptographic schemes (both symmetric and asymmetric). It defines a single `NAME` constant to provide a unique, readable identifier for each algorithm (e.g., "RSA-PSS-SHA256").
-2.  **Base Layer: Key Primitives (`Key`)**: At the very bottom are fundamental traits like `Key`, `PublicKey`, and `PrivateKey`. They define the absolute basic properties of any key, such as serialization.
-3.  **Layer 1: The KeySet**: This is the core of the design. `AsymmetricKeySet` and `SymmetricKeySet` inherit from `Algorithm` and have a single responsibility: to define the associated key types for a cryptographic scheme. They are the **single source of truth** for `PublicKey`, `PrivateKey`, and `SymmetricKey`.
-4.  **Layer 2: Capabilities**: This layer defines actions. Traits like `KeyGenerator`, `Signer`, `Kem`, `KeyAgreement`, and `SymmetricEncryptor` inherit directly from their respective KeySet layer and add specific methods (`generate_keypair`, `sign`, `encapsulate`, `agree`, etc.). They define *what you can do* with a scheme.
-5.  **Layer 3: Scheme Bundles**: For user convenience, we provide "supertraits" like `SignatureScheme` and `AeadScheme`. They don't add new methods but bundle all relevant capabilities into a single, easy-to-use trait.
+2.  **Layer 1: Core Capabilities**: This layer is the heart of the library.
+    *   **Core Cryptographic Schemes**: `AsymmetricKeySet` and `SymmetricKeySet` are central nodes, linking to their capability traits (`Signer`, `Kem`, etc.). A separate, self-contained "Key Type Inheritance" subgraph is used to show how the associated types defined by these sets (`type PublicKey`, `type Key`, etc.) inherit from the base `Key` trait. Dotted lines from the scheme sets *into* this subgraph illustrate the "definition" relationship.
+    *   **Derivation Schemes**: Contains traits for key and password-based derivation.
+3.  **Layer 2: Scheme Bundles**: For user convenience, we provide "supertraits" like `SignatureScheme` and `AeadScheme`. They don't add new methods but bundle all relevant capabilities into a single, easy-to-use trait.
 
 This layered approach ensures that every trait has a clear purpose, preventing ambiguity and making the entire library highly consistent and predictable.
 

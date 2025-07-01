@@ -85,68 +85,73 @@ graph TD
         Z["Algorithm<br/><i>所有加密方案的顶层 Trait,<br/>提供 'NAME' 常量</i>"]
     end
 
-    subgraph "基础层：密钥原语"
-        A["Key<br/><i>定义如序列化等基础行为</i>"]
-        B["PublicKey / PrivateKey<br/><i>密钥类型的标记 Trait</i>"]
-    end
+    subgraph "第一层：核心能力"
+        subgraph "核心加密方案"
+            C["AsymmetricKeySet"]
+            D["SymmetricKeySet"]
 
-    subgraph "第一层：KeySet - 密钥定义"
-        C["AsymmetricKeySet<br/><i>继承 Algorithm<br/><b>- type PublicKey<br/>- type PrivateKey</b></i>"]
-        D["SymmetricKeySet<br/><i>继承 Algorithm<br/><b>- type Key</b></i>"]
-    end
+            subgraph "密钥类型继承"
+                A["Key<br/><i>定义如序列化等基础行为</i>"]
+                PK["(type PublicKey)"]
+                SK["(type PrivateKey)"]
+                SymK["(type Key)"]
 
-    subgraph "第二层：能力"
-        F["KeyGenerator<br/><i>继承 AsymmetricKeySet,<br/>添加 'generate_keypair'</i>"]
-        G["Signer / Verifier<br/><i>继承 AsymmetricKeySet,<br/>添加 'sign'/'verify'</i>"]
-        H["Kem<br/><i>继承 AsymmetricKeySet,<br/>添加 'encapsulate'/'decapsulate'</i>"]
-        M["KeyAgreement<br/><i>继承 AsymmetricKeySet,<br/>添加 'agree'</i>"]
-        I["SymmetricKeyGenerator<br/><i>继承 SymmetricKeySet,<br/>添加 'generate_key'</i>"]
-        J["SymmetricEncryptor / Decryptor<br/><i>继承 SymmetricKeySet,<br/>添加 'encrypt'/'decrypt'</i>"]
+                PK -- "继承" --> A
+                SK -- "继承" --> A
+                SymK -- "继承" --> A
+            end
+            
+            C -. "定义" .-> PK
+            C -. "定义" .-> SK
+            D -. "定义" .-> SymK
+
+            F["KeyGenerator<br/><i>'generate_keypair'</i>"]
+            G["Signer / Verifier<br/><i>'sign'/'verify'</i>"]
+            H["Kem<br/><i>'encapsulate'/'decapsulate'</i>"]
+            M["KeyAgreement<br/><i>'agree'</i>"]
+            
+            I["SymmetricKeyGenerator<br/><i>'generate_key'</i>"]
+            J["SymmetricEncryptor / Decryptor<br/><i>'encrypt'/'decrypt'</i>"]
+        end
         
-        subgraph "派生"
+        subgraph "派生方案"
             N_BASE["Derivation<br/><i>派生算法的顶层 Trait</i>"]
             N_KEY["KeyBasedDerivation<br/><i>用于高熵密钥</i>"]
             N_PASS["PasswordBasedDerivation<br/><i>用于低熵密码</i>"]
         end
     end
     
-    subgraph "第三层：方案包 (为方便起见)"
+    subgraph "第二层：方案包 (为方便起见)"
         K["SignatureScheme<br/><i>捆绑 KeyGenerator, Signer, Verifier</i>"]
         L["AeadScheme<br/><i>捆绑 SymmetricKeySet, SymmetricKeyGenerator 等</i>"]
     end
 
-    %% 链接
-    Z --> A
-    A --> B
-
-    B --> C
-    B --> D
-    
+    Z --> C
+    Z --> D
     Z --> N_BASE
     
-    C --> F 
+    C --> F
     C --> G
     C --> H
     C --> M
-    D --> I
-    D --> J
     
     F & G --> K
-    I & J --> L
-    
-    N_BASE --> N_KEY & N_PASS
 
-    %% 布局方向
-    rankdir TD
+    D --> I
+    D --> J
+    I & J --> L
+
+    N_BASE --> N_KEY
+    N_BASE --> N_PASS
 ```
 
 各层解析如下：
 
 1.  **顶层：算法标识 (`Algorithm`)**: 这是所有加密方案（无论是对称还是非对称）的统一顶层 Trait。它只定义了一个 `NAME` 常量，用于为每个算法提供一个唯一的、可读的标识符（例如 "RSA-PSS-SHA256"）。
-2.  **基础层：密钥原语 (`Key`)**: 位于最底层的是像 `Key`, `PublicKey`, 和 `PrivateKey` 这样的基础 Trait。它们定义了任何密钥都必须具备的最基本的属性，如序列化。
-3.  **第一层：KeySet**: 这是设计的核心。`AsymmetricKeySet` 和 `SymmetricKeySet` 继承自 `Algorithm`，它们的职责只有一个：为某个加密方案定义其关联的密钥类型。它们是 `PublicKey`, `PrivateKey`, 和 `SymmetricKey` 的**唯一事实来源**。
-4.  **第二层：能力**: 这一层定义了"动作"。像 `KeyGenerator`, `Signer`, `Kem`, 和 `SymmetricEncryptor` 这样的 Trait 直接继承自相应的 KeySet 层，并添加了具体的方法（`generate_keypair`, `sign`, `encapsulate` 等）。它们定义了你能用一个方案来*做什么*。
-5.  **第三层：方案包**: 为了方便用户，我们提供了像 `SignatureScheme` 和 `AeadScheme` 这样的"超级 Trait"。它们不添加任何新方法，而是将所有相关的能力捆绑到一个单一、易用的 Trait 中。
+2.  **第一层：核心能力**: 这是库的核心。
+    *   **核心加密方案**: `AsymmetricKeySet` 和 `SymmetricKeySet` 作为核心节点，连接到它们的能力 Trait (如 `Signer`, `Kem` 等)。一个独立的、自包含的"密钥类型继承"子图专门用于展示这些方案集所定义的关联类型（`type PublicKey`, `type Key` 等）是如何继承自基础的 `Key` Trait。从方案集指向该子图内部的虚线表示"定义"关系。
+    *   **派生方案**: 包含了用于密钥和密码派生的 Trait。
+3.  **第二层：方案包**: 为了方便用户，我们提供了像 `SignatureScheme` 和 `AeadScheme` 这样的"超级 Trait"。它们不添加任何新方法，而是将所有相关的能力捆绑到一个单一、易用的 Trait 中。
 
 这种分层的方法确保了每个 Trait 都有其明确的用途，避免了歧义，并使得整个库高度一致和可预测。
 
