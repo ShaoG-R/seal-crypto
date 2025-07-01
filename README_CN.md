@@ -99,10 +99,15 @@ graph TD
         F["KeyGenerator<br/><i>继承 AsymmetricKeySet,<br/>添加 'generate_keypair'</i>"]
         G["Signer / Verifier<br/><i>继承 AsymmetricKeySet,<br/>添加 'sign'/'verify'</i>"]
         H["Kem<br/><i>继承 AsymmetricKeySet,<br/>添加 'encapsulate'/'decapsulate'</i>"]
-        M["KeyAgreement<br/><i>Inherits AsymmetricKeySet,<br/>adds 'agree'.</i>"]
+        M["KeyAgreement<br/><i>继承 AsymmetricKeySet,<br/>添加 'agree'</i>"]
         I["SymmetricKeyGenerator<br/><i>继承 SymmetricKeySet,<br/>添加 'generate_key'</i>"]
         J["SymmetricEncryptor / Decryptor<br/><i>继承 SymmetricKeySet,<br/>添加 'encrypt'/'decrypt'</i>"]
-        N["KeyDerivation<br/><i>直接继承 Algorithm,<br/>添加 'derive'</i>"]
+        
+        subgraph "派生"
+            N_BASE["Derivation<br/><i>派生算法的顶层 Trait</i>"]
+            N_KEY["KeyBasedDerivation<br/><i>用于高熵密钥</i>"]
+            N_PASS["PasswordBasedDerivation<br/><i>用于低熵密码</i>"]
+        end
     end
     
     subgraph "第三层：方案包 (为方便起见)"
@@ -114,17 +119,22 @@ graph TD
 
     Z --> C
     Z --> D
-    Z --> N
+    Z --> N_BASE
     
     C --> F
     C --> G
     C --> H
+    C --> M
     
     F & G --> K
 
     D --> I
     D --> J
     I & J --> L
+
+    N_BASE --> N_KEY
+    N_BASE --> N_PASS
+end
 ```
 
 各层解析如下：
@@ -147,7 +157,8 @@ API 主要由以下几个核心 `trait` 组成，它们位于 `seal_crypto::trai
 -   `KeyAgreement`: 用于密钥协商以生成共享密钥。
 -   `Signer` / `Verifier`: 创建和验证数字签名。
 -   `Hasher`: 提供哈希摘要功能。
--   `KeyDerivation`: 从输入密钥材料中派生一个或多个安全密钥。
+-   `KeyBasedDerivation`: 从高熵输入密钥材料中派生一个或多个安全密钥。
+-   `PasswordBasedDerivation`: 从低熵密码中派生一个或多个安全密钥。
 
 ## 支持的算法
 
@@ -157,13 +168,13 @@ API 主要由以下几个核心 `trait` 组成，它们位于 `seal_crypto::trai
 | | ECDSA (P-256) | `ecc` |
 | | EdDSA (Ed25519) | `ecc` |
 | | Dilithium (2/3/5) | `dilithium` |
-| **KEM** | RSA-OAEP (2048/4096 位, 可配置哈希) | `rsa`, `sha256`, etc. |
+| **KEM** | RSA-OAEP (2048/4096 位, 可配置哈希) | `rsa`, `sha2`, etc. |
 | | Kyber (512/768/1024) | `kyber` |
 | **密钥协商** | ECDH (P-256) | `ecdh` |
 | **AEAD** | AES-GCM (128/256 位) | `aes-gcm` |
 | | ChaCha20-Poly1305 | `chacha20-poly1305` |
-| **密钥派生** | HKDF (SHA-256, SHA-512) | `hkdf` |
-| | PBKDF2 (SHA-256, SHA-512) | `pbkdf2` |
+| **密钥派生 (KDF)** | HKDF (SHA-256, SHA-384, SHA-512) | `hkdf` |
+| **密码派生 (PBKDF)** | PBKDF2 (SHA-256, SHA-384, SHA-512) | `pbkdf2` |
 | **哈希** | SHA-2 (256, 384, 512) | `sha2` |
 
 ## 许可证

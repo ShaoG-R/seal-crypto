@@ -2,6 +2,7 @@
 //!
 //! 定义了对称认证加密的 trait。
 
+use crate::traits::Key;
 use crate::{errors::Error, traits::key::SymmetricKeySet};
 #[cfg(feature = "std")]
 use thiserror::Error;
@@ -12,6 +13,16 @@ use zeroize::Zeroizing;
 /// 对称密码的密钥。
 #[allow(dead_code)]
 pub type SymmetricKey = Zeroizing<Vec<u8>>;
+
+impl Key for SymmetricKey {
+    fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
+        Ok(Zeroizing::new(bytes.to_vec()))
+    }
+
+    fn to_bytes(&self) -> Vec<u8> {
+        self.to_vec()
+    }
+}
 
 /// Authenticated associated data (AAD).
 ///

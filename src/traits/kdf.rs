@@ -1,6 +1,6 @@
-//! Defines traits for Key Derivation Functions (KDFs).
+//! Defines traits for key and password derivation functions.
 //!
-//! 定义了密钥派生函数 (KDF) 的 trait。
+//! 定义了密钥和密码派生函数的 trait。
 
 use crate::errors::Error;
 use crate::traits::algorithm::Algorithm;
@@ -43,10 +43,15 @@ pub enum KdfError {
     InvalidOutputLength,
 }
 
-/// The core trait for a Key Derivation Function (KDF).
+/// A top-level trait for all derivation algorithms (KDFs, PBKDFs, etc.).
 ///
-/// 密钥派生函数 (KDF) 的核心 trait。
-pub trait KeyDerivation: Algorithm {
+/// 所有派生算法（KDF、PBKDF 等）的顶层 trait。
+pub trait Derivation: Algorithm {}
+
+/// A trait for Key Derivation Functions (KDFs) that derive keys from a high-entropy Input Keying Material (IKM).
+///
+/// 用于从高熵输入密钥材料 (IKM) 派生密钥的密钥派生函数 (KDF) 的 trait。
+pub trait KeyBasedDerivation: Derivation {
     /// Derives one or more secure keys from Input Keying Material (IKM).
     ///
     /// # Arguments
@@ -78,6 +83,36 @@ pub trait KeyDerivation: Algorithm {
     ) -> Result<DerivedKey, Error>;
 }
 
+/// A trait for Password-Based Key Derivation Functions (PBKDFs) that derive keys from a low-entropy password.
+/// These functions are typically computationally intensive to protect against brute-force attacks.
+///
+/// 用于从低熵密码派生密钥的基于密码的密钥派生函数 (PBKDF) 的 trait。
+/// 这些函数通常是计算密集型的，以防止暴力破解攻击。
+pub trait PasswordBasedDerivation: Derivation {
+    /// Derives a secure key from a password.
+    ///
+    /// # Arguments
+    /// * `self` - The scheme instance, which may contain configuration like the number of iterations.
+    /// * `password` - The password to derive the key from.
+    /// * `salt` - A salt. It is crucial for security and must be unique per password.
+    /// * `output_len` - The desired length of the derived key in bytes.
+    ///
+    /// # Returns
+    /// The derived key of `output_len` bytes.
+    ///
+    /// 从密码派生一个安全密钥。
+    ///
+    /// # 参数
+    /// * `self` - 方案的实例，可能包含配置，例如迭代次数。
+    /// * `password` - 用于派生密钥的密码。
+    /// * `salt` - 盐。这对安全性至关重要，每个密码都必须是唯一的。
+    /// * `output_len` - 期望派生的密钥长度（以字节为单位）。
+    ///
+    /// # 返回
+    /// 派生出的密钥，长度为 `output_len`。
+    fn derive(&self, password: &[u8], salt: &[u8], output_len: usize) -> Result<DerivedKey, Error>;
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -88,4 +123,4 @@ mod tests {
         let derived_key = DerivedKey::new(key_data.clone());
         assert_eq!(derived_key.as_bytes(), key_data.as_slice());
     }
-} 
+}

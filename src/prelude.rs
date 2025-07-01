@@ -9,17 +9,23 @@ pub use crate::traits::{
     // core
     Algorithm,
     AsymmetricKeySet,
+    // KDF
+    Derivation,
+    DerivedKey,
     // hash
     Hasher,
+    KdfError,
     Kem,
     KemError,
     Key,
-    KeyError,
     KeyAgreement,
     KeyAgreementError,
+    KeyBasedDerivation,
+    KeyError,
     // asymmetric
     KeyGenerator,
     KeyPair,
+    PasswordBasedDerivation,
     PrivateKey,
     PublicKey,
     Signature,
@@ -29,14 +35,10 @@ pub use crate::traits::{
     SymmetricCipher,
     SymmetricDecryptor,
     SymmetricEncryptor,
+    SymmetricError,
     // symmetric
     SymmetricKeyGenerator,
     SymmetricKeySet,
-    SymmetricError,
     Verifier,
-    // KDF
-    KeyDerivation,
-    KdfError,
-    DerivedKey,
 };
 pub use ::zeroize;

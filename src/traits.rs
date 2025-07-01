@@ -5,13 +5,13 @@
 pub mod algorithm;
 pub mod asymmetric;
 pub mod hash;
+pub mod kdf;
 pub mod key;
 pub mod symmetric;
-pub mod kdf;
 
 pub use algorithm::*;
 pub use asymmetric::*;
 pub use hash::*;
+pub use kdf::*;
 pub use key::*;
 pub use symmetric::*;
-pub use kdf::*;

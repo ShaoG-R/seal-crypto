@@ -18,31 +18,27 @@ fn bench_pbkdf2(c: &mut Criterion) {
 
     // --- PBKDF2-SHA256 ---
     let scheme_sha256 = Pbkdf2Sha256::new(BENCH_ITERATIONS);
-    group.bench_function(format!("PBKDF2-SHA256 ({} iterations)", BENCH_ITERATIONS), |b| {
-        b.iter(|| {
-            scheme_sha256.derive(
-                black_box(password),
-                black_box(Some(salt)),
-                black_box(None),
-                black_box(output_len),
-            )
-        })
-    });
+    group.bench_function(
+        format!("PBKDF2-SHA256 ({} iterations)", BENCH_ITERATIONS),
+        |b| {
+            b.iter(|| {
+                scheme_sha256.derive(black_box(password), black_box(salt), black_box(output_len))
+            })
+        },
+    );
 
     // --- PBKDF2-SHA512 ---
     let scheme_sha512 = Pbkdf2Sha512::new(BENCH_ITERATIONS);
-    group.bench_function(format!("PBKDF2-SHA512 ({} iterations)", BENCH_ITERATIONS), |b| {
-        b.iter(|| {
-            scheme_sha512.derive(
-                black_box(password),
-                black_box(Some(salt)),
-                black_box(None),
-                black_box(output_len),
-            )
-        })
-    });
+    group.bench_function(
+        format!("PBKDF2-SHA512 ({} iterations)", BENCH_ITERATIONS),
+        |b| {
+            b.iter(|| {
+                scheme_sha512.derive(black_box(password), black_box(salt), black_box(output_len))
+            })
+        },
+    );
 
     group.finish();
 }
 
-criterion_group!(benches, bench_pbkdf2); 
+criterion_group!(benches, bench_pbkdf2);

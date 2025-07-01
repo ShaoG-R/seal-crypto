@@ -2,17 +2,17 @@
 //!
 //! 提供了基于 HMAC 的密钥派生函数 (HKDF) 的实现。
 
+use crate::traits::Sha384;
 use crate::{
     errors::Error,
     traits::{
         algorithm::Algorithm,
         hash::{Hasher, Sha256, Sha512},
-        kdf::{DerivedKey, KdfError, KeyDerivation},
+        kdf::{Derivation, DerivedKey, KdfError, KeyBasedDerivation},
     },
 };
 use hkdf_p::Hkdf;
 use std::marker::PhantomData;
-
 // --- Generic HKDF Implementation ---
 // --- 通用 HKDF 实现 ---
 
@@ -32,6 +32,8 @@ impl<H: Hasher> Default for HkdfScheme<H> {
     }
 }
 
+impl<H: Hasher> Derivation for HkdfScheme<H> {}
+
 impl<H: Hasher> Algorithm for HkdfScheme<H> {
     const NAME: &'static str = "HKDF";
 }
@@ -40,7 +42,7 @@ impl<H: Hasher> Algorithm for HkdfScheme<H> {
 // Implementation for specific hash algorithms instead of generic
 
 #[cfg(feature = "sha2")]
-impl KeyDerivation for HkdfScheme<Sha256> {
+impl KeyBasedDerivation for HkdfScheme<Sha256> {
     fn derive(
         &self,
         ikm: &[u8],
@@ -59,7 +61,7 @@ impl KeyDerivation for HkdfScheme<Sha256> {
 }
 
 #[cfg(feature = "sha2")]
-impl KeyDerivation for HkdfScheme<Sha512> {
+impl KeyBasedDerivation for HkdfScheme<Sha512> {
     fn derive(
         &self,
         ikm: &[u8],
@@ -86,6 +88,12 @@ impl KeyDerivation for HkdfScheme<Sha512> {
 #[cfg(feature = "sha2")]
 pub type HkdfSha256 = HkdfScheme<Sha256>;
 
+/// A type alias for the HKDF-SHA-384 scheme.
+///
+/// HKDF-SHA-384 方案的类型别名。
+#[cfg(feature = "sha2")]
+pub type HkdfSha384 = HkdfScheme<Sha384>;
+
 /// A type alias for the HKDF-SHA-512 scheme.
 ///
 /// HKDF-SHA-512 方案的类型别名。
@@ -95,11 +103,11 @@ pub type HkdfSha512 = HkdfScheme<Sha512>;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::traits::{hash::Hasher, kdf::KeyDerivation};
+    use crate::traits::{hash::Hasher, kdf::KeyBasedDerivation};
 
     fn run_hkdf_test<H: Hasher>()
     where
-        HkdfScheme<H>: KeyDerivation + Default,
+        HkdfScheme<H>: KeyBasedDerivation + Default,
     {
         let ikm = b"initial-keying-material";
         let salt = b"test-salt";

@@ -60,7 +60,7 @@ pub trait AsymmetricKeySet: Algorithm {
 ///
 /// 定义对称加密方案中使用的密钥。
 pub trait SymmetricKeySet: Algorithm {
-    type Key: 'static;
+    type Key: Key;
 }
 
 /// A trait that associates a private key with its corresponding public key.

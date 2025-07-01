@@ -102,7 +102,12 @@ graph TD
         M["KeyAgreement<br/><i>Inherits AsymmetricKeySet,<br/>adds 'agree'.</i>"]
         I["SymmetricKeyGenerator<br/><i>Inherits SymmetricKeySet,<br/>adds 'generate_key'.</i>"]
         J["SymmetricEncryptor / Decryptor<br/><i>Inherit SymmetricKeySet,<br/>add 'encrypt'/'decrypt'.</i>"]
-        N["KeyDerivation<br/><i>Inherits Algorithm,<br/>adds 'derive'.</i>"]
+        
+        subgraph "Derivation"
+            N_BASE["Derivation<br/><i>Top-level trait for derivation</i>"]
+            N_KEY["KeyBasedDerivation<br/><i>For high-entropy keys</i>"]
+            N_PASS["PasswordBasedDerivation<br/><i>For low-entropy passwords</i>"]
+        end
     end
     
     subgraph "Layer 3: Scheme Bundles (for convenience)"
@@ -114,7 +119,7 @@ graph TD
 
     Z --> C
     Z --> D
-    Z --> N
+    Z --> N_BASE
     
     C --> F
     C --> G
@@ -126,6 +131,10 @@ graph TD
     D --> I
     D --> J
     I & J --> L
+
+    N_BASE --> N_KEY
+    N_BASE --> N_PASS
+end
 ```
 
 Here's a breakdown of the layers:
@@ -142,17 +151,18 @@ This layered approach ensures that every trait has a clear purpose, preventing a
 
 | Capability | Algorithm | Cargo Feature |
 | :--- | :--- | :--- |
-| **Signature** | RSA-PSS (2048/4096 bits, configurable hash) | `rsa`, `sha256`, etc. |
+| **Signature** | RSA-PSS (2048/4096 bits, configurable hash) | `rsa`, `sha2`, etc. |
 | | ECDSA (P-256) | `ecc` |
 | | EdDSA (Ed25519) | `ecc` |
-| **KEM** | RSA-OAEP (2048/4096 bits, configurable hash) | `rsa`, `sha256`, etc. |
+| | Dilithium (2/3/5) | `dilithium` |
+| **KEM** | RSA-OAEP (2048/4096 bits, configurable hash) | `rsa`, `sha2`, etc. |
 | | Kyber (512/768/1024) | `kyber` |
 | **Key Agreement** | ECDH (P-256) | `ecdh` |
 | **AEAD** | AES-GCM (128/256 bits) | `aes-gcm` |
 | | ChaCha20-Poly1305 | `chacha20-poly1305` |
-| **Key Derivation** | HKDF (SHA-256, SHA-512) | `hkdf` |
-| | PBKDF2 (SHA-256, SHA-512) | `pbkdf2` |
-| **Hashing** | SHA-2 (256, 384, 512) | `sha256`, `sha384`, `sha512` |
+| **Key Derivation (KDF)** | HKDF (SHA-256, SHA-384, SHA-512) | `hkdf` |
+| **Password Derivation (PBKDF)** | PBKDF2 (SHA-256, SHA-384, SHA-512) | `pbkdf2` |
+| **Hashing** | SHA-2 (256, 384, 512) | `sha2` |
 
 ## License
 

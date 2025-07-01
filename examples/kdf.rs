@@ -3,6 +3,7 @@
 //!
 //! 一个演示密钥派生函数 (KDF) 的示例，特别是 HKDF 和可配置的 PBKDF2。
 
+use hex;
 use seal_crypto::{
     prelude::*,
     schemes::kdf::{
@@ -10,7 +11,6 @@ use seal_crypto::{
         pbkdf2::{Pbkdf2Sha256, Pbkdf2Sha512, PBKDF2_DEFAULT_ITERATIONS},
     },
 };
-use hex;
 
 fn main() -> Result<(), CryptoError> {
     println!("Running KDF example... / 正在运行 KDF 示例...");
@@ -63,7 +63,7 @@ fn main() -> Result<(), CryptoError> {
         pbkdf2_default_scheme.iterations
     );
     let derived_key_pbkdf2_default =
-        pbkdf2_default_scheme.derive(password, Some(salt_pbkdf2), None, output_len_pbkdf2)?;
+        pbkdf2_default_scheme.derive(password, salt_pbkdf2, output_len_pbkdf2)?;
     println!(
         "  - PBKDF2 Input Password: \"{}\"",
         String::from_utf8_lossy(password)
@@ -84,25 +84,24 @@ fn main() -> Result<(), CryptoError> {
         pbkdf2_custom_scheme.iterations
     );
     let derived_key_pbkdf2_custom =
-        pbkdf2_custom_scheme.derive(password, Some(salt_pbkdf2), None, output_len_pbkdf2)?;
+        pbkdf2_custom_scheme.derive(password, salt_pbkdf2, output_len_pbkdf2)?;
     println!(
         "  - Derived Key (Custom Iterations): 0x{}",
         hex::encode(derived_key_pbkdf2_custom.as_bytes())
     );
 
-    // PBKDF2 requires a salt. The derive function will return an error if no salt is provided.
-    // PBKDF2 需要盐。如果未提供盐，derive 函数将返回错误。
-    let no_salt_result = pbkdf2_default_scheme.derive(password, None, None, output_len_pbkdf2);
-    assert!(no_salt_result.is_err());
-    println!("  - Correctly failed when no salt was provided for PBKDF2. / PBKDF2 在未提供盐的情况下正确失败。");
+    // With the new `PasswordBasedDerivation` trait, providing a salt is enforced at compile time.
+    // An attempt to call `derive` without a salt would not compile.
+    // 使用新的 `PasswordBasedDerivation` trait，在编译时就强制要求提供盐。
+    // 任何不带盐调用 `derive` 的尝试都无法通过编译。
+    println!("  - Salt is now required by the function signature, preventing misuse. / 函数签名现在要求提供盐，防止误用。");
 
     // Using PBKDF2-SHA512 is also straightforward.
     // 使用 PBKDF2-SHA512 也同样直接。
     let pbkdf2_sha512_scheme = Pbkdf2Sha512::new(PBKDF2_DEFAULT_ITERATIONS);
-    let _derived_key_pbkdf2_512 =
-        pbkdf2_sha512_scheme.derive(password, Some(salt_pbkdf2), None, 64)?;
+    let _derived_key_pbkdf2_512 = pbkdf2_sha512_scheme.derive(password, salt_pbkdf2, 64)?;
 
     println!("\nKDF example completed successfully! / KDF 示例成功完成！");
 
     Ok(())
-} 
+}
