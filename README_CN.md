@@ -90,21 +90,6 @@ graph TD
             C["AsymmetricKeySet"]
             D["SymmetricKeySet"]
 
-            subgraph "密钥类型继承"
-                A["Key<br/><i>定义如序列化等基础行为</i>"]
-                PK["(type PublicKey)"]
-                SK["(type PrivateKey)"]
-                SymK["(type Key)"]
-
-                PK -- "继承" --> A
-                SK -- "继承" --> A
-                SymK -- "继承" --> A
-            end
-            
-            C -. "定义" .-> PK
-            C -. "定义" .-> SK
-            D -. "定义" .-> SymK
-
             F["KeyGenerator<br/><i>'generate_keypair'</i>"]
             G["Signer / Verifier<br/><i>'sign'/'verify'</i>"]
             H["Kem<br/><i>'encapsulate'/'decapsulate'</i>"]
@@ -147,11 +132,36 @@ graph TD
 
 各层解析如下：
 
-1.  **顶层：算法标识 (`Algorithm`)**: 这是所有加密方案（无论是对称还是非对称）的统一顶层 Trait。它只定义了一个 `NAME` 常量，用于为每个算法提供一个唯一的、可读的标识符（例如 "RSA-PSS-SHA256"）。
-2.  **第一层：核心能力**: 这是库的核心。
-    *   **核心加密方案**: `AsymmetricKeySet` 和 `SymmetricKeySet` 作为核心节点，连接到它们的能力 Trait (如 `Signer`, `Kem` 等)。一个独立的、自包含的"密钥类型继承"子图专门用于展示这些方案集所定义的关联类型（`type PublicKey`, `type Key` 等）是如何继承自基础的 `Key` Trait。从方案集指向该子图内部的虚线表示"定义"关系。
-    *   **派生方案**: 包含了用于密钥和密码派生的 Trait。
-3.  **第二层：方案包**: 为了方便用户，我们提供了像 `SignatureScheme` 和 `AeadScheme` 这样的"超级 Trait"。它们不添加任何新方法，而是将所有相关的能力捆绑到一个单一、易用的 Trait 中。
+1.  **顶层：算法标识 (`Algorithm`)**: 这是所有加密方案的统一顶层 Trait。
+2.  **第一层：核心能力**: 这是库的核心，将像 `AsymmetricKeySet` 这样的方案集与其能力 Trait (如 `Signer`, `Kem` 等) 联系起来。
+3.  **第二层：方案包**: 为了方便用户，我们提供了像 `SignatureScheme` 这样的"超级 Trait"来捆绑相关的能力。
+
+这种分层方法确保了每个 Trait 都有明确的用途。详细的密钥继承模型见下图。
+
+### 密钥继承详情
+
+为了保持主图的整洁，我们将方案集、其关联密钥类型以及基础 `Key` Trait 之间的关系在此详细说明。下图展示了方案使用的具体密钥是如何被定义，以及它们如何建立在 `Key` 这一基础原语之上。
+
+```mermaid
+graph TD
+    subgraph "密钥继承模型"
+        A["Key<br/><i>定义如序列化等基础行为</i>"]
+        C["AsymmetricKeySet"]
+        D["SymmetricKeySet"]
+        
+        PK["(type PublicKey)"]
+        SK["(type PrivateKey)"]
+        SymK["(type Key)"]
+
+        C -. "定义" .-> PK
+        C -. "定义" .-> SK
+        D -. "定义" .-> SymK
+        
+        PK -- "继承" --> A
+        SK -- "继承" --> A
+        SymK -- "继承" --> A
+    end
+```
 
 这种分层的方法确保了每个 Trait 都有其明确的用途，避免了歧义，并使得整个库高度一致和可预测。
 

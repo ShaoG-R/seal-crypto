@@ -90,21 +90,6 @@ graph TD
             C["AsymmetricKeySet"]
             D["SymmetricKeySet"]
 
-            subgraph "Key Type Inheritance"
-                A["Key<br/><i>Defines basic key behaviors like serialization.</i>"]
-                PK["(type PublicKey)"]
-                SK["(type PrivateKey)"]
-                SymK["(type Key)"]
-
-                PK -- "inherits" --> A
-                SK -- "inherits" --> A
-                SymK -- "inherits" --> A
-            end
-            
-            C -. "defines" .-> PK
-            C -. "defines" .-> SK
-            D -. "defines" .-> SymK
-
             F["KeyGenerator<br/><i>'generate_keypair'</i>"]
             G["Signer / Verifier<br/><i>'sign'/'verify'</i>"]
             H["Kem<br/><i>'encapsulate'/'decapsulate'</i>"]
@@ -147,11 +132,36 @@ graph TD
 
 Here's a breakdown of the layers:
 
-1.  **Top Layer: Algorithm Identity (`Algorithm`)**: This is the unified top-level trait for all cryptographic schemes (both symmetric and asymmetric). It defines a single `NAME` constant to provide a unique, readable identifier for each algorithm (e.g., "RSA-PSS-SHA256").
-2.  **Layer 1: Core Capabilities**: This layer is the heart of the library.
-    *   **Core Cryptographic Schemes**: `AsymmetricKeySet` and `SymmetricKeySet` are central nodes, linking to their capability traits (`Signer`, `Kem`, etc.). A separate, self-contained "Key Type Inheritance" subgraph is used to show how the associated types defined by these sets (`type PublicKey`, `type Key`, etc.) inherit from the base `Key` trait. Dotted lines from the scheme sets *into* this subgraph illustrate the "definition" relationship.
-    *   **Derivation Schemes**: Contains traits for key and password-based derivation.
-3.  **Layer 2: Scheme Bundles**: For user convenience, we provide "supertraits" like `SignatureScheme` and `AeadScheme`. They don't add new methods but bundle all relevant capabilities into a single, easy-to-use trait.
+1.  **Top Layer: Algorithm Identity (`Algorithm`)**: This is the unified top-level trait for all cryptographic schemes.
+2.  **Layer 1: Core Capabilities**: This layer is the heart of the library, linking scheme sets like `AsymmetricKeySet` to their capability traits (`Signer`, `Kem`, etc.).
+3.  **Layer 2: Scheme Bundles**: For user convenience, we provide "supertraits" like `SignatureScheme` that bundle relevant capabilities.
+
+This layered approach ensures that every trait has a clear purpose. The detailed key inheritance model is shown in the next diagram.
+
+### Key Inheritance Detail
+
+To keep the main diagram clean, the relationship between scheme sets, their associated key types, and the base `Key` trait is detailed below. This illustrates how the specific keys used by a scheme are defined and how they build upon the fundamental `Key` primitive.
+
+```mermaid
+graph TD
+    subgraph "Key Inheritance Model"
+        A["Key<br/><i>Defines basic key behaviors<br/>like serialization.</i>"]
+        C["AsymmetricKeySet"]
+        D["SymmetricKeySet"]
+        
+        PK["(type PublicKey)"]
+        SK["(type PrivateKey)"]
+        SymK["(type Key)"]
+
+        C -. "defines" .-> PK
+        C -. "defines" .-> SK
+        D -. "defines" .-> SymK
+        
+        PK -- "inherits" --> A
+        SK -- "inherits" --> A
+        SymK -- "inherits" --> A
+    end
+```
 
 This layered approach ensures that every trait has a clear purpose, preventing ambiguity and making the entire library highly consistent and predictable.
 
