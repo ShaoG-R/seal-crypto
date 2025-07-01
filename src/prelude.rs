@@ -12,7 +12,9 @@ pub use crate::traits::{
     // hash
     Hasher,
     Kem,
+    KemError,
     Key,
+    KeyError,
     KeyAgreement,
     KeyAgreementError,
     // asymmetric
@@ -30,8 +32,11 @@ pub use crate::traits::{
     // symmetric
     SymmetricKeyGenerator,
     SymmetricKeySet,
+    SymmetricError,
     Verifier,
     // KDF
-    KeyDerivation
+    KeyDerivation,
+    KdfError,
+    DerivedKey,
 };
 pub use ::zeroize;
