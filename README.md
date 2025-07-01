@@ -115,22 +115,29 @@ graph TD
         L["AeadScheme<br/><i>Bundles SymmetricKeySet, SymmetricKeyGenerator, etc.</i>"]
     end
 
-    %% Invisible links to enforce vertical layout
+    %% Links
     Z --> A
+    A --> B
+
     B --> C
     B --> D
-
-    %% Visible links
-    A --> B
-    Z --> C & D & N_BASE
-    C --> F & G & H & M
+    
+    Z --> N_BASE
+    
+    C --> F 
+    C --> G
+    C --> H
+    C --> M
+    D --> I
+    D --> J
+    
     F & G --> K
-    D --> I & J
     I & J --> L
+    
     N_BASE --> N_KEY & N_PASS
 
-    %% Style the layout links to be invisible
-    linkStyle 0,1,2 stroke-width:0px
+    %% Layout direction
+    rankdir TD
 ```
 
 Here's a breakdown of the layers:
