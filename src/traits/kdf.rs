@@ -12,7 +12,7 @@ use zeroize::Zeroizing;
 ///
 /// 从 KDF 派生出的密钥，使用 `Zeroizing` 确保安全。
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct DerivedKey(Zeroizing<Vec<u8>>);
+pub struct DerivedKey(pub Zeroizing<Vec<u8>>);
 
 impl DerivedKey {
     pub fn new(key_material: Vec<u8>) -> Self {

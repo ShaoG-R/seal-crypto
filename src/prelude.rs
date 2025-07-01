@@ -32,6 +32,8 @@ pub use crate::traits::{
     SymmetricKeySet,
     Verifier,
     // KDF
-    KeyDerivation
+    KeyDerivation,
+    KdfError,
+    DerivedKey,
 };
 pub use ::zeroize;

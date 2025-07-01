@@ -1046,7 +1046,7 @@ dependencies = [
 
 [[package]]
 name = "seal-crypto"
-version = "0.1.2-rc2"
+version = "0.1.2-rc3"
 dependencies = [
  "aes-gcm",
  "chacha20poly1305",
