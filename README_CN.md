@@ -115,25 +115,22 @@ graph TD
         L["AeadScheme<br/><i>捆绑 SymmetricKeySet, SymmetricKeyGenerator 等</i>"]
     end
 
+    %% Invisible links to enforce vertical layout
+    Z --> A
+    B --> C
+    B --> D
+    
+    %% Visible links
     A --> B
-
-    Z --> C
-    Z --> D
-    Z --> N_BASE
-    
-    C --> F
-    C --> G
-    C --> H
-    C --> M
-    
+    Z --> C & D & N_BASE
+    C --> F & G & H & M
     F & G --> K
-
-    D --> I
-    D --> J
+    D --> I & J
     I & J --> L
+    N_BASE --> N_KEY & N_PASS
 
-    N_BASE --> N_KEY
-    N_BASE --> N_PASS
+    %% Style the layout links to be invisible
+    linkStyle 0,1,2 stroke-width:0px
 ```
 
 各层解析如下：
