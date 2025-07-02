@@ -9,11 +9,7 @@ use crate::{
         kdf::{Derivation, DerivedKey, KdfError, PasswordBasedDerivation},
     },
 };
-use argon2::{
-    password_hash::{PasswordHasher, SaltString},
-    Argon2 as Argon2_p,
-};
-use base64::Engine;
+use argon2::Argon2 as Argon2_p;
 
 /// Argon2id default memory cost (in kibibytes). OWASP recommendation: 19 MiB = 19456 KiB.
 /// We use a slightly more conservative value that is a power of 2.
@@ -69,20 +65,17 @@ impl PasswordBasedDerivation for Argon2Scheme {
         let params = argon2::Params::new(self.m_cost, self.t_cost, self.p_cost, Some(output_len))
             .map_err(|_| Error::Kdf(KdfError::DerivationFailed))?;
 
-        let argon2 = Argon2_p::new(argon2::Algorithm::Argon2id, argon2::Version::V0x13, params);
+        let argon2 = Argon2_p::new(
+            argon2::Algorithm::Argon2id,
+            argon2::Version::V0x13,
+            params,
+        );
 
-        let salt_str = base64::engine::general_purpose::STANDARD.encode(salt);
+        let mut output = vec![0u8; output_len];
+        argon2.hash_password_into(password, salt, &mut output)
+            .map_err(|_| Error::Kdf(KdfError::DerivationFailed))?;
 
-        let salt_string =
-            SaltString::from_b64(&salt_str).map_err(|_| Error::Kdf(KdfError::DerivationFailed))?;
-
-        let hash = argon2
-            .hash_password(password, &salt_string)
-            .map_err(|_| Error::Kdf(KdfError::DerivationFailed))?
-            .hash
-            .ok_or(Error::Kdf(KdfError::DerivationFailed))?;
-
-        Ok(DerivedKey::new(hash.as_bytes().to_vec()))
+        Ok(DerivedKey::new(output))
     }
 }
 
