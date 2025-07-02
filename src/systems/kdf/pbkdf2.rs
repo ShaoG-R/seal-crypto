@@ -148,6 +148,12 @@ mod tests {
 
     #[test]
     #[cfg(feature = "sha2")]
+    fn test_pbkdf2_sha384() {
+        run_pbkdf2_test::<Sha384>();
+    }
+
+    #[test]
+    #[cfg(feature = "sha2")]
     fn test_pbkdf2_sha512() {
         run_pbkdf2_test::<Sha512>();
     }

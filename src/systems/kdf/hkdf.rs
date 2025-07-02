@@ -7,7 +7,7 @@ use crate::{
     errors::Error,
     traits::{
         algorithm::Algorithm,
-        hash::{Hasher, Sha256, Sha512},
+        hash::{Hasher, Sha256, Sha384, Sha512},
         kdf::{Derivation, DerivedKey, KdfError, KeyBasedDerivation},
     },
 };
@@ -51,6 +51,25 @@ impl KeyBasedDerivation for HkdfScheme<Sha256> {
         output_len: usize,
     ) -> Result<DerivedKey, Error> {
         let hk = Hkdf::<sha2::Sha256>::new(salt, ikm);
+        let mut okm = vec![0u8; output_len];
+
+        hk.expand(info.unwrap_or_default(), &mut okm)
+            .map_err(|_| Error::Kdf(KdfError::InvalidOutputLength))?;
+
+        Ok(DerivedKey::new(okm))
+    }
+}
+
+#[cfg(feature = "sha2")]
+impl KeyBasedDerivation for HkdfScheme<Sha384> {
+    fn derive(
+        &self,
+        ikm: &[u8],
+        salt: Option<&[u8]>,
+        info: Option<&[u8]>,
+        output_len: usize,
+    ) -> Result<DerivedKey, Error> {
+        let hk = Hkdf::<sha2::Sha384>::new(salt, ikm);
         let mut okm = vec![0u8; output_len];
 
         hk.expand(info.unwrap_or_default(), &mut okm)
@@ -134,6 +153,12 @@ mod tests {
     #[cfg(feature = "sha2")]
     fn test_hkdf_sha256() {
         run_hkdf_test::<Sha256>();
+    }
+
+    #[test]
+    #[cfg(feature = "sha2")]
+    fn test_hkdf_sha384() {
+        run_hkdf_test::<Sha384>();
     }
 
     #[test]
