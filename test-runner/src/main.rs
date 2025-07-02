@@ -7,15 +7,18 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tempfile::TempDir;
 use tokio::io::AsyncBufReadExt;
-use tokio::process::Command;
 use tokio_util::sync::CancellationToken;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
-    /// Number of parallel jobs, defaults to number of logical CPUs
+    /// Number of parallel test jobs, defaults to number of logical CPUs
     #[arg(short, long)]
     jobs: Option<usize>,
+
+    /// Number of parallel build jobs, defaults to (logical CPUs / 2) + 1
+    #[arg(short = 'b', long)]
+    build_jobs: Option<usize>,
 
     /// Path to the test matrix config file
     #[arg(short, long, default_value = "TestMatrix.toml")]
@@ -48,6 +51,28 @@ struct BuildContext {
     _temp_root: TempDir,
     /// Path to the target directory for this build.
     target_path: PathBuf,
+}
+
+/// Holds the result of a successful build.
+struct BuiltTest {
+    case: TestCase,
+    executable: PathBuf,
+    build_ctx: BuildContext,
+}
+
+/// Represents a message from `cargo build --message-format=json`.
+#[derive(Deserialize)]
+struct CargoMessage {
+    reason: String,
+    target: Option<CargoTarget>,
+    executable: Option<PathBuf>,
+}
+
+/// Represents the "target" field in a `CargoMessage`.
+#[derive(Deserialize)]
+struct CargoTarget {
+    name: String,
+    test: bool,
 }
 
 /// Recursively copies a directory.
@@ -218,7 +243,8 @@ fn create_build_dir(features: &str, no_default_features: bool) -> BuildContext {
 async fn main() {
     let args = Args::parse();
     let num_cpus = num_cpus::get();
-    let num_jobs = args.jobs.unwrap_or(num_cpus);
+    let test_jobs = args.jobs.unwrap_or(num_cpus);
+    let build_jobs = args.build_jobs.unwrap_or(num_cpus / 2 + 1);
     
     println!("{}", "Temporary directories will be auto-cleaned for successful tests.".green());
     println!("{}", "Artifacts for failed tests will be preserved in './target-errors'.".yellow());
@@ -264,35 +290,106 @@ async fn main() {
         .into_iter()
         .partition(|c| c.allow_failure.iter().any(|os| os == current_os));
 
+    let mut results = Vec::new();
+
+    // --- Build safe cases in parallel ---
     println!(
         "\n{}",
         format!(
-            "Running {} safe-to-build configurations with up to {} parallel jobs...",
+            "Building {} safe configurations with up to {} parallel jobs...",
             safe_cases.len(),
-            num_jobs
+            build_jobs
         )
         .cyan()
     );
 
-    rayon::ThreadPoolBuilder::new()
-        .num_threads(num_jobs)
-        .build_global()
-        .unwrap();
-
-    let mut results = Vec::new();
-    let stop_token = CancellationToken::new();
-    let mut safe_cases_stream = stream::iter(safe_cases)
+    let build_stop_token = CancellationToken::new();
+    let mut safe_build_stream = stream::iter(safe_cases)
         .map(|case| {
             let project_root = project_root.clone();
-            let stop_token = stop_token.clone();
+            let stop_token = build_stop_token.clone();
             tokio::spawn(async move {
-                run_test_case(case, project_root, Some(stop_token)).await
+                build_test_case(case, project_root, Some(stop_token)).await
             })
         })
-        .buffer_unordered(num_jobs);
+        .buffer_unordered(build_jobs);
+
+    let mut built_safe_cases = Vec::new();
+    while let Some(res) = safe_build_stream.next().await {
+        match res.unwrap() {
+            Ok(built_test) => {
+                built_safe_cases.push(built_test);
+            }
+            Err(failure_result) => {
+                // First unexpected build failure is fatal.
+                build_stop_token.cancel();
+                handle_unexpected_failure(&failure_result); // Exits process.
+            }
+        }
+    }
+    println!("{}", "All safe cases built successfully.".green());
+    
+    // --- Build flaky cases in parallel ---
+    let mut built_flaky_cases = Vec::new();
+    if !flaky_cases.is_empty() {
+        println!(
+            "\n{}",
+            format!(
+                "Building {} platform-specific (flaky) cases with up to {} parallel jobs...",
+                flaky_cases.len(),
+                build_jobs
+            )
+            .yellow()
+        );
+        let mut flaky_build_stream = stream::iter(flaky_cases)
+            .map(|case| {
+                let project_root = project_root.clone();
+                // No stop token here, as one failure doesn't stop others
+                tokio::spawn(async move {
+                    build_test_case(case, project_root, None).await
+                })
+            })
+            .buffer_unordered(build_jobs);
+
+        while let Some(res) = flaky_build_stream.next().await {
+            match res.unwrap() {
+                Ok(built_test) => built_flaky_cases.push(built_test),
+                Err(failure_result) => {
+                    let is_allowed =
+                        failure_result.case.allow_failure.iter().any(|os| os == current_os);
+                    if !is_allowed {
+                        handle_unexpected_failure(&failure_result);
+                    }
+                    results.push(failure_result);
+                }
+            }
+        }
+        println!("{}", "Finished building platform-specific cases.".green());
+    }
+
+    // --- Run safe cases in parallel ---
+    println!(
+        "\n{}",
+        format!(
+            "Running {} safe-to-build configurations with up to {} parallel jobs...",
+            built_safe_cases.len(),
+            test_jobs
+        )
+        .cyan()
+    );
+
+    let stop_token = CancellationToken::new();
+    let mut safe_tests_stream = stream::iter(built_safe_cases)
+        .map(|built_test| {
+            let stop_token = stop_token.clone();
+            tokio::spawn(
+                async move { run_built_test(built_test, Some(stop_token)).await },
+            )
+        })
+        .buffer_unordered(test_jobs);
 
     let mut unexpected_failure_observed = false;
-    while let Some(res) = safe_cases_stream.next().await {
+    while let Some(res) = safe_tests_stream.next().await {
         let result = res.unwrap(); // Unwrap the JoinHandle result
         match result {
             Ok(test_result) => {
@@ -305,31 +402,29 @@ async fn main() {
                     stop_token.cancel(); // Signal all other tests to stop.
                     handle_unexpected_failure(&test_result); // This will exit the process.
                 }
-                // We still collect the result of other tests that might have finished
-                // before the cancellation signal was fully processed.
                 results.push(test_result);
             }
         }
     }
 
+
     // --- Run flaky cases sequentially ---
-    if !flaky_cases.is_empty() {
+    if !built_flaky_cases.is_empty() {
         println!(
             "\n{}",
             format!(
                 "Running {} platform-specific (may fail) configurations sequentially...",
-                flaky_cases.len()
+                built_flaky_cases.len()
             )
             .yellow()
         );
-        for case in flaky_cases {
-            let result = run_test_case(case, project_root.clone(), None).await;
+        for built_test in built_flaky_cases {
+            let result = run_built_test(built_test, None).await;
             match result {
                 Ok(res) => {
                     results.push(res);
                 }
                 Err(res) => {
-                    let current_os = std::env::consts::OS;
                     let failure_allowed = res.case.allow_failure.iter().any(|os| os == current_os);
 
                     if !failure_allowed {
@@ -358,24 +453,22 @@ async fn main() {
     }
 }
 
-async fn run_test_case(
+async fn build_test_case(
     case: TestCase,
     project_root: PathBuf,
     stop_token: Option<CancellationToken>,
-) -> Result<TestResult, TestResult> {
-    let start_time = std::time::Instant::now();
-    println!("{}", format!("Queueing test: {}", case.name).blue());
+) -> Result<BuiltTest, TestResult> {
+    println!("{}", format!("Building test: {}", case.name).blue());
 
-    // Get unique target directory for this test case.
-    // The build_ctx will be dropped when this function returns, cleaning up the temp dir.
     let build_ctx = create_build_dir(&case.features, case.no_default_features);
-    println!("Using temporary target directory: {}", build_ctx.target_path.display());
-
+    
     let mut cmd = tokio::process::Command::new("cargo");
     cmd.kill_on_drop(true);
     cmd.current_dir(&project_root);
     cmd.arg("test")
         .arg("--lib")
+        .arg("--no-run") // Build but don't run
+        .arg("--message-format=json-diagnostic-rendered-ansi")
         .arg("--locked")
         .arg("--offline")
         .arg("--target-dir")
@@ -391,14 +484,87 @@ async fn run_test_case(
 
     let (status_res, output) = spawn_and_capture(cmd, stop_token).await;
     let status = status_res.expect("Error waiting for process to complete");
+
+    if !status.success() {
+        let sanitized_name = case.name.chars().map(|c| if c.is_alphanumeric() { c } else { '_' }).collect::<String>();
+        let error_dir_path = project_root.join("target-errors").join(sanitized_name);
+        
+        println!(
+            "{}",
+            format!(
+                "Build for '{}' failed. Preserving build artifacts in: {}",
+                case.name,
+                error_dir_path.display()
+            )
+            .yellow()
+        );
+
+        if error_dir_path.exists() {
+             fs::remove_dir_all(&error_dir_path).expect("Failed to clean up old error artifacts directory");
+        }
+        
+        copy_dir_all(&build_ctx.target_path, &error_dir_path)
+            .unwrap_or_else(|e| eprintln!("Failed to copy error artifacts for '{}': {}", case.name, e));
+        
+        return Err(TestResult {
+            case,
+            output,
+            success: false,
+        });
+    }
+
+    // Find the executable from the cargo JSON output
+    let executable = output
+        .lines()
+        .filter_map(|line| serde_json::from_str::<CargoMessage>(line).ok())
+        .find_map(|msg| {
+            if msg.reason == "compiler-artifact" {
+                if let (Some(target), Some(executable_path)) = (msg.target, msg.executable) {
+                    // Check if it's a test artifact for the main crate.
+                    // When running `cargo test`, the main library is compiled as a test.
+                    // We check for `target.test == true` and that the name matches our crate.
+                    // Crate names with hyphens are converted to underscores.
+                    if target.name == "seal_crypto" && target.test {
+                        return Some(executable_path);
+                    }
+                }
+            }
+            None
+        })
+        .expect("Could not find test executable in cargo output");
+    
+    println!("{}", format!("Successfully built test: {}", case.name).green());
+
+    Ok(BuiltTest {
+        case,
+        executable,
+        build_ctx,
+    })
+}
+
+
+async fn run_built_test(
+    built_test: BuiltTest,
+    stop_token: Option<CancellationToken>,
+) -> Result<TestResult, TestResult> {
+    let case = built_test.case;
+    let executable = built_test.executable;
+    let build_ctx = built_test.build_ctx; // This now holds the ownership of the temp dir
+    let project_root = PathBuf::from("."); // Not ideal, but should work.
+
+    let start_time = std::time::Instant::now();
+    println!("{}", format!("Queueing test: {}", case.name).blue());
+
+    let mut cmd = tokio::process::Command::new(executable);
+    cmd.kill_on_drop(true);
+
+    let (status_res, output) = spawn_and_capture(cmd, stop_token).await;
+    let status = status_res.expect("Error waiting for process to complete");
     
     let duration = start_time.elapsed();
     
     println!("{}", format!("Finished test: {} in {:.2?}", case.name, duration).blue());
     
-    // The build context is NOT stored, it will be dropped when this function returns,
-    // which cleans up the temporary directory.
-
     let result = TestResult {
         case: case.clone(),
         output,
@@ -423,11 +589,14 @@ async fn run_test_case(
              fs::remove_dir_all(&error_dir_path).expect("Failed to clean up old error artifacts directory");
         }
         
+        // The build artifacts are already in the temp dir managed by build_ctx.
+        // We just need to copy them.
         copy_dir_all(&build_ctx.target_path, &error_dir_path)
             .unwrap_or_else(|e| eprintln!("Failed to copy error artifacts for '{}': {}", case.name, e));
         
         Err(result)
     } else {
+        // build_ctx is dropped here, cleaning up the temp dir
         Ok(result)
     }
 }
