@@ -42,6 +42,12 @@ pub enum KdfError {
     /// 提供的输出长度对于此 KDF 无效或过大。
     #[cfg_attr(feature = "std", error("Invalid output length for this KDF"))]
     InvalidOutputLength,
+
+    /// The operation is not supported in `no_std` environment.
+    ///
+    /// 该操作在 `no_std` 环境中不受支持。
+    #[cfg_attr(feature = "std", error("This operation is not supported in `no_std` mode"))]
+    UnsupportedInNoStd,
 }
 
 /// A top-level trait for all derivation algorithms (KDFs, PBKDFs, etc.).

@@ -132,7 +132,7 @@ pub type EncapsulatedKey = Vec<u8>;
 ///
 /// 定义 KEM 操作期间可能发生的错误。
 #[cfg_attr(feature = "std", derive(Error))]
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum KemError {
     /// Failed to encapsulate a shared secret.
     ///
@@ -215,7 +215,7 @@ pub trait Kem: AsymmetricKeySet {
 ///
 /// 定义密钥协商期间可能发生的错误。
 #[cfg_attr(feature = "std", derive(Error))]
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum KeyAgreementError {
     /// Failed to derive the shared secret.
     ///

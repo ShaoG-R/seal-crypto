@@ -9,6 +9,7 @@ use crate::{
         kdf::{Derivation, DerivedKey, KdfError, PasswordBasedDerivation},
     },
 };
+#[cfg(feature = "std")]
 use argon2::Argon2 as Argon2_p;
 
 /// Argon2id default memory cost (in kibibytes). OWASP recommendation: 19 MiB = 19456 KiB.
@@ -80,6 +81,7 @@ impl Algorithm for Argon2Scheme {
 }
 
 impl PasswordBasedDerivation for Argon2Scheme {
+    #[cfg(feature = "std")]
     fn derive(&self, password: &[u8], salt: &[u8], output_len: usize) -> Result<DerivedKey, Error> {
         let params = argon2::Params::new(self.m_cost, self.t_cost, self.p_cost, Some(output_len))
             .map_err(|_| Error::Kdf(KdfError::DerivationFailed))?;
@@ -98,6 +100,20 @@ impl PasswordBasedDerivation for Argon2Scheme {
 
         Ok(DerivedKey::new(output))
     }
+
+    #[cfg(not(feature = "std"))]
+    fn derive(&self, _password: &[u8], _salt: &[u8], _output_len: usize) -> Result<DerivedKey, Error> {
+        // In a `no_std` environment, we cannot dynamically allocate the memory needed for Argon2's `m_cost`.
+        // The `hash_password_into_with_memory` function requires a pre-allocated buffer, but `m_cost` is a
+        // runtime parameter, making stack allocation impossible without a fixed, constant size.
+        // Therefore, Argon2 derivation is not supported in `no_std` mode with the current API design.
+        //
+        // 在 `no_std` 环境中，我们无法为 Argon2 的 `m_cost` 动态分配所需的内存。
+        // `hash_password_into_with_memory` 函数需要一个预先分配的缓冲区，但 `m_cost` 是一个运行时参数，
+        // 这使得在没有固定常量大小的情况下无法进行栈分配。
+        // 因此，在当前的 API 设计下，`no_std` 模式不支持 Argon2 派生。
+        Err(Error::Kdf(KdfError::UnsupportedInNoStd))
+    }
 }
 
 /// A type alias for the Argon2id scheme.
@@ -109,8 +125,9 @@ pub type Argon2 = Argon2Scheme;
 mod tests {
     use super::*;
 
+    #[cfg(feature = "std")]
     #[test]
-    fn test_argon2_derivation() {
+    fn test_argon2_derivation_std() {
         let password = b"password";
         let salt = b"some-random-salt";
         let output_len = 32;
@@ -130,6 +147,23 @@ mod tests {
         assert!(derived_key_default_result.is_ok());
     }
 
+    #[cfg(not(feature = "std"))]
+    #[test]
+    fn test_argon2_derivation_no_std() {
+        let password = b"password";
+        let salt = b"some-random-salt";
+        let output_len = 32;
+        let scheme = Argon2Scheme::new(16, 1, 1);
+
+        let derived_key_result = scheme.derive(password, salt, output_len);
+        assert!(derived_key_result.is_err());
+        assert_eq!(
+            derived_key_result.unwrap_err(),
+            Error::Kdf(KdfError::UnsupportedInNoStd)
+        );
+    }
+
+    #[cfg(feature = "std")]
     #[test]
     fn test_argon2_determinism() {
         let password = b"a-secure-password";
@@ -143,6 +177,7 @@ mod tests {
         assert_eq!(key1.as_bytes(), key2.as_bytes());
     }
 
+    #[cfg(feature = "std")]
     #[test]
     fn test_argon2_different_salts() {
         let password = b"another-password";

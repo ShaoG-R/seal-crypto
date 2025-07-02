@@ -32,7 +32,7 @@ pub type AssociatedData<'a> = &'a [u8];
 /// Defines the errors that can occur during symmetric encryption and decryption.
 ///
 /// 定义了在对称加密和解密过程中可能发生的错误。
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "std", derive(Error))]
 pub enum SymmetricError {
     /// Failed to encrypt the plaintext.

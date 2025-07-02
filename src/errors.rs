@@ -18,7 +18,7 @@ use thiserror::Error;
 ///
 /// 此枚举将来自底层加密 trait 的所有可能失败合并为一个统一的错误类型。
 #[cfg_attr(feature = "std", derive(Error))]
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Error {
     /// An error occurred during a key operation.
     ///
