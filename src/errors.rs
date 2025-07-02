@@ -53,7 +53,6 @@ pub enum Error {
     /// KDF error.
     ///
     /// 密钥派生函数 (KDF) 错误。
-    #[cfg(feature = "kdf")]
     #[cfg_attr(feature = "std", error("KDF error"))]
     Kdf(#[cfg_attr(feature = "std", from)] KdfError),
 }

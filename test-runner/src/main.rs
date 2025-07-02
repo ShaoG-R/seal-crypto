@@ -8,6 +8,7 @@ use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::sync::{Arc, Mutex};
+use tempfile::TempDir;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -19,6 +20,10 @@ struct Args {
     /// Path to the test matrix config file
     #[arg(short, long, default_value = "TestMatrix.toml")]
     config: PathBuf,
+
+    /// Keep the target directories after testing (for debugging)
+    #[arg(long)]
+    keep_target_dirs: bool,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -41,13 +46,64 @@ struct TestResult {
     success: bool,
 }
 
-fn run_pre_build(project_root: &Path, features: &str, no_default_features: bool) {
+/// Temporary build directory context that manages cleanup
+struct BuildContext {
+    /// The temporary directory that will be auto-deleted when this struct is dropped
+    _temp_root: Option<TempDir>,
+    /// Path to the target directory inside the temp directory
+    target_path: PathBuf,
+}
+
+/// Generate a temporary build directory for a given build configuration
+fn create_build_dir(features: &str, no_default_features: bool, keep_dirs: bool) -> BuildContext {
+    // Create a base temp directory with a meaningful prefix
+    let build_type = if no_default_features { "no-std" } else { "std" };
+    
+    // Create descriptive prefix for the temp directory
+    let mut prefix = format!("seal-crypto-{}", build_type);
+    if !features.is_empty() {
+        // Add a short hash of features to keep the name reasonably sized
+        use std::collections::hash_map::DefaultHasher;
+        use std::hash::{Hash, Hasher};
+        
+        let mut hasher = DefaultHasher::new();
+        features.hash(&mut hasher);
+        let feature_hash = hasher.finish() % 10000; // Get last 4 digits
+        prefix = format!("{}-{:04}", prefix, feature_hash);
+    }
+    
+    if keep_dirs {
+        // If we want to keep directories, create them in a visible location
+        let target_path = PathBuf::from(format!("./target-matrix/{}", prefix));
+        fs::create_dir_all(&target_path).expect("Failed to create persistent target directory");
+
+        BuildContext {
+            _temp_root: None,
+            target_path,
+        }
+    } else {
+        // Otherwise create a true temporary directory that will be automatically cleaned up
+        let temp_dir = TempDir::with_prefix(&prefix).expect("Failed to create temporary directory");
+        let target_path = temp_dir.path().to_path_buf();
+        
+        BuildContext {
+            _temp_root: Some(temp_dir),
+            target_path,
+        }
+    }
+}
+
+fn run_pre_build(project_root: &Path, features: &str, no_default_features: bool, keep_dirs: bool) -> BuildContext {
     let build_type = if no_default_features { "no-std" } else { "std" };
     println!("{}", format!("Starting pre-build for all '{}' configurations...", build_type).yellow());
 
+    // Get unique target directory for this build configuration
+    let build_ctx = create_build_dir(features, no_default_features, keep_dirs);
+    
     let mut cmd = Command::new("cargo");
     cmd.current_dir(project_root);
     cmd.arg("test").arg("--no-run");
+    cmd.arg("--target-dir").arg(&build_ctx.target_path);
 
     if no_default_features {
         cmd.arg("--no-default-features");
@@ -58,6 +114,7 @@ fn run_pre_build(project_root: &Path, features: &str, no_default_features: bool)
     }
 
     println!("Executing: {:?}", cmd);
+    println!("Using target directory: {}", build_ctx.target_path.display());
 
     let mut child = cmd
         .stdout(Stdio::piped())
@@ -91,12 +148,21 @@ fn run_pre_build(project_root: &Path, features: &str, no_default_features: bool)
     }
 
     println!("{}", format!("Pre-build for '{}' configurations successful.", build_type).green());
+    
+    build_ctx
 }
 
 fn main() {
     let args = Args::parse();
     let num_cpus = num_cpus::get();
     let num_jobs = args.jobs.unwrap_or(num_cpus);
+    let keep_target_dirs = args.keep_target_dirs;
+    
+    if keep_target_dirs {
+        println!("{}", "Target directories will be kept after testing (--keep-target-dirs flag is set).".yellow());
+    } else {
+        println!("{}", "Target directories will be automatically cleaned up after testing.".green());
+    }
 
     // Determine the project root (parent of the test-runner's manifest dir)
     let manifest_dir = Path::new(env!("CARGO_MANIFEST_DIR"));
@@ -149,12 +215,17 @@ fn main() {
         .collect::<Vec<_>>()
         .join(",");
 
+    // Store build contexts to keep them alive during testing
+    let mut build_contexts = Vec::new();
+
     // Run pre-builds only for safe cases
     if !std_safe_cases.is_empty() {
-        run_pre_build(&project_root, &all_std_features, false);
+        let ctx = run_pre_build(&project_root, &all_std_features, false, keep_target_dirs);
+        build_contexts.push(ctx);
     }
     if !no_std_safe_cases.is_empty() {
-        run_pre_build(&project_root, &all_no_std_features, true);
+        let ctx = run_pre_build(&project_root, &all_no_std_features, true, keep_target_dirs);
+        build_contexts.push(ctx);
     }
 
     // Re-combine safe cases for parallel execution
@@ -180,10 +251,13 @@ fn main() {
 
     let results = Arc::new(Mutex::new(Vec::new()));
 
+    // Store test contexts to keep them alive until all tests complete
+    let test_contexts = Arc::new(Mutex::new(Vec::new()));
+
     let safe_run_result = safe_cases_to_run
         .par_iter()
         .try_for_each(|case| -> Result<(), TestResult> {
-            match run_test_case(case.clone(), project_root.clone()) {
+            match run_test_case(case.clone(), project_root.clone(), keep_target_dirs, test_contexts.clone()) {
                 Ok(result) => {
                     results.lock().unwrap().push(result);
                     Ok(())
@@ -219,7 +293,7 @@ fn main() {
             .yellow()
         );
         for case in flaky_cases {
-            let result = run_test_case(case, project_root.clone());
+            let result = run_test_case(case, project_root.clone(), keep_target_dirs, test_contexts.clone());
             let mut results_lock = results.lock().unwrap();
             match result {
                 Ok(res) => {
@@ -275,6 +349,22 @@ fn main() {
         println!();
     }
 
+    // Report number of target directories that will be cleaned
+    if !keep_target_dirs {
+        let contexts_count = test_contexts.lock().unwrap().len() + build_contexts.len();
+        println!("{}", format!("Cleaning up {} target directories...", contexts_count).green());
+        // Contexts will be dropped here, cleaning up all temporary directories
+    } else {
+        // Extract and log paths that will be kept
+        let build_paths: Vec<_> = build_contexts.iter().map(|ctx| ctx.target_path.display().to_string()).collect();
+        let test_paths: Vec<_> = test_contexts.lock().unwrap().iter().map(|ctx| ctx.target_path.display().to_string()).collect();
+        
+        println!("{}", "The following target directories have been kept for inspection:".yellow());
+        for path in build_paths.iter().chain(test_paths.iter()) {
+            println!("  - {}", path);
+        }
+    }
+
     if has_unexpected_failures {
         println!("{}", "TEST MATRIX FAILED".red());
         std::process::exit(1);
@@ -284,13 +374,23 @@ fn main() {
     }
 }
 
-fn run_test_case(case: TestCase, project_root: PathBuf) -> Result<TestResult, TestResult> {
+fn run_test_case(
+    case: TestCase,
+    project_root: PathBuf,
+    keep_dirs: bool,
+    contexts: Arc<Mutex<Vec<BuildContext>>>
+) -> Result<TestResult, TestResult> {
     let start_time = std::time::Instant::now();
     println!("{}", format!("Queueing test: {}", case.name).blue());
+
+    // Get unique target directory for this test case
+    let build_ctx = create_build_dir(&case.features, case.no_default_features, keep_dirs);
+    println!("Using target directory: {}", build_ctx.target_path.display());
 
     let mut cmd = Command::new("cargo");
     cmd.current_dir(&project_root);
     cmd.arg("test").arg("--lib");
+    cmd.arg("--target-dir").arg(&build_ctx.target_path);
 
     if case.no_default_features {
         cmd.arg("--no-default-features");
@@ -340,6 +440,9 @@ fn run_test_case(case: TestCase, project_root: PathBuf) -> Result<TestResult, Te
     let duration = start_time.elapsed();
     
     println!("{}", format!("Finished test: {} in {:.2?}", case.name, duration).blue());
+    
+    // Store the build context to keep it alive until all tests complete
+    contexts.lock().unwrap().push(build_ctx);
 
     let result = TestResult {
         case,

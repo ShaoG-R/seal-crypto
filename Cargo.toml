@@ -86,18 +86,7 @@ zeroize = { version = "1.8.1", features = ["derive"] } # 用于从内存中安�
 # For `no_std` environments, you need to disable default features to compile.
 std = [
     "rand_core/std",
-    "aes-gcm/std",
-    "chacha20poly1305/std",
     "dep:thiserror",
-    "rsa/std",
-    "elliptic-curve/std",
-    "ecdsa/std",
-    "p256/std",
-    "ed25519-dalek/std",
-    "hkdf/std",
-    "hmac/std",
-    "pbkdf2/std",
-    "argon2/std"
 ]
 
 # --- 默认特性 ---
@@ -112,12 +101,24 @@ default = ["std"]
 # --- Algorithm Primitive Features ---
 # Level 1: Individual algorithm features. Enabling these brings in the corresponding crypto algorithm implementations.
 # The "dep:" syntax indicates an optional dependency.
-rsa = ["dep:rsa", "sha2"]
+rsa = ["dep:rsa", "sha2", "std-rsa"]
+std-rsa = ["rsa/std"]
+no-std-rsa = []
+
 kyber = ["dep:pqcrypto-kyber", "dep:pqcrypto-traits"]
+
 dilithium = ["dep:pqcrypto-dilithium", "dep:pqcrypto-traits"]
-aes-gcm = ["dep:aes-gcm"]
-chacha20-poly1305 = ["dep:chacha20poly1305"]
+
+aes-gcm = ["dep:aes-gcm", "std-aes-gcm"]
+std-aes-gcm = ["aes-gcm/std"]
+no-std-aes-gcm = []
+
+chacha20-poly1305 = ["dep:chacha20poly1305", "std-chacha20poly1305"]
+std-chacha20poly1305 = ["chacha20poly1305/std"]
+no-std-chacha20poly1305 = []
+
 sha2 = ["dep:sha2"]
+
 ecc = [
     "dep:elliptic-curve",
     "dep:ecdsa",
@@ -127,20 +128,38 @@ ecc = [
     "p256/ecdsa",
     "dep:ed25519-dalek",
     "dep:signature",
+    "std-ecc",
 ]
+std-ecc = ["elliptic-curve/std", "ecdsa/std", "p256/std", "ed25519-dalek/std"]
+no-std-ecc = []
+
 ecdh = ["elliptic-curve/ecdh", "dep:p256", "p256/ecdh", "p256/pkcs8"]
-hkdf = ["dep:hkdf", "dep:hmac"]
-pbkdf2 = ["dep:pbkdf2", "pbkdf2/hmac"]
+
+hkdf = ["dep:hkdf", "dep:hmac", "std-hkdf"]
+std-hkdf = ["hkdf/std", "hmac/std"]
+no-std-hkdf = []
+
+pbkdf2 = ["dep:pbkdf2", "pbkdf2/hmac", "std-pbkdf2"]
+std-pbkdf2 = ["pbkdf2/std"]
+no-std-pbkdf2 = []
+
 shake = ["dep:sha3"]
-argon2 = ["dep:argon2", "dep:base64"]
+
+argon2 = ["dep:argon2", "dep:base64", "std-argon2"]
+std-argon2 = ["argon2/std"]
+no-std-argon2 = []
 
 # --- 算法集特性 ---
 # 第二级：为常用算法组合提供的便捷特性。
 # --- Algorithm Set Features ---
 # Level 2: Convenience features for common combinations of algorithms.
 classic = ["rsa", "aes-gcm", "chacha20-poly1305", "ecc", "ecdh"] # 经典加密算法集 / Classic cryptographic algorithms set
+no-std-classic = ["no-std-rsa", "no-std-aes-gcm", "no-std-chacha20poly1305", "no-std-ecc"]
+
 pqc = ["kyber", "dilithium"] # 后量子密码学算法集 / Post-Quantum Cryptography algorithms set
+
 kdf = ["hkdf", "pbkdf2", "sha2", "shake", "argon2"]
+no-std-kdf = ["no-std-hkdf", "no-std-pbkdf2", "no-std-argon2"]
 
 # --- 硬件加速特性 ---
 # 启用特定 CPU 指令集（如 AVX2 或 sha-ni）以加速计算。
@@ -165,6 +184,7 @@ asm = [
 # --- Full Feature ---
 # Level 3: The `full` feature activates all available algorithm implementations.
 full = ["classic", "pqc", "kdf"]
+no-std-full = ["no-std-classic", "pqc", "no-std-kdf"]
 
 # [[example]] 区域用于定义项目的示例代码。
 # 每个示例都可以有自己所需的特性。
