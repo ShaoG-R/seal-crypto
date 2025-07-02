@@ -1,14 +1,14 @@
 use clap::Parser;
 use colored::*;
-use rayon::prelude::*;
+use futures::{stream, StreamExt};
 use serde::Deserialize;
-use std::collections::HashSet;
 use std::fs;
-use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
-use std::process::{Command, Stdio};
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use tempfile::TempDir;
+use tokio::io::AsyncBufReadExt;
+use tokio::process::Command;
+use tokio_util::sync::CancellationToken;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -114,46 +114,77 @@ fn print_summary(final_results: &[TestResult]) -> bool {
 }
 
 /// Spawns a command and captures its stdout and stderr streams.
-fn spawn_and_capture(mut cmd: Command) -> (std::process::ExitStatus, String) {
+/// If a stop_signal is provided and set, it will attempt to kill the child process.
+async fn spawn_and_capture(
+    mut cmd: tokio::process::Command,
+    stop_token: Option<CancellationToken>,
+) -> (std::io::Result<std::process::ExitStatus>, String) {
     // Capture stdout and stderr
-    cmd.stdout(Stdio::piped());
-    cmd.stderr(Stdio::piped());
+    let mut child = match cmd
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .spawn()
+    {
+        Ok(child) => child,
+        Err(e) => {
+            // If spawning fails, we return the error and an empty string for the output.
+            return (Err(e), String::new());
+        }
+    };
 
-    let mut child = cmd.spawn().expect("Failed to spawn cargo command");
+    let stdout = child
+        .stdout
+        .take()
+        .expect("Failed to capture stdout of child process");
+    let stderr = child
+        .stderr
+        .take()
+        .expect("Failed to capture stderr of child process");
 
-    let stdout = child.stdout.take().expect("Failed to capture stdout");
-    let stderr = child.stderr.take().expect("Failed to capture stderr");
-
-    let output = Arc::new(Mutex::new(String::new()));
+    let output = Arc::new(tokio::sync::Mutex::new(String::new()));
 
     let stdout_output = Arc::clone(&output);
-    let stdout_handle = std::thread::spawn(move || {
-        let reader = BufReader::new(stdout);
-        for line in reader.lines() {
-            let line = line.unwrap();
-            let mut output = stdout_output.lock().unwrap();
+    let stdout_handle = tokio::spawn(async move {
+        let reader = tokio::io::BufReader::new(stdout);
+        let mut lines = reader.lines();
+        while let Ok(Some(line)) = lines.next_line().await {
+            let mut output = stdout_output.lock().await;
             output.push_str(&line);
             output.push('\n');
         }
     });
 
     let stderr_output = Arc::clone(&output);
-    let stderr_handle = std::thread::spawn(move || {
-        let reader = BufReader::new(stderr);
-        for line in reader.lines() {
-            let line = line.unwrap();
-            let mut output = stderr_output.lock().unwrap();
+    let stderr_handle = tokio::spawn(async move {
+        let reader = tokio::io::BufReader::new(stderr);
+        let mut lines = reader.lines();
+        while let Ok(Some(line)) = lines.next_line().await {
+            let mut output = stderr_output.lock().await;
             output.push_str(&line);
             output.push('\n');
         }
     });
 
-    stdout_handle.join().unwrap();
-    stderr_handle.join().unwrap();
-    
-    let status = child.wait().expect("Failed to wait on cargo command");
+    let status = if let Some(token) = stop_token {
+        tokio::select! {
+            _ = token.cancelled() => {
+                if let Err(e) = child.start_kill() {
+                    eprintln!("Failed to kill child process: {}", e);
+                }
+                child.wait().await
+            },
+            status = child.wait() => {
+                status
+            }
+        }
+    } else {
+        child.wait().await
+    };
 
-    (status, output.lock().unwrap().clone())
+    stdout_handle.await.unwrap();
+    stderr_handle.await.unwrap();
+
+    (status, output.lock().await.clone())
 }
 
 /// Generate a temporary build directory for a given build configuration
@@ -183,7 +214,8 @@ fn create_build_dir(features: &str, no_default_features: bool) -> BuildContext {
     }
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let args = Args::parse();
     let num_cpus = num_cpus::get();
     let num_jobs = args.jobs.unwrap_or(num_cpus);
@@ -197,6 +229,21 @@ fn main() {
         .parent()
         .expect("Failed to get parent directory of CARGO_MANIFEST_DIR")
         .to_path_buf();
+
+    // --- Pre-fetch all dependencies ---
+    println!("\n{}", "Fetching all dependencies to avoid lock contention...".cyan());
+    let mut fetch_cmd = std::process::Command::new("cargo");
+    fetch_cmd.current_dir(&project_root);
+    fetch_cmd.arg("fetch");
+
+    let fetch_status = fetch_cmd
+        .status()
+        .expect("Failed to execute cargo fetch command");
+
+    if !fetch_status.success() {
+        panic!("'cargo fetch' failed. Please check your network and Cargo.toml file.");
+    }
+    println!("{}", "Dependency fetching successful.".green());
 
     // The config file path is relative to the manifest directory, unless it's absolute
     let config_path = manifest_dir.join(&args.config);
@@ -232,27 +279,39 @@ fn main() {
         .build_global()
         .unwrap();
 
-    let results = Arc::new(Mutex::new(Vec::new()));
+    let mut results = Vec::new();
+    let stop_token = CancellationToken::new();
+    let mut safe_cases_stream = stream::iter(safe_cases)
+        .map(|case| {
+            let project_root = project_root.clone();
+            let stop_token = stop_token.clone();
+            tokio::spawn(async move {
+                run_test_case(case, project_root, Some(stop_token)).await
+            })
+        })
+        .buffer_unordered(num_jobs);
 
-    let safe_run_result = safe_cases
-        .par_iter()
-        .try_for_each(|case| -> Result<(), TestResult> {
-            match run_test_case(case.clone(), project_root.clone()) {
-                Ok(result) => {
-                    results.lock().unwrap().push(result);
-                    Ok(())
-                }
-                Err(result) => {
-                    // For safe cases, any failure is unexpected.
-                    Err(result)
-                }
+    let mut unexpected_failure_observed = false;
+    while let Some(res) = safe_cases_stream.next().await {
+        let result = res.unwrap(); // Unwrap the JoinHandle result
+        match result {
+            Ok(test_result) => {
+                results.push(test_result);
             }
-        });
-
-    if let Err(failed_result) = safe_run_result {
-        handle_unexpected_failure(&failed_result);
+            Err(test_result) => {
+                if !unexpected_failure_observed {
+                    // This is the first unexpected failure.
+                    unexpected_failure_observed = true;
+                    stop_token.cancel(); // Signal all other tests to stop.
+                    handle_unexpected_failure(&test_result); // This will exit the process.
+                }
+                // We still collect the result of other tests that might have finished
+                // before the cancellation signal was fully processed.
+                results.push(test_result);
+            }
+        }
     }
-    
+
     // --- Run flaky cases sequentially ---
     if !flaky_cases.is_empty() {
         println!(
@@ -264,11 +323,10 @@ fn main() {
             .yellow()
         );
         for case in flaky_cases {
-            let result = run_test_case(case, project_root.clone());
-            let mut results_lock = results.lock().unwrap();
+            let result = run_test_case(case, project_root.clone(), None).await;
             match result {
                 Ok(res) => {
-                    results_lock.push(res);
+                    results.push(res);
                 }
                 Err(res) => {
                     let current_os = std::env::consts::OS;
@@ -277,18 +335,17 @@ fn main() {
                     if !failure_allowed {
                         handle_unexpected_failure(&res);
                     }
-                    results_lock.push(res);
+                    results.push(res);
                 }
             }
         }
     }
 
-    let final_results = results.lock().unwrap();
-    let has_unexpected_failures = print_summary(&final_results);
+    let has_unexpected_failures = print_summary(&results);
 
     // Final status message about directories.
     println!("{}", "\nTemporary build directories for successful tests have been cleaned up automatically.".green());
-    if final_results.iter().any(|r| !r.success) {
+    if results.iter().any(|r| !r.success) {
         println!("{}", "Build artifacts for any failed tests have been preserved in './target-errors'.".yellow());
     }
 
@@ -301,9 +358,10 @@ fn main() {
     }
 }
 
-fn run_test_case(
+async fn run_test_case(
     case: TestCase,
     project_root: PathBuf,
+    stop_token: Option<CancellationToken>,
 ) -> Result<TestResult, TestResult> {
     let start_time = std::time::Instant::now();
     println!("{}", format!("Queueing test: {}", case.name).blue());
@@ -313,10 +371,15 @@ fn run_test_case(
     let build_ctx = create_build_dir(&case.features, case.no_default_features);
     println!("Using temporary target directory: {}", build_ctx.target_path.display());
 
-    let mut cmd = Command::new("cargo");
+    let mut cmd = tokio::process::Command::new("cargo");
+    cmd.kill_on_drop(true);
     cmd.current_dir(&project_root);
-    cmd.arg("test").arg("--lib");
-    cmd.arg("--target-dir").arg(&build_ctx.target_path);
+    cmd.arg("test")
+        .arg("--lib")
+        .arg("--locked")
+        .arg("--offline")
+        .arg("--target-dir")
+        .arg(&build_ctx.target_path);
 
     if case.no_default_features {
         cmd.arg("--no-default-features");
@@ -326,7 +389,8 @@ fn run_test_case(
         cmd.arg("--features").arg(&case.features);
     }
 
-    let (status, output) = spawn_and_capture(cmd);
+    let (status_res, output) = spawn_and_capture(cmd, stop_token).await;
+    let status = status_res.expect("Error waiting for process to complete");
     
     let duration = start_time.elapsed();
     
