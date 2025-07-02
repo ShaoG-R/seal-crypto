@@ -10,7 +10,7 @@ use crate::{
         kdf::{Derivation, DerivedKey, PasswordBasedDerivation},
     },
 };
-use pbkdf2_p::pbkdf2_hmac;
+use pbkdf2::pbkdf2_hmac;
 use std::marker::PhantomData;
 
 // A reasonable default for iterations, based on OWASP recommendations.

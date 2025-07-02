@@ -10,7 +10,7 @@ use crate::{
         kdf::{Derivation, DerivedKey, KdfError, KeyBasedDerivation},
     },
 };
-use hkdf_p::Hkdf;
+use hkdf::Hkdf;
 use std::marker::PhantomData;
 // --- Generic HKDF Implementation ---
 // --- 通用 HKDF 实现 ---
