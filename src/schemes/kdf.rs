@@ -22,3 +22,8 @@ pub mod pbkdf2 {
 pub mod shake {
     pub use crate::systems::kdf::shake::*;
 }
+
+#[cfg(feature = "argon2")]
+pub mod argon2 {
+    pub use crate::systems::kdf::argon2::*;
+}

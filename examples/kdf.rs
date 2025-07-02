@@ -9,10 +9,9 @@ use seal_crypto::{
     schemes::kdf::{
         hkdf::{HkdfSha256, HkdfSha512},
         pbkdf2::{Pbkdf2Sha256, Pbkdf2Sha512, PBKDF2_DEFAULT_ITERATIONS},
-        shake::{Shake128, Shake256},
+        shake::Shake256,
     },
 };
-
 
 fn main() -> Result<(), CryptoError> {
     println!("Running KDF example... / 正在运行 KDF 示例...");
@@ -117,7 +116,8 @@ fn main() -> Result<(), CryptoError> {
     // 1. Using it as a standard KDF with fixed output length.
     // 1. 将其用作具有固定输出长度的标准 KDF。
     println!("  - Using SHAKE as a standard KDF:");
-    let derived_key_shake = shake_scheme.derive(ikm_shake, Some(salt_shake), Some(info_shake), 32)?;
+    let derived_key_shake =
+        shake_scheme.derive(ikm_shake, Some(salt_shake), Some(info_shake), 32)?;
     println!(
         "    - Derived Key (32 bytes): 0x{}",
         hex::encode(derived_key_shake.as_bytes())

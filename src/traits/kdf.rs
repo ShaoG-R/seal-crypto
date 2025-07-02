@@ -4,10 +4,10 @@
 
 use crate::errors::Error;
 use crate::traits::algorithm::Algorithm;
+use digest::XofReader as DigestXofReader;
 #[cfg(feature = "std")]
 use thiserror::Error;
 use zeroize::Zeroizing;
-use digest::XofReader as DigestXofReader;
 
 /// A key derived from a KDF, wrapped in `Zeroizing` for security.
 ///

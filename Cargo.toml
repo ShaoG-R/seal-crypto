@@ -45,6 +45,7 @@ categories = ["cryptography"]
 # 这些是实际的加密算法实现库。它们是可选的，可以通过下面的 [features] 来启用。
 # --- Cryptography Backends ---
 # These are the actual cryptographic algorithm implementation libraries. They are optional and can be enabled via the [features] section below.
+base64 = { version = "0.22.1", optional = true }
 rsa = { version = "0.9.8", optional = true, default-features = false }
 pqcrypto-kyber = { version = "0.8.1", optional = true }
 aes-gcm = { version = "0.10.3", optional = true, default-features = false, features = ["aes", "getrandom", "alloc"] }
@@ -56,11 +57,12 @@ elliptic-curve = { version = "0.13.8", optional = true, features = ["pkcs8"] }
 ecdsa = { version = "0.16.9", optional = true, features = ["der"] }
 p256 = { version = "0.13.2", optional = true, default-features = false }
 ed25519-dalek = { version = "2.1.1", optional = true, features = ["pkcs8"] }
-signature = { version = "2.2", optional = true, features = ["rand_core"] }
+signature = { version = "2.2.0", optional = true, features = ["rand_core"] }
 digest = "0.10.7"
 hkdf_p = { package = "hkdf", version = "0.12.4", optional = true, default-features = false }
 hmac = { version = "0.12.1", optional = true, default-features = false }
 pbkdf2_p = { package = "pbkdf2", version = "0.12.2", optional = true, default-features = false }
+argon2 = { version = "0.5.3", optional = true, default-features = false }
 
 # --- 辅助 Crates ---
 # 这些 crate 提供了一些通用的辅助功能。
@@ -94,7 +96,8 @@ std = [
     "ed25519-dalek/std",
     "hkdf_p/std",
     "hmac/std",
-    "pbkdf2_p/std"
+    "pbkdf2_p/std",
+    "argon2/std"
 ]
 
 # --- 默认特性 ---
@@ -129,6 +132,7 @@ ecdh = ["elliptic-curve/ecdh", "dep:p256", "p256/ecdh", "p256/pkcs8"]
 hkdf = ["dep:hkdf_p", "dep:hmac"]
 pbkdf2 = ["dep:pbkdf2_p", "pbkdf2_p/hmac"]
 shake = ["dep:sha3"]
+argon2 = ["dep:argon2", "dep:base64"]
 
 # --- 算法集特性 ---
 # 第二级：为常用算法组合提供的便捷特性。
@@ -136,7 +140,7 @@ shake = ["dep:sha3"]
 # Level 2: Convenience features for common combinations of algorithms.
 classic = ["rsa", "aes-gcm", "chacha20-poly1305", "ecc", "ecdh"] # 经典加密算法集 / Classic cryptographic algorithms set
 pqc = ["kyber", "dilithium"] # 后量子密码学算法集 / Post-Quantum Cryptography algorithms set
-kdf = ["hkdf", "pbkdf2", "sha2", "shake"]
+kdf = ["hkdf", "pbkdf2", "sha2", "shake", "argon2"]
 
 # --- 硬件加速特性 ---
 # 启用特定 CPU 指令集（如 AVX2 或 sha-ni）以加速计算。
@@ -153,6 +157,7 @@ asm = [
     "sha2/sha2-asm",
     "sha2/asm",
     "ed25519-dalek/asm",
+    "sha3/asm",
 ]
 
 # --- 完整特性 ---

@@ -158,4 +158,4 @@ mod tests {
         reader2.read(&mut key1_redux);
         assert_eq!(&key1[..], &key1_redux[..]);
     }
-} 
+}

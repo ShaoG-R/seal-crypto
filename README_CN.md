@@ -196,8 +196,9 @@ API 主要由以下几个核心 `trait` 组成，它们位于 `seal_crypto::trai
 | | ChaCha20-Poly1305 | `chacha20-poly1305` |
 | **密钥派生 (KDF)** | HKDF (SHA-256, SHA-384, SHA-512) | `hkdf` |
 | | PBKDF2 (SHA-256, SHA-384, SHA-512) | `pbkdf2` |
-| | SHAKE (128, 256) | `shake` |
 | **密码派生 (PBKDF)** | PBKDF2 (SHA-256, SHA-384, SHA-512) | `pbkdf2` |
+| | Argon2id (可配置) | `argon2` |
+| **可扩展输出函数 (XOF)** | SHAKE (128, 256) | `shake` |
 | **哈希** | SHA-2 (256, 384, 512) | `sha2` |
 
 ## 许可证

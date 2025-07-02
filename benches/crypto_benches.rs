@@ -15,4 +15,5 @@ criterion_main! {
     kdf::hkdf::benches,
     kdf::pbkdf2::benches,
     kdf::shake::benches,
+    kdf::argon2::benches,
 }

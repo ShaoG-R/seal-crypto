@@ -2,7 +2,7 @@
 //!
 //! 定义了哈希算法的核心 trait。
 
-use digest::{Digest, DynDigest, FixedOutputReset, ExtendableOutput, Update};
+use digest::{Digest, DynDigest, ExtendableOutput, FixedOutputReset, Update};
 
 mod private {
     pub trait Sealed {}

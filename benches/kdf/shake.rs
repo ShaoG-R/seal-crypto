@@ -42,4 +42,4 @@ fn bench_shake(c: &mut Criterion) {
     group.finish();
 }
 
-criterion_group!(benches, bench_shake); 
+criterion_group!(benches, bench_shake);

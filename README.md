@@ -182,8 +182,9 @@ This layered approach ensures that every trait has a clear purpose, preventing a
 | | ChaCha20-Poly1305 | `chacha20-poly1305` |
 | **Key Derivation (KDF)** | HKDF (SHA-256, SHA-384, SHA-512) | `hkdf` |
 | | PBKDF2 (SHA-256, SHA-384, SHA-512) | `pbkdf2` |
-| | SHAKE (128, 256) | `shake` |
 | **Password Derivation (PBKDF)** | PBKDF2 (SHA-256, SHA-384, SHA-512) | `pbkdf2` |
+| | Argon2id (configurable) | `argon2` |
+| **Extendable-Output Function (XOF)** | SHAKE (128, 256) | `shake` |
 | **Hashing** | SHA-2 (256, 384, 512) | `sha2` |
 
 ## License
