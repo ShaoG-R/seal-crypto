@@ -2,7 +2,6 @@
 //!
 //! 提供了基于 HMAC 的密钥派生函数 (HKDF) 的实现。
 
-use crate::traits::Sha384;
 use crate::{
     errors::Error,
     traits::{

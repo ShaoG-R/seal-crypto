@@ -14,3 +14,11 @@ pub mod hkdf {
 pub mod pbkdf2 {
     pub use crate::systems::kdf::pbkdf2::*;
 }
+
+/// SHAKE (Secure Hash Algorithm and Keccak) family of Extendable-Output Functions (XOFs).
+///
+/// SHAKE (安全哈希算法和 Keccak) 系列的可扩展输出函数 (XOFs)。
+#[cfg(feature = "shake")]
+pub mod shake {
+    pub use crate::systems::kdf::shake::*;
+}

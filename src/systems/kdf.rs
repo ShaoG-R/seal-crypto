@@ -5,5 +5,8 @@
 #[cfg(feature = "hkdf")]
 pub mod hkdf;
 
-#[cfg(feature = "hkdf")]
+#[cfg(feature = "pbkdf2")]
 pub mod pbkdf2;
+
+#[cfg(feature = "shake")]
+pub mod shake;

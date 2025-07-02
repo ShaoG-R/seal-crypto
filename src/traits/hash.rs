@@ -2,7 +2,7 @@
 //!
 //! 定义了哈希算法的核心 trait。
 
-use digest::{Digest, DynDigest, FixedOutputReset};
+use digest::{Digest, DynDigest, FixedOutputReset, ExtendableOutput, Update};
 
 mod private {
     pub trait Sealed {}
@@ -55,4 +55,44 @@ impl private::Sealed for Sha512 {}
 #[cfg(feature = "sha2")]
 impl Hasher for Sha512 {
     type Digest = Sha512_;
+}
+
+/// A sealed trait representing an Extendable-Output Function (XOF).
+/// It associates a specific `digest::ExtendableOutput` implementation.
+///
+/// 一个代表可扩展输出函数 (XOF) 的密封 trait。
+/// 它关联一个具体的 `digest::ExtendableOutput` 实现。
+pub trait Xof: private::Sealed + Send + Sync + 'static {
+    /// The actual XOF implementation from the `digest` crate.
+    ///
+    /// 来自 `digest` crate 的实际 XOF 实现。
+    type Xof: ExtendableOutput + Clone + Send + Sync + 'static + Update + Default;
+}
+
+/// `sha3` family hash functions
+#[cfg(feature = "shake")]
+pub use sha3::{Shake128 as Shake128_, Shake256 as Shake256_};
+
+#[cfg(feature = "shake")]
+#[derive(Default)]
+pub struct Shake128;
+
+#[cfg(feature = "shake")]
+impl private::Sealed for Shake128 {}
+
+#[cfg(feature = "shake")]
+impl Xof for Shake128 {
+    type Xof = Shake128_;
+}
+
+#[cfg(feature = "shake")]
+#[derive(Default)]
+pub struct Shake256;
+
+#[cfg(feature = "shake")]
+impl private::Sealed for Shake256 {}
+
+#[cfg(feature = "shake")]
+impl Xof for Shake256 {
+    type Xof = Shake256_;
 }

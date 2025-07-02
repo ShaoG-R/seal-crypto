@@ -103,6 +103,7 @@ graph TD
             N_BASE["Derivation<br/><i>派生算法的顶层 Trait</i>"]
             N_KEY["KeyBasedDerivation<br/><i>用于高熵密钥</i>"]
             N_PASS["PasswordBasedDerivation<br/><i>用于低熵密码</i>"]
+            N_XOF["XofDerivation<br/><i>用于流式输出 (XOF)</i>"]
         end
     end
     
@@ -128,6 +129,7 @@ graph TD
 
     N_BASE --> N_KEY
     N_BASE --> N_PASS
+    N_BASE --> N_XOF
 ```
 
 各层解析如下：
@@ -177,6 +179,7 @@ API 主要由以下几个核心 `trait` 组成，它们位于 `seal_crypto::trai
 -   `Hasher`: 提供哈希摘要功能。
 -   `KeyBasedDerivation`: 从高熵输入密钥材料中派生一个或多个安全密钥。
 -   `PasswordBasedDerivation`: 从低熵密码中派生一个或多个安全密钥。
+-   `XofDerivation`: 从输入密钥材料中派生一个可扩展的字节流 (用于 SHAKE 等 XOF)。
 
 ## 支持的算法
 
@@ -192,6 +195,8 @@ API 主要由以下几个核心 `trait` 组成，它们位于 `seal_crypto::trai
 | **AEAD** | AES-GCM (128/256 位) | `aes-gcm` |
 | | ChaCha20-Poly1305 | `chacha20-poly1305` |
 | **密钥派生 (KDF)** | HKDF (SHA-256, SHA-384, SHA-512) | `hkdf` |
+| | PBKDF2 (SHA-256, SHA-384, SHA-512) | `pbkdf2` |
+| | SHAKE (128, 256) | `shake` |
 | **密码派生 (PBKDF)** | PBKDF2 (SHA-256, SHA-384, SHA-512) | `pbkdf2` |
 | **哈希** | SHA-2 (256, 384, 512) | `sha2` |
 

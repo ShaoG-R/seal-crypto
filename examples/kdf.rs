@@ -9,8 +9,10 @@ use seal_crypto::{
     schemes::kdf::{
         hkdf::{HkdfSha256, HkdfSha512},
         pbkdf2::{Pbkdf2Sha256, Pbkdf2Sha512, PBKDF2_DEFAULT_ITERATIONS},
+        shake::{Shake128, Shake256},
     },
 };
+
 
 fn main() -> Result<(), CryptoError> {
     println!("Running KDF example... / 正在运行 KDF 示例...");
@@ -100,6 +102,50 @@ fn main() -> Result<(), CryptoError> {
     // 使用 PBKDF2-SHA512 也同样直接。
     let pbkdf2_sha512_scheme = Pbkdf2Sha512::new(PBKDF2_DEFAULT_ITERATIONS);
     let _derived_key_pbkdf2_512 = pbkdf2_sha512_scheme.derive(password, salt_pbkdf2, 64)?;
+
+    // --- SHAKE XOF Example ---
+    // SHAKE is an Extendable-Output Function (XOF), perfect for deriving multiple
+    // keys or keys of arbitrary length from a single input.
+    // SHAKE 是一个可扩展输出函数 (XOF)，非常适合从单个输入派生多个密钥或任意长度的密钥。
+    println!("\n--- SHAKE256 ---");
+    let ikm_shake = b"another-high-entropy-input";
+    let salt_shake = b"shake-it-up-salt";
+    let info_shake = b"shake-specific-info";
+
+    let shake_scheme = Shake256::default();
+
+    // 1. Using it as a standard KDF with fixed output length.
+    // 1. 将其用作具有固定输出长度的标准 KDF。
+    println!("  - Using SHAKE as a standard KDF:");
+    let derived_key_shake = shake_scheme.derive(ikm_shake, Some(salt_shake), Some(info_shake), 32)?;
+    println!(
+        "    - Derived Key (32 bytes): 0x{}",
+        hex::encode(derived_key_shake.as_bytes())
+    );
+
+    // 2. Using its XOF capability to stream output via the `XofDerivation` trait.
+    // 2. 通过 `XofDerivation` trait 使用其 XOF 功能来流式传输输出。
+    println!("  - Using SHAKE as a streamable XOF:");
+    let mut reader = shake_scheme.reader(ikm_shake, Some(salt_shake), Some(info_shake))?;
+
+    let mut key1 = [0u8; 32];
+    reader.read(&mut key1);
+    println!(
+        "    - Derived Key 1 from stream (32 bytes): 0x{}",
+        hex::encode(&key1)
+    );
+
+    let mut key2 = [0u8; 64];
+    reader.read(&mut key2);
+    println!(
+        "    - Derived Key 2 from stream (64 bytes): 0x{}",
+        hex::encode(&key2)
+    );
+
+    // Verify the first key from the stream matches the one from derive()
+    // 验证从流中得到的第一个密钥与从 derive() 中得到的密钥匹配
+    assert_eq!(derived_key_shake.as_bytes(), &key1);
+    println!("    - Verified: First 32 bytes from stream match the `derive` output. / 验证：流中的前 32 字节与 `derive` 输出匹配。");
 
     println!("\nKDF example completed successfully! / KDF 示例成功完成！");
 

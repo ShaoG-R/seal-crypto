@@ -14,4 +14,5 @@ criterion_main! {
     asymmetric::post_quantum::kyber::benches,
     kdf::hkdf::benches,
     kdf::pbkdf2::benches,
+    kdf::shake::benches,
 }

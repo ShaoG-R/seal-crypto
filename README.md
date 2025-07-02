@@ -103,6 +103,7 @@ graph TD
             N_BASE["Derivation<br/><i>Top-level trait for derivation</i>"]
             N_KEY["KeyBasedDerivation<br/><i>For high-entropy keys</i>"]
             N_PASS["PasswordBasedDerivation<br/><i>For low-entropy passwords</i>"]
+            N_XOF["XofDerivation<br/><i>For streamable output (XOFs)</i>"]
         end
     end
     
@@ -128,6 +129,7 @@ graph TD
 
     N_BASE --> N_KEY
     N_BASE --> N_PASS
+    N_BASE --> N_XOF
 ```
 
 Here's a breakdown of the layers:
@@ -179,6 +181,8 @@ This layered approach ensures that every trait has a clear purpose, preventing a
 | **AEAD** | AES-GCM (128/256 bits) | `aes-gcm` |
 | | ChaCha20-Poly1305 | `chacha20-poly1305` |
 | **Key Derivation (KDF)** | HKDF (SHA-256, SHA-384, SHA-512) | `hkdf` |
+| | PBKDF2 (SHA-256, SHA-384, SHA-512) | `pbkdf2` |
+| | SHAKE (128, 256) | `shake` |
 | **Password Derivation (PBKDF)** | PBKDF2 (SHA-256, SHA-384, SHA-512) | `pbkdf2` |
 | **Hashing** | SHA-2 (256, 384, 512) | `sha2` |
 

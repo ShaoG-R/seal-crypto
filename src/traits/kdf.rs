@@ -7,6 +7,7 @@ use crate::traits::algorithm::Algorithm;
 #[cfg(feature = "std")]
 use thiserror::Error;
 use zeroize::Zeroizing;
+use digest::XofReader as DigestXofReader;
 
 /// A key derived from a KDF, wrapped in `Zeroizing` for security.
 ///
@@ -111,6 +112,72 @@ pub trait PasswordBasedDerivation: Derivation {
     /// # 返回
     /// 派生出的密钥，长度为 `output_len`。
     fn derive(&self, password: &[u8], salt: &[u8], output_len: usize) -> Result<DerivedKey, Error>;
+}
+
+/// A reader for extendable-output functions (XOFs).
+///
+/// This struct wraps a boxed `digest::XofReader` to provide a concrete type
+/// that can be returned from trait methods.
+///
+/// 可扩展输出函数 (XOF) 的读取器。
+///
+/// 此结构体包装了一个盒装的 `digest::XofReader`，以提供可从 trait 方法返回的具体类型。
+pub struct XofReader<'a> {
+    reader: Box<dyn DigestXofReader + 'a>,
+}
+
+impl<'a> XofReader<'a> {
+    /// Creates a new `XofReader` from a boxed `digest::XofReader`.
+    ///
+    /// 从盒装的 `digest::XofReader` 创建一个新的 `XofReader`。
+    pub fn new<R: DigestXofReader + 'a>(reader: R) -> Self {
+        Self {
+            reader: Box::new(reader),
+        }
+    }
+}
+
+impl<'a> DigestXofReader for XofReader<'a> {
+    fn read(&mut self, buffer: &mut [u8]) {
+        self.reader.read(buffer);
+    }
+}
+
+/// A trait for Key Derivation Functions based on Extendable-Output Functions (XOFs).
+///
+/// This trait allows for deriving a stream of bytes from Input Keying Material (IKM),
+/// which is useful for generating multiple keys or keys of a length not known beforehand.
+///
+/// 基于可扩展输出函数 (XOF) 的密钥派生函数 trait。
+///
+/// 此 trait 允许从输入密钥材料 (IKM) 派生字节流，
+/// 这对于生成多个密钥或预先未知长度的密钥非常有用。
+pub trait XofDerivation: Derivation {
+    /// Derives a byte stream from Input Keying Material (IKM).
+    ///
+    /// # Arguments
+    /// * `ikm` - The Input Keying Material.
+    /// * `salt` - An optional salt.
+    /// * `info` - Optional context and application-specific information.
+    ///
+    /// # Returns
+    /// An `XofReader` that can be used to read an arbitrary number of bytes.
+    ///
+    /// 从输入密钥材料 (IKM) 派生字节流。
+    ///
+    /// # 参数
+    /// * `ikm` - 输入密钥材料。
+    /// * `salt` - 可选的盐。
+    /// * `info` - 可选的上下文和应用程序特定信息。
+    ///
+    /// # 返回
+    /// 一个可用于读取任意数量字节的 `XofReader`。
+    fn reader<'a>(
+        &self,
+        ikm: &'a [u8],
+        salt: Option<&'a [u8]>,
+        info: Option<&'a [u8]>,
+    ) -> Result<XofReader<'a>, Error>;
 }
 
 #[cfg(test)]
