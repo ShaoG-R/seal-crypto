@@ -25,7 +25,8 @@ struct TestCase {
     name: String,
     features: String,
     no_default_features: bool,
-    allow_failure: bool,
+    #[serde(default)]
+    allow_failure: Vec<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -96,8 +97,12 @@ fn main() {
             println!("{}", format!("Test successful for configuration: {}", result.case.name).green());
         } else {
             println!("{}", format!("Test failed for configuration: {}", result.case.name).red());
-            if result.case.allow_failure {
-                println!("{}", "NOTE: This failure was expected and will be ignored.".yellow());
+            
+            let current_os = std::env::consts::OS;
+            let failure_allowed_on_this_os = result.case.allow_failure.iter().any(|os| os == current_os);
+
+            if failure_allowed_on_this_os {
+                println!("{}", format!("NOTE: This failure was expected on '{}' and will be ignored.", current_os).yellow());
             } else {
                 failed_cases.push(result.case.name);
             }

@@ -2,166 +2,166 @@
 name = "std-default"
 features = ""
 no_default_features = false
-allow_failure = false
+allow_failure = []
 
 [[cases]]
 name = "std-classic"
 features = "classic,ecdh"
 no_default_features = false
-allow_failure = false
+allow_failure = []
 
 [[cases]]
 name = "std-pqc"
 features = "pqc"
 no_default_features = false
-allow_failure = false
+allow_failure = []
 
 [[cases]]
 name = "std-kdf"
 features = "kdf"
 no_default_features = false
-allow_failure = false
+allow_failure = []
 
 [[cases]]
 name = "std-full"
 features = "full"
 no_default_features = false
-allow_failure = false
+allow_failure = []
 
 [[cases]]
 name = "std-rsa"
 features = "rsa"
 no_default_features = false
-allow_failure = false
+allow_failure = []
 
 [[cases]]
 name = "std-kyber"
 features = "kyber"
 no_default_features = false
-allow_failure = false
+allow_failure = []
 
 [[cases]]
 name = "std-dilithium"
 features = "dilithium"
 no_default_features = false
-allow_failure = false
+allow_failure = []
 
 [[cases]]
 name = "std-aes-gcm"
 features = "aes-gcm"
 no_default_features = false
-allow_failure = false
+allow_failure = []
 
 [[cases]]
 name = "std-chacha20-poly1305"
 features = "chacha20-poly1305"
 no_default_features = false
-allow_failure = false
+allow_failure = []
 
 [[cases]]
 name = "std-sha2"
 features = "sha2"
 no_default_features = false
-allow_failure = false
+allow_failure = []
 
 [[cases]]
 name = "std-ecc"
 features = "ecc"
 no_default_features = false
-allow_failure = false
+allow_failure = []
 
 [[cases]]
 name = "std-ecdh"
 features = "ecdh"
 no_default_features = false
-allow_failure = false
+allow_failure = []
 
 [[cases]]
 name = "std-hkdf"
 features = "hkdf"
 no_default_features = false
-allow_failure = false
+allow_failure = []
 
 [[cases]]
 name = "std-pbkdf2"
 features = "pbkdf2"
 no_default_features = false
-allow_failure = false
+allow_failure = []
 
 [[cases]]
 name = "std-shake"
 features = "shake"
 no_default_features = false
-allow_failure = false
+allow_failure = []
 
 [[cases]]
 name = "std-argon2"
 features = "argon2"
 no_default_features = false
-allow_failure = false
+allow_failure = []
 
 [[cases]]
 name = "std-classic-asm"
 features = "classic,ecdh,asm"
 no_default_features = false
-allow_failure = true
+allow_failure = ["windows"]
 
 [[cases]]
 name = "std-pqc-avx2"
 features = "pqc,avx2"
 no_default_features = false
-allow_failure = false
+allow_failure = []
 
 [[cases]]
 name = "std-full-optimized"
 features = "full,asm,avx2"
 no_default_features = false
-allow_failure = true
+allow_failure = ["windows"]
 
 [[cases]]
 name = "no_std-base"
 features = ""
 no_default_features = true
-allow_failure = false
+allow_failure = []
 
 [[cases]]
 name = "no_std-classic"
 features = "classic,ecdh"
 no_default_features = true
-allow_failure = false
+allow_failure = []
 
 [[cases]]
 name = "no_std-pqc"
 features = "pqc"
 no_default_features = true
-allow_failure = false
+allow_failure = []
 
 [[cases]]
 name = "no_std-kdf"
 features = "kdf"
 no_default_features = true
-allow_failure = false
+allow_failure = []
 
 [[cases]]
 name = "no_std-full"
 features = "full"
 no_default_features = true
-allow_failure = false
+allow_failure = []
 
 [[cases]]
 name = "no_std-classic-asm"
 features = "classic,ecdh,asm"
 no_default_features = true
-allow_failure = true
+allow_failure = ["windows"]
 
 [[cases]]
 name = "no_std-pqc-avx2"
 features = "pqc,avx2"
 no_default_features = true
-allow_failure = false
+allow_failure = []
 
 [[cases]]
 name = "no_std-full-optimized"
 features = "full,asm,avx2"
 no_default_features = true
-allow_failure = true 
+allow_failure = ["windows"] 
