@@ -13,27 +13,44 @@ use argon2::Argon2 as Argon2_p;
 
 /// Argon2id default memory cost (in kibibytes). OWASP recommendation: 19 MiB = 19456 KiB.
 /// We use a slightly more conservative value that is a power of 2.
+///
+/// Argon2id 默认内存成本（单位：KiB）。OWASP 建议值为 19 MiB = 19456 KiB。
+/// 我们使用一个稍微保守的、2的幂次方的值。
 pub const ARGON2_DEFAULT_M_COST: u32 = 32768; // 32 MiB
 
 /// Argon2id default time cost (iterations). OWASP recommendation: 2.
+///
+/// Argon2id 默认时间成本（迭代次数）。OWASP 建议值为 2。
 pub const ARGON2_DEFAULT_T_COST: u32 = 2;
 
 /// Argon2id default parallelism cost. OWASP recommendation: 1.
+///
+/// Argon2id 默认并行成本。OWASP 建议值为 1。
 pub const ARGON2_DEFAULT_P_COST: u32 = 1;
 
 /// A struct representing the Argon2id cryptographic system.
+///
+/// 代表 Argon2id 加密系统的结构体。
 #[derive(Debug, Clone, Copy)]
 pub struct Argon2Scheme {
     /// Memory cost in kibibytes.
+    ///
+    /// 内存成本（单位：KiB）。
     pub m_cost: u32,
     /// Time cost (iterations).
+    ///
+    /// 时间成本（迭代次数）。
     pub t_cost: u32,
     /// Parallelism cost (threads).
+    ///
+    /// 并行成本（线程数）。
     pub p_cost: u32,
 }
 
 impl Argon2Scheme {
     /// Creates a new Argon2 scheme with specific parameters.
+    ///
+    /// 使用指定的参数创建一个新的 Argon2 方案。
     pub fn new(m_cost: u32, t_cost: u32, p_cost: u32) -> Self {
         Self {
             m_cost,
@@ -45,6 +62,8 @@ impl Argon2Scheme {
 
 impl Default for Argon2Scheme {
     /// Creates a new Argon2 scheme with default security parameters based on OWASP recommendations.
+    ///
+    /// 使用基于 OWASP 建议的默认安全参数创建一个新的 Argon2 方案。
     fn default() -> Self {
         Self::new(
             ARGON2_DEFAULT_M_COST,
@@ -65,14 +84,16 @@ impl PasswordBasedDerivation for Argon2Scheme {
         let params = argon2::Params::new(self.m_cost, self.t_cost, self.p_cost, Some(output_len))
             .map_err(|_| Error::Kdf(KdfError::DerivationFailed))?;
 
-        let argon2 = Argon2_p::new(
-            argon2::Algorithm::Argon2id,
-            argon2::Version::V0x13,
-            params,
-        );
+        let argon2 = Argon2_p::new(argon2::Algorithm::Argon2id, argon2::Version::V0x13, params);
 
+        // Directly hash the password with the raw salt into an output buffer.
+        // This is the most direct way to use Argon2 for key derivation.
+        //
+        // 直接使用原始盐和密码将哈希值计算到输出缓冲区中。
+        // 这是将 Argon2 用于密钥派生的最直接方法。
         let mut output = vec![0u8; output_len];
-        argon2.hash_password_into(password, salt, &mut output)
+        argon2
+            .hash_password_into(password, salt, &mut output)
             .map_err(|_| Error::Kdf(KdfError::DerivationFailed))?;
 
         Ok(DerivedKey::new(output))
@@ -80,6 +101,8 @@ impl PasswordBasedDerivation for Argon2Scheme {
 }
 
 /// A type alias for the Argon2id scheme.
+///
+/// Argon2id 方案的类型别名。
 pub type Argon2 = Argon2Scheme;
 
 #[cfg(test)]

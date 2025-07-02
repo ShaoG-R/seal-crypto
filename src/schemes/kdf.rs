@@ -10,6 +10,9 @@ pub mod hkdf {
     pub use crate::systems::kdf::hkdf::*;
 }
 
+/// Password-Based Key Derivation Function 2 (PBKDF2).
+///
+/// 基于密码的密钥派生函数 2 (PBKDF2)。
 #[cfg(feature = "pbkdf2")]
 pub mod pbkdf2 {
     pub use crate::systems::kdf::pbkdf2::*;
