@@ -27,6 +27,19 @@ jobs:
           - { name: "std-pqc",             args: "--features pqc" }
           - { name: "std-kdf",             args: "--features kdf" }
           - { name: "std-full",            args: "--features full" }
+          # Individual algorithm features (std)
+          - { name: "std-rsa",             args: "--features rsa" }
+          - { name: "std-kyber",           args: "--features kyber" }
+          - { name: "std-dilithium",       args: "--features dilithium" }
+          - { name: "std-aes-gcm",         args: "--features aes-gcm" }
+          - { name: "std-chacha20-poly1305", args: "--features 'chacha20-poly1305'" }
+          - { name: "std-sha2",            args: "--features sha2" }
+          - { name: "std-ecc",             args: "--features ecc" }
+          - { name: "std-ecdh",            args: "--features ecdh" }
+          - { name: "std-hkdf",            args: "--features hkdf" }
+          - { name: "std-pbkdf2",          args: "--features pbkdf2" }
+          - { name: "std-shake",           args: "--features shake" }
+          - { name: "std-argon2",          args: "--features argon2" }
           - { name: "std-classic-asm",     args: "--features 'classic,ecdh,asm'" }
           - { name: "std-pqc-avx2",        args: "--features 'pqc,avx2'" }
           - { name: "std-full-optimized",  args: "--features 'full,asm,avx2'" }

@@ -1,0 +1,12 @@
+[package]
+name = "test-runner"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+rayon = "1.10.0"
+colored = "2.1.0"
+clap = { version = "4.5.4", features = ["derive"] }
+num_cpus = "1.16.0"
+serde = { version = "1.0", features = ["derive"] }
+toml = "0.8.13"
