@@ -7,6 +7,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tempfile::TempDir;
 use tokio::io::AsyncBufReadExt;
+use tokio::process::Command;
 use tokio_util::sync::CancellationToken;
 
 #[derive(Parser, Debug)]
@@ -39,10 +40,18 @@ struct TestMatrix {
     cases: Vec<TestCase>,
 }
 
+#[derive(Debug, Clone)]
+enum FailureReason {
+    Build,
+    Test,
+}
+
+#[derive(Debug, Clone)]
 struct TestResult {
     case: TestCase,
     output: String,
     success: bool,
+    failure_reason: Option<FailureReason>,
 }
 
 /// A context for a build, managing the temporary directory.
@@ -60,12 +69,21 @@ struct BuiltTest {
     build_ctx: BuildContext,
 }
 
+/// Represents a diagnostic message from the compiler.
+#[derive(Debug, Clone, Deserialize)]
+struct CargoDiagnostic {
+    level: String,
+    message: String,
+    rendered: Option<String>,
+}
+
 /// Represents a message from `cargo build --message-format=json`.
 #[derive(Deserialize)]
 struct CargoMessage {
     reason: String,
     target: Option<CargoTarget>,
     executable: Option<PathBuf>,
+    message: Option<CargoDiagnostic>,
 }
 
 /// Represents the "target" field in a `CargoMessage`.
@@ -73,6 +91,37 @@ struct CargoMessage {
 struct CargoTarget {
     name: String,
     test: bool,
+}
+
+/// Extracts and formats compiler errors from `cargo` JSON output.
+fn format_build_error_output(raw_output: &str) -> String {
+    let error_messages: Vec<String> = raw_output
+        .lines()
+        .filter_map(|line| serde_json::from_str::<CargoMessage>(line).ok())
+        .filter_map(|msg| {
+            if msg.reason == "compiler-message" {
+                if let Some(diag) = msg.message {
+                    if diag.level == "error" {
+                        // Prefer the colorful rendered output if available
+                        return diag.rendered.or(Some(diag.message));
+                    }
+                }
+            }
+            None
+        })
+        .collect();
+
+    if error_messages.is_empty() {
+        // If we can't find a specific error, return a snippet of the raw output.
+        let snippet = raw_output.lines().take(50).collect::<Vec<_>>().join("\n");
+        format!(
+            "{}\n\n{}",
+            "Could not parse specific compiler errors. Raw output snippet:".yellow(),
+            snippet
+        )
+    } else {
+        error_messages.join("\n")
+    }
 }
 
 /// Recursively copies a directory.
@@ -95,14 +144,24 @@ fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> std::io::Result
 /// Prints details for an unexpected test failure and exits the process.
 fn handle_unexpected_failure(result: &TestResult) {
     println!("{}", "=================================================================".cyan());
-    println!("{}", format!("  Test results for: {}", result.case.name).cyan());
+    println!("{}", format!("  Failure details for: {}", result.case.name).cyan());
     println!("{}", "-----------------------------------------------------------------".cyan());
-    println!("{}", result.output);
-    println!("{}", format!("Unexpected test failure for configuration: {}", result.case.name).red());
+
+    let output_to_print = match &result.failure_reason {
+        Some(FailureReason::Build) => format_build_error_output(&result.output),
+        _ => result.output.clone(), // For Test failures or unknown, print raw output
+    };
+    println!("{}", output_to_print);
+
+    let failure_type = match result.failure_reason {
+        Some(FailureReason::Build) => "build",
+        Some(FailureReason::Test) => "test",
+        None => "task",
+    };
+    println!("{}", format!("Unexpected {} failure for configuration: {}", failure_type, result.case.name).red());
     println!("\n{}", "==================== FINAL SUMMARY ====================".cyan());
     println!("{}", "TEST MATRIX FAILED".red());
-    println!("{}", "Failed configurations:".red());
-    println!("{}", format!("  - {}", result.case.name).red());
+    println!("{}", format!("  - {} ({})", result.case.name, failure_type).red());
     std::process::exit(1);
 }
 
@@ -116,7 +175,16 @@ fn print_summary(final_results: &[TestResult]) -> bool {
         println!("{}", "=================================================================".cyan());
         println!("{}", format!("  Test results for: {}", result.case.name).cyan());
         println!("{}", "-----------------------------------------------------------------".cyan());
-        println!("{}", result.output);
+        
+        let output_to_print = if !result.success {
+            match &result.failure_reason {
+                Some(FailureReason::Build) => format_build_error_output(&result.output),
+                _ => result.output.clone(),
+            }
+        } else {
+            result.output.clone()
+        };
+        println!("{}", output_to_print);
 
         if result.success {
             println!("{}", format!("Test successful for configuration: {}", result.case.name).green());
@@ -341,12 +409,14 @@ async fn main() {
             )
             .yellow()
         );
+        let flaky_build_stop_token = CancellationToken::new();
         let mut flaky_build_stream = stream::iter(flaky_cases)
             .map(|case| {
                 let project_root = project_root.clone();
-                // No stop token here, as one failure doesn't stop others
+                // Pass a stop token to allow cancellation on first unexpected failure.
+                let stop_token = flaky_build_stop_token.clone();
                 tokio::spawn(async move {
-                    build_test_case(case, project_root, None).await
+                    build_test_case(case, project_root, Some(stop_token)).await
                 })
             })
             .buffer_unordered(build_jobs);
@@ -358,8 +428,11 @@ async fn main() {
                     let is_allowed =
                         failure_result.case.allow_failure.iter().any(|os| os == current_os);
                     if !is_allowed {
+                        // On unexpected failure, cancel other builds and exit.
+                        flaky_build_stop_token.cancel();
                         handle_unexpected_failure(&failure_result);
                     }
+                    // If failure is allowed, just record it and continue.
                     results.push(failure_result);
                 }
             }
@@ -510,6 +583,7 @@ async fn build_test_case(
             case,
             output,
             success: false,
+            failure_reason: Some(FailureReason::Build),
         });
     }
 
@@ -569,6 +643,7 @@ async fn run_built_test(
         case: case.clone(),
         output,
         success: status.success(),
+        failure_reason: if status.success() { None } else { Some(FailureReason::Test) },
     };
 
     if !result.success {
