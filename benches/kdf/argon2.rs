@@ -1,3 +1,5 @@
+#![cfg(feature = "argon2")]
+
 use criterion::{criterion_group, Criterion};
 use seal_crypto::{prelude::*, schemes::kdf::argon2::Argon2Scheme};
 use std::hint::black_box;
@@ -8,7 +10,7 @@ const BENCH_M_COST: u32 = 4096; // 4 MiB
 const BENCH_T_COST: u32 = 1;
 const BENCH_P_COST: u32 = 1;
 
-fn bench_argon2(c: &mut Criterion) {
+pub fn bench_argon2(c: &mut Criterion) {
     let mut group = c.benchmark_group("KDF-Argon2");
 
     let password = b"password-for-benchmarking";

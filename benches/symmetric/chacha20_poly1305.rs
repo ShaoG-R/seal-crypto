@@ -1,3 +1,5 @@
+#![cfg(feature = "chacha20-poly1305")]
+
 use criterion::{criterion_group, Criterion};
 use seal_crypto::{
     prelude::*,
@@ -8,7 +10,7 @@ use std::hint::black_box;
 const KB: usize = 1024;
 const SIZES: [usize; 3] = [KB, 16 * KB, 128 * KB];
 
-fn bench_chacha20_poly1305(c: &mut Criterion) {
+pub fn bench_chacha20_poly1305(c: &mut Criterion) {
     let mut group = c.benchmark_group("ChaCha20-Poly1305");
 
     for &size in SIZES.iter() {

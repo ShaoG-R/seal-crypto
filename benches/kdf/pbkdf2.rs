@@ -1,3 +1,5 @@
+#![cfg(feature = "pbkdf2")]
+
 use criterion::{criterion_group, Criterion};
 use seal_crypto::{
     prelude::*,
@@ -9,7 +11,7 @@ use std::hint::black_box;
 // In a real application, use a much higher value (e.g., 600,000 or more).
 const BENCH_ITERATIONS: u32 = 1000;
 
-fn bench_pbkdf2(c: &mut Criterion) {
+pub fn bench_pbkdf2(c: &mut Criterion) {
     let mut group = c.benchmark_group("KDF-PBKDF2");
 
     let password = b"password-for-benchmarking";

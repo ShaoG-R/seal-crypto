@@ -1,3 +1,5 @@
+#![cfg(feature = "hkdf")]
+
 use criterion::{criterion_group, Criterion};
 use seal_crypto::{
     prelude::*,
@@ -5,10 +7,10 @@ use seal_crypto::{
 };
 use std::hint::black_box;
 
-fn bench_hkdf(c: &mut Criterion) {
+pub fn bench_hkdf(c: &mut Criterion) {
     let mut group = c.benchmark_group("KDF-HKDF");
 
-    let ikm = b"initial-keying-material";
+    let ikm = b"initial-keying-material-for-benchmarking";
     let salt = b"test-salt";
     let info = b"test-info";
     let output_len = 32;

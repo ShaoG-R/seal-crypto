@@ -1,3 +1,5 @@
+#![cfg(feature = "rsa")]
+
 use criterion::{criterion_group, Criterion};
 use seal_crypto::{
     prelude::*,
@@ -6,7 +8,7 @@ use seal_crypto::{
 };
 use std::hint::black_box;
 
-fn bench_rsa(c: &mut Criterion) {
+pub fn bench_rsa(c: &mut Criterion) {
     let mut group = c.benchmark_group("RSA");
     let message = b"message for PSS signing";
 

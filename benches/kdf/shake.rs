@@ -1,3 +1,5 @@
+#![cfg(feature = "shake")]
+
 use criterion::{criterion_group, Criterion};
 use seal_crypto::{
     prelude::*,
@@ -5,7 +7,7 @@ use seal_crypto::{
 };
 use std::hint::black_box;
 
-fn bench_shake(c: &mut Criterion) {
+pub fn bench_shake(c: &mut Criterion) {
     let mut group = c.benchmark_group("KDF-SHAKE");
 
     let ikm = b"shake-benchmark-ikm";
