@@ -231,7 +231,7 @@ shake-asm = ["sha3/asm"]
 # 第三级：`full` 特性激活所有可用的算法实现。
 # --- Full Feature ---
 # Level 3: The `full` feature activates all available algorithm implementations.
-full = ["classic", "pqc", "kdf"]
+full = ["classic", "pqc", "kdf", "xof"]
 no-std-full = ["no-std-classic", "no-std-pqc", "no-std-kdf"]
 
 # [[example]] 区域用于定义项目的示例代码。
