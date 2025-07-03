@@ -2,6 +2,7 @@
 //!
 //! 定义了对称认证加密的 trait。
 
+use crate::traits::Key;
 use crate::{errors::Error, traits::key::SymmetricKeySet};
 #[cfg(feature = "std")]
 use thiserror::Error;
@@ -13,6 +14,16 @@ use zeroize::Zeroizing;
 #[allow(dead_code)]
 pub type SymmetricKey = Zeroizing<Vec<u8>>;
 
+impl Key for SymmetricKey {
+    fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
+        Ok(Zeroizing::new(bytes.to_vec()))
+    }
+
+    fn to_bytes(&self) -> Vec<u8> {
+        self.to_vec()
+    }
+}
+
 /// Authenticated associated data (AAD).
 ///
 /// 认证的关联数据 (AAD)。
@@ -21,7 +32,7 @@ pub type AssociatedData<'a> = &'a [u8];
 /// Defines the errors that can occur during symmetric encryption and decryption.
 ///
 /// 定义了在对称加密和解密过程中可能发生的错误。
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "std", derive(Error))]
 pub enum SymmetricError {
     /// Failed to encrypt the plaintext.

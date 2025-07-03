@@ -85,55 +85,85 @@ graph TD
         Z["Algorithm<br/><i>所有加密方案的顶层 Trait,<br/>提供 'NAME' 常量</i>"]
     end
 
-    subgraph "基础层：密钥原语"
-        A["Key<br/><i>定义如序列化等基础行为</i>"]
-        B["PublicKey / PrivateKey<br/><i>密钥类型的标记 Trait</i>"]
-    end
+    subgraph "第一层：核心能力"
+        subgraph "核心加密方案"
+            C["AsymmetricKeySet"]
+            D["SymmetricKeySet"]
 
-    subgraph "第一层：KeySet - 密钥定义"
-        C["AsymmetricKeySet<br/><i>继承 Algorithm<br/><b>- type PublicKey<br/>- type PrivateKey</b></i>"]
-        D["SymmetricKeySet<br/><i>继承 Algorithm<br/><b>- type Key</b></i>"]
-    end
-
-    subgraph "第二层：能力"
-        F["KeyGenerator<br/><i>继承 AsymmetricKeySet,<br/>添加 'generate_keypair'</i>"]
-        G["Signer / Verifier<br/><i>继承 AsymmetricKeySet,<br/>添加 'sign'/'verify'</i>"]
-        H["Kem<br/><i>继承 AsymmetricKeySet,<br/>添加 'encapsulate'/'decapsulate'</i>"]
-        M["KeyAgreement<br/><i>Inherits AsymmetricKeySet,<br/>adds 'agree'.</i>"]
-        I["SymmetricKeyGenerator<br/><i>继承 SymmetricKeySet,<br/>添加 'generate_key'</i>"]
-        J["SymmetricEncryptor / Decryptor<br/><i>继承 SymmetricKeySet,<br/>添加 'encrypt'/'decrypt'</i>"]
-        N["KeyDerivation<br/><i>直接继承 Algorithm,<br/>添加 'derive'</i>"]
+            F["KeyGenerator<br/><i>'generate_keypair'</i>"]
+            G["Signer / Verifier<br/><i>'sign'/'verify'</i>"]
+            H["Kem<br/><i>'encapsulate'/'decapsulate'</i>"]
+            M["KeyAgreement<br/><i>'agree'</i>"]
+            
+            I["SymmetricKeyGenerator<br/><i>'generate_key'</i>"]
+            J["SymmetricEncryptor / Decryptor<br/><i>'encrypt'/'decrypt'</i>"]
+        end
+        
+        subgraph "派生方案"
+            N_BASE["Derivation<br/><i>派生算法的顶层 Trait</i>"]
+            N_KEY["KeyBasedDerivation<br/><i>用于高熵密钥</i>"]
+            N_PASS["PasswordBasedDerivation<br/><i>用于低熵密码</i>"]
+            N_XOF["XofDerivation<br/><i>用于流式输出 (XOF)</i>"]
+        end
     end
     
-    subgraph "第三层：方案包 (为方便起见)"
+    subgraph "第二层：方案包 (为方便起见)"
         K["SignatureScheme<br/><i>捆绑 KeyGenerator, Signer, Verifier</i>"]
         L["AeadScheme<br/><i>捆绑 SymmetricKeySet, SymmetricKeyGenerator 等</i>"]
     end
 
-    A --> B
-
     Z --> C
     Z --> D
-    Z --> N
+    Z --> N_BASE
     
     C --> F
     C --> G
     C --> H
+    C --> M
     
     F & G --> K
 
     D --> I
     D --> J
     I & J --> L
+
+    N_BASE --> N_KEY
+    N_BASE --> N_PASS
+    N_BASE --> N_XOF
 ```
 
 各层解析如下：
 
-1.  **顶层：算法标识 (`Algorithm`)**: 这是所有加密方案（无论是对称还是非对称）的统一顶层 Trait。它只定义了一个 `NAME` 常量，用于为每个算法提供一个唯一的、可读的标识符（例如 "RSA-PSS-SHA256"）。
-2.  **基础层：密钥原语 (`Key`)**: 位于最底层的是像 `Key`, `PublicKey`, 和 `PrivateKey` 这样的基础 Trait。它们定义了任何密钥都必须具备的最基本的属性，如序列化。
-3.  **第一层：KeySet**: 这是设计的核心。`AsymmetricKeySet` 和 `SymmetricKeySet` 继承自 `Algorithm`，它们的职责只有一个：为某个加密方案定义其关联的密钥类型。它们是 `PublicKey`, `PrivateKey`, 和 `SymmetricKey` 的**唯一事实来源**。
-4.  **第二层：能力**: 这一层定义了"动作"。像 `KeyGenerator`, `Signer`, `Kem`, 和 `SymmetricEncryptor` 这样的 Trait 直接继承自相应的 KeySet 层，并添加了具体的方法（`generate_keypair`, `sign`, `encapsulate` 等）。它们定义了你能用一个方案来*做什么*。
-5.  **第三层：方案包**: 为了方便用户，我们提供了像 `SignatureScheme` 和 `AeadScheme` 这样的"超级 Trait"。它们不添加任何新方法，而是将所有相关的能力捆绑到一个单一、易用的 Trait 中。
+1.  **顶层：算法标识 (`Algorithm`)**: 这是所有加密方案的统一顶层 Trait。
+2.  **第一层：核心能力**: 这是库的核心，将像 `AsymmetricKeySet` 这样的方案集与其能力 Trait (如 `Signer`, `Kem` 等) 联系起来。
+3.  **第二层：方案包**: 为了方便用户，我们提供了像 `SignatureScheme` 这样的"超级 Trait"来捆绑相关的能力。
+
+这种分层方法确保了每个 Trait 都有明确的用途。详细的密钥继承模型见下图。
+
+### 密钥继承详情
+
+为了保持主图的整洁，我们将方案集、其关联密钥类型以及基础 `Key` Trait 之间的关系在此详细说明。下图展示了方案使用的具体密钥是如何被定义，以及它们如何建立在 `Key` 这一基础原语之上。
+
+```mermaid
+graph TD
+    subgraph "密钥继承模型"
+        A["Key<br/><i>定义如序列化等基础行为</i>"]
+        C["AsymmetricKeySet"]
+        D["SymmetricKeySet"]
+        
+        PK["(type PublicKey)"]
+        SK["(type PrivateKey)"]
+        SymK["(type Key)"]
+
+        C -. "定义" .-> PK
+        C -. "定义" .-> SK
+        D -. "定义" .-> SymK
+        
+        PK -- "继承" --> A
+        SK -- "继承" --> A
+        SymK -- "继承" --> A
+    end
+```
 
 这种分层的方法确保了每个 Trait 都有其明确的用途，避免了歧义，并使得整个库高度一致和可预测。
 
@@ -147,7 +177,9 @@ API 主要由以下几个核心 `trait` 组成，它们位于 `seal_crypto::trai
 -   `KeyAgreement`: 用于密钥协商以生成共享密钥。
 -   `Signer` / `Verifier`: 创建和验证数字签名。
 -   `Hasher`: 提供哈希摘要功能。
--   `KeyDerivation`: 从输入密钥材料中派生一个或多个安全密钥。
+-   `KeyBasedDerivation`: 从高熵输入密钥材料中派生一个或多个安全密钥。
+-   `PasswordBasedDerivation`: 从低熵密码中派生一个或多个安全密钥。
+-   `XofDerivation`: 从输入密钥材料中派生一个可扩展的字节流 (用于 SHAKE 等 XOF)。
 
 ## 支持的算法
 
@@ -157,13 +189,16 @@ API 主要由以下几个核心 `trait` 组成，它们位于 `seal_crypto::trai
 | | ECDSA (P-256) | `ecc` |
 | | EdDSA (Ed25519) | `ecc` |
 | | Dilithium (2/3/5) | `dilithium` |
-| **KEM** | RSA-OAEP (2048/4096 位, 可配置哈希) | `rsa`, `sha256`, etc. |
+| **KEM** | RSA-OAEP (2048/4096 位, 可配置哈希) | `rsa`, `sha2`, etc. |
 | | Kyber (512/768/1024) | `kyber` |
 | **密钥协商** | ECDH (P-256) | `ecdh` |
 | **AEAD** | AES-GCM (128/256 位) | `aes-gcm` |
 | | ChaCha20-Poly1305 | `chacha20-poly1305` |
-| **密钥派生** | HKDF (SHA-256, SHA-512) | `hkdf` |
-| | PBKDF2 (SHA-256, SHA-512) | `pbkdf2` |
+| **密钥派生 (KDF)** | HKDF (SHA-256, SHA-384, SHA-512) | `hkdf` |
+| | PBKDF2 (SHA-256, SHA-384, SHA-512) | `pbkdf2` |
+| **密码派生 (PBKDF)** | PBKDF2 (SHA-256, SHA-384, SHA-512) | `pbkdf2` |
+| | Argon2id (可配置) | `argon2` |
+| **可扩展输出函数 (XOF)** | SHAKE (128, 256) | `shake` |
 | **哈希** | SHA-2 (256, 384, 512) | `sha2` |
 
 ## 许可证

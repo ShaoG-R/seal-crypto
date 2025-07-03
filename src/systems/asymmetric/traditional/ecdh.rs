@@ -14,8 +14,8 @@ use crate::traits::{
     PrivateKey, PublicKey, SharedSecret,
 };
 use elliptic_curve::pkcs8::{DecodePrivateKey, DecodePublicKey, EncodePrivateKey, EncodePublicKey};
-use elliptic_curve::rand_core::OsRng;
 use p256::{ecdh, NistP256, PublicKey as P256PublicKey, SecretKey};
+use rand_core_elliptic_curve::OsRng;
 use std::convert::TryFrom;
 use std::marker::PhantomData;
 use zeroize::{Zeroize, Zeroizing};

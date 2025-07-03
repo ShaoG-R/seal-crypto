@@ -1,3 +1,5 @@
+#![cfg(feature = "kyber")]
+
 use criterion::{criterion_group, Criterion};
 use seal_crypto::{
     prelude::*,
@@ -5,7 +7,7 @@ use seal_crypto::{
 };
 use std::hint::black_box;
 
-fn bench_kyber(c: &mut Criterion) {
+pub fn bench_kyber(c: &mut Criterion) {
     let mut group = c.benchmark_group("Kyber");
 
     // --- Kyber512 ---

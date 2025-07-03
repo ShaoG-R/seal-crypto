@@ -2,7 +2,9 @@
 //!
 //! 为 `seal-crypto` crate 定义了顶层错误类型。
 
-use crate::traits::{KemError, KeyAgreementError, KeyError, SignatureError, SymmetricError, KdfError};
+use crate::traits::{
+    KdfError, KemError, KeyAgreementError, KeyError, SignatureError, SymmetricError,
+};
 
 #[cfg(feature = "std")]
 use thiserror::Error;
@@ -16,7 +18,7 @@ use thiserror::Error;
 ///
 /// 此枚举将来自底层加密 trait 的所有可能失败合并为一个统一的错误类型。
 #[cfg_attr(feature = "std", derive(Error))]
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Error {
     /// An error occurred during a key operation.
     ///
@@ -51,7 +53,6 @@ pub enum Error {
     /// KDF error.
     ///
     /// 密钥派生函数 (KDF) 错误。
-    #[cfg(feature = "kdf")]
     #[cfg_attr(feature = "std", error("KDF error"))]
     Kdf(#[cfg_attr(feature = "std", from)] KdfError),
 }
@@ -92,7 +93,7 @@ impl From<KeyAgreementError> for Error {
     }
 }
 
-#[cfg(all(not(feature = "std"), feature = "kdf"))]
+#[cfg(not(feature = "std"))]
 impl From<KdfError> for Error {
     fn from(e: KdfError) -> Self {
         Error::Kdf(e)

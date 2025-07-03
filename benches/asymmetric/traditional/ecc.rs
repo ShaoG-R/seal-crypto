@@ -1,3 +1,5 @@
+#![cfg(feature = "ecc")]
+
 use criterion::{criterion_group, Criterion};
 use seal_crypto::{
     prelude::*,
@@ -5,7 +7,7 @@ use seal_crypto::{
 };
 use std::hint::black_box;
 
-fn bench_ecc(c: &mut Criterion) {
+pub fn bench_ecc(c: &mut Criterion) {
     let mut group = c.benchmark_group("ECC");
     let message = b"message to be signed";
 
