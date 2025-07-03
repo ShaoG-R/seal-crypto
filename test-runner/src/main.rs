@@ -72,7 +72,21 @@ async fn main() {
     let test_matrix: TestMatrix =
         toml::from_str(&config_content).expect("Failed to parse TOML config file");
 
-    let all_cases = test_matrix.cases;
+    let total_cases_count = test_matrix.cases.len();
+    let current_arch = std::env::consts::ARCH;
+    println!("Current architecture detected: {}", current_arch.yellow());
+
+    let all_cases: Vec<_> = test_matrix
+        .cases
+        .into_iter()
+        .filter(|case| case.arch.is_empty() || case.arch.iter().any(|a| a == current_arch))
+        .collect();
+    
+    let filtered_count = total_cases_count - all_cases.len();
+    if filtered_count > 0 {
+        println!("{}", format!("Filtered out {} test case(s) based on current architecture. {} case(s) remaining.", filtered_count, all_cases.len()).yellow());
+    }
+
     let cases_to_run = match (args.total_runners, args.runner_index) {
         (Some(total), Some(index)) => {
             if index >= total {
