@@ -20,6 +20,14 @@ struct Args {
     /// Path to the test matrix config file
     #[arg(short, long, default_value = "TestMatrix.toml")]
     config: PathBuf,
+
+    /// Total number of parallel runners for splitting the test matrix
+    #[arg(long)]
+    total_runners: Option<usize>,
+
+    /// Index of the current runner (0-based) when splitting the test matrix
+    #[arg(long)]
+    runner_index: Option<usize>,
 }
 
 #[tokio::main]
@@ -64,11 +72,48 @@ async fn main() {
     let test_matrix: TestMatrix =
         toml::from_str(&config_content).expect("Failed to parse TOML config file");
 
+    let all_cases = test_matrix.cases;
+    let cases_to_run = match (args.total_runners, args.runner_index) {
+        (Some(total), Some(index)) => {
+            if index >= total {
+                panic!("--runner-index must be less than --total-runners.");
+            }
+            let cases_for_this_runner = all_cases
+                .into_iter()
+                .enumerate()
+                .filter_map(|(i, case)| if i % total == index { Some(case) } else { None })
+                .collect::<Vec<_>>();
+
+            println!(
+                "{}",
+                format!(
+                    "Running as runner {}/{} ({} cases assigned)",
+                    index + 1,
+                    total,
+                    cases_for_this_runner.len()
+                )
+                .yellow()
+            );
+            cases_for_this_runner
+        }
+        (None, None) => {
+            println!("{}", "Running all test cases as a single runner.".yellow());
+            all_cases
+        }
+        _ => {
+            panic!("--total-runners and --runner-index must be provided together.");
+        }
+    };
+
+    if cases_to_run.is_empty() {
+        println!("{}", "No test cases to run for this runner, exiting successfully.".green());
+        std::process::exit(0);
+    }
+    
     let current_os = std::env::consts::OS;
     println!("Current OS detected: {}", current_os.yellow());
 
-    let (flaky_cases, safe_cases): (Vec<_>, Vec<_>) = test_matrix
-        .cases
+    let (flaky_cases, safe_cases): (Vec<_>, Vec<_>) = cases_to_run
         .into_iter()
         .partition(|c| c.allow_failure.iter().any(|os| os == current_os));
 
