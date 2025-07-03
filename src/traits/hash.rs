@@ -1,7 +1,7 @@
 //! Defines the core trait for hashing algorithms.
 //!
 //! 定义了哈希算法的核心 trait。
-
+#[cfg(feature = "digest")]
 use digest::{Digest, DynDigest, ExtendableOutput, FixedOutputReset, Update};
 
 mod private {
@@ -13,6 +13,7 @@ mod private {
 ///
 /// 一个代表哈希函数的密封 trait。
 /// 它关联一个具体的 `digest::Digest` 实现。
+#[cfg(feature = "digest")]
 pub trait Hasher: private::Sealed + Send + Sync + 'static {
     /// The actual digest implementation from the `digest` crate.
     ///
@@ -62,7 +63,7 @@ impl Hasher for Sha512 {
 ///
 /// 一个代表可扩展输出函数 (XOF) 的密封 trait。
 /// 它关联一个具体的 `digest::ExtendableOutput` 实现。
-#[allow(unused)]
+#[cfg(feature = "digest")]
 pub trait Xof: private::Sealed + Send + Sync + 'static {
     /// The actual XOF implementation from the `digest` crate.
     ///

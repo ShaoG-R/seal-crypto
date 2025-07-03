@@ -4,6 +4,7 @@
 
 use crate::errors::Error;
 use crate::traits::algorithm::Algorithm;
+#[cfg(feature = "digest")]
 use digest::XofReader as DigestXofReader;
 #[cfg(feature = "std")]
 use thiserror::Error;
@@ -131,10 +132,12 @@ pub trait PasswordBasedDerivation: Derivation {
 /// 可扩展输出函数 (XOF) 的读取器。
 ///
 /// 此结构体包装了一个盒装的 `digest::XofReader`，以提供可从 trait 方法返回的具体类型。
+#[cfg(feature = "digest")]
 pub struct XofReader<'a> {
     reader: Box<dyn DigestXofReader + 'a>,
 }
 
+#[cfg(feature = "digest")]
 impl<'a> XofReader<'a> {
     /// Creates a new `XofReader` from a boxed `digest::XofReader`.
     ///
@@ -146,6 +149,7 @@ impl<'a> XofReader<'a> {
     }
 }
 
+#[cfg(feature = "digest")]
 impl<'a> DigestXofReader for XofReader<'a> {
     fn read(&mut self, buffer: &mut [u8]) {
         self.reader.read(buffer);
@@ -161,6 +165,7 @@ impl<'a> DigestXofReader for XofReader<'a> {
 ///
 /// 此 trait 允许从输入密钥材料 (IKM) 派生字节流，
 /// 这对于生成多个密钥或预先未知长度的密钥非常有用。
+#[cfg(feature = "digest")]
 pub trait XofDerivation: Derivation {
     /// Derives a byte stream from Input Keying Material (IKM).
     ///

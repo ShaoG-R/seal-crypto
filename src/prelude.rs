@@ -13,7 +13,6 @@ pub use crate::traits::{
     Derivation,
     DerivedKey,
     // hash
-    Hasher,
     KdfError,
     Kem,
     KemError,
@@ -40,7 +39,9 @@ pub use crate::traits::{
     SymmetricKeyGenerator,
     SymmetricKeySet,
     Verifier,
-    XofDerivation,
 };
+#[cfg(feature = "digest")]
+pub use crate::traits::{XofDerivation, Hasher};
 pub use ::zeroize;
-pub use digest::XofReader as DigestXofReader;
+#[cfg(feature = "digest")]
+pub use ::digest::XofReader as DigestXofReader;
