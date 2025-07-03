@@ -45,6 +45,11 @@ keywords = ["cryptography", "trait", "kem", "signature", "aead"]
 # Categories on crates.io, used for organization and discoverability.
 categories = ["cryptography"]
 
+[package.metadata.docs.rs]
+# 指示 docs.rs 在构建文档时启用 `full` 特性。
+# Instructs docs.rs to build documentation with the `full` feature enabled.
+features = ["full"]
+
 # [dependencies] 区域列出了项目所依赖的所有外部 crate。
 # The [dependencies] section lists all the external crates that the project depends on.
 [dependencies]
