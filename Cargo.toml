@@ -188,13 +188,13 @@ pbkdf2-default = ["dep:pbkdf2", "sha2", "pbkdf2/hmac"]
 pbkdf2 = ["pbkdf2/std", "pbkdf2-default", "std"]
 no-std-pbkdf2 = ["pbkdf2-default"]
 
-shake-default = ["dep:sha3"]
-shake = ["shake-default", "sha3/std", "std"]
-no-std-shake = ["shake-default"]
-
 argon2-default = ["dep:argon2", "dep:base64"]
 argon2 = ["argon2/std", "argon2-default", "std"]
 no-std-argon2 = ["argon2-default", "argon2/alloc"]
+
+shake-default = ["dep:sha3"]
+shake = ["shake-default", "sha3/std", "std"]
+no-std-shake = ["shake-default"]
 
 # --- 算法集特性 ---
 # 第二级：为常用算法组合提供的便捷特性。
@@ -206,8 +206,11 @@ no-std-classic = ["no-std-rsa", "no-std-aes-gcm", "no-std-chacha20poly1305", "no
 pqc = ["kyber", "dilithium"] # 后量子密码学算法集 / Post-Quantum Cryptography algorithms set
 no-std-pqc = ["no-std-kyber", "no-std-dilithium"]
 
-kdf = ["hkdf", "pbkdf2", "sha2", "shake", "argon2"]
-no-std-kdf = ["no-std-hkdf", "no-std-pbkdf2", "no-std-shake", "no-std-argon2"]
+kdf = ["hkdf", "pbkdf2", "sha2", "argon2"]
+no-std-kdf = ["no-std-hkdf", "no-std-pbkdf2", "no-std-argon2"]
+
+xof = ["shake"]
+no-std-xof = ["no-std-shake"]
 
 # --- 硬件加速特性 ---
 # 为特定算法启用硬件加速。
@@ -252,6 +255,12 @@ required-features = ["kyber", "aes-gcm"]
 # KDF example, requires `kdf` feature.
 name = "kdf"
 required-features = ["kdf"]
+
+[[example]]
+# XOF 示例, 需要 `shake` 特性.
+# XOF example, requires `shake` feature.
+name = "xof"
+required-features = ["shake"]
 
 [[example]]
 # README 示例，需要 `rsa` 特性.

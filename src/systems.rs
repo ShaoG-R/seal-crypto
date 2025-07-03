@@ -5,3 +5,4 @@
 pub mod asymmetric;
 pub mod kdf;
 pub mod symmetric;
+pub mod xof;

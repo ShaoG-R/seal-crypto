@@ -3,7 +3,7 @@
 use criterion::{criterion_group, Criterion};
 use seal_crypto::{
     prelude::*,
-    schemes::kdf::shake::{Shake128, Shake256},
+    schemes::xof::shake::{Shake128, Shake256},
 };
 use std::hint::black_box;
 
