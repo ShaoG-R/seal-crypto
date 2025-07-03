@@ -1,3 +1,10 @@
+[workspace]
+members = [
+    ".",
+    "test-runner",
+]
+resolver = "2"
+
 # [package] 区域定义了您的 crate（也就是您的 Rust 项目/库）的基本信息。
 # The [package] section defines basic information about your crate (your Rust project/library).
 [package]
@@ -238,6 +245,12 @@ required-features = ["kyber", "aes-gcm"]
 # KDF example, requires `kdf` feature.
 name = "kdf"
 required-features = ["kdf"]
+
+[[example]]
+# README 示例，需要 `rsa` 特性.
+# README example, requires the `rsa` feature.
+name = "readme"
+required-features = ["rsa"]
 
 [dev-dependencies]
 criterion = { version = "0.6.0", features = ["html_reports"] }
