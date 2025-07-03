@@ -93,7 +93,7 @@ impl From<KeyAgreementError> for Error {
     }
 }
 
-#[cfg(all(not(feature = "std"), feature = "kdf"))]
+#[cfg(not(feature = "std"))]
 impl From<KdfError> for Error {
     fn from(e: KdfError) -> Self {
         Error::Kdf(e)

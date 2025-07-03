@@ -126,19 +126,19 @@ allow_failure = []
 
 [[cases]]
 name = "no_std-classic"
-features = "no-std-classic,ecdh"
+features = "no-std-classic,no-std-ecdh"
 no_default_features = true
 allow_failure = []
 
 [[cases]]
 name = "no_std-pqc"
-features = "pqc"
+features = "no-std-pqc"
 no_default_features = true
 allow_failure = []
 
 [[cases]]
 name = "no_std-kdf"
-features = "no-std-kdf"
+features = "no-std-kdf,sha2"
 no_default_features = true
 allow_failure = []
 
@@ -150,13 +150,13 @@ allow_failure = []
 
 [[cases]]
 name = "no_std-classic-asm"
-features = "no-std-classic,ecdh,ecc-asm,sha2-asm"
+features = "no-std-classic,no-std-ecdh,ecc-asm,sha2-asm"
 no_default_features = true
 allow_failure = ["windows"]
 
 [[cases]]
 name = "no_std-pqc-avx2"
-features = "pqc,kyber-avx2,dilithium-avx2"
+features = "no-std-pqc,kyber-avx2,dilithium-avx2"
 no_default_features = true
 allow_failure = []
 
@@ -175,6 +175,18 @@ no_default_features = true
 allow_failure = []
 
 [[cases]]
+name = "no_std-kyber"
+features = "no-std-kyber"
+no_default_features = true
+allow_failure = []
+
+[[cases]]
+name = "no_std-dilithium"
+features = "no-std-dilithium"
+no_default_features = true
+allow_failure = []
+
+[[cases]]
 name = "no_std-aes-gcm"
 features = "no-std-aes-gcm"
 no_default_features = true
@@ -187,8 +199,20 @@ no_default_features = true
 allow_failure = []
 
 [[cases]]
+name = "no_std-sha2"
+features = "sha2"
+no_default_features = true
+allow_failure = []
+
+[[cases]]
 name = "no_std-ecc"
 features = "no-std-ecc"
+no_default_features = true
+allow_failure = []
+
+[[cases]]
+name = "no_std-ecdh"
+features = "no-std-ecdh"
 no_default_features = true
 allow_failure = []
 
@@ -201,6 +225,12 @@ allow_failure = []
 [[cases]]
 name = "no_std-pbkdf2"
 features = "no-std-pbkdf2"
+no_default_features = true
+allow_failure = []
+
+[[cases]]
+name = "no_std-shake"
+features = "no-std-shake"
 no_default_features = true
 allow_failure = []
 

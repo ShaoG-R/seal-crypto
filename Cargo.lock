@@ -1101,6 +1101,7 @@ dependencies = [
  "pqcrypto-dilithium",
  "pqcrypto-kyber",
  "pqcrypto-traits",
+ "rand_core 0.6.4",
  "rand_core 0.9.3",
  "rsa",
  "sha2",

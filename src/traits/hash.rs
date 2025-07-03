@@ -70,29 +70,29 @@ pub trait Xof: private::Sealed + Send + Sync + 'static {
 }
 
 /// `sha3` family hash functions
-#[cfg(feature = "shake")]
+#[cfg(feature = "shake-default")]
 pub use sha3::{Shake128 as Shake128_, Shake256 as Shake256_};
 
-#[cfg(feature = "shake")]
+#[cfg(feature = "shake-default")]
 #[derive(Default)]
 pub struct Shake128;
 
-#[cfg(feature = "shake")]
+#[cfg(feature = "shake-default")]
 impl private::Sealed for Shake128 {}
 
-#[cfg(feature = "shake")]
+#[cfg(feature = "shake-default")]
 impl Xof for Shake128 {
     type Xof = Shake128_;
 }
 
-#[cfg(feature = "shake")]
+#[cfg(feature = "shake-default")]
 #[derive(Default)]
 pub struct Shake256;
 
-#[cfg(feature = "shake")]
+#[cfg(feature = "shake-default")]
 impl private::Sealed for Shake256 {}
 
-#[cfg(feature = "shake")]
+#[cfg(feature = "shake-default")]
 impl Xof for Shake256 {
     type Xof = Shake256_;
 }

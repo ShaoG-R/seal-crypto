@@ -2,14 +2,14 @@
 //!
 //! KDF 实现。
 
-#[cfg(feature = "hkdf")]
+#[cfg(feature = "hkdf-default")]
 pub mod hkdf;
 
-#[cfg(feature = "pbkdf2")]
+#[cfg(feature = "pbkdf2-default")]
 pub mod pbkdf2;
 
-#[cfg(feature = "shake")]
+#[cfg(feature = "shake-default")]
 pub mod shake;
 
-#[cfg(feature = "argon2")]
+#[cfg(feature = "argon2-default")]
 pub mod argon2;

@@ -3,13 +3,10 @@
 //!
 //! `seal-crypto` 库提供了一套纯粹的、基于 Trait 的加密能力抽象和实现。
 
-#![cfg_attr(docsrs, feature(doc_cfg))]
-
 pub mod errors;
 pub mod prelude;
 pub mod schemes;
 
-#[cfg_attr(docsrs, doc(cfg(feature = "full")))]
 pub(crate) mod systems;
 pub(crate) mod traits;
 

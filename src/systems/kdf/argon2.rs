@@ -102,7 +102,12 @@ impl PasswordBasedDerivation for Argon2Scheme {
     }
 
     #[cfg(not(feature = "std"))]
-    fn derive(&self, _password: &[u8], _salt: &[u8], _output_len: usize) -> Result<DerivedKey, Error> {
+    fn derive(
+        &self,
+        _password: &[u8],
+        _salt: &[u8],
+        _output_len: usize,
+    ) -> Result<DerivedKey, Error> {
         // In a `no_std` environment, we cannot dynamically allocate the memory needed for Argon2's `m_cost`.
         // The `hash_password_into_with_memory` function requires a pre-allocated buffer, but `m_cost` is a
         // runtime parameter, making stack allocation impossible without a fixed, constant size.
