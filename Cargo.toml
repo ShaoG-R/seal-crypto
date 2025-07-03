@@ -101,25 +101,25 @@ default = ["std"]
 # --- Algorithm Primitive Features ---
 # Level 1: Individual algorithm features. Enabling these brings in the corresponding crypto algorithm implementations.
 # The "dep:" syntax indicates an optional dependency.
-rsa = ["dep:rsa", "sha2", "std-rsa"]
-std-rsa = ["rsa/std"]
-no-std-rsa = []
+rsa-default = ["dep:rsa", "sha2"]
+rsa = ["rsa/std", "rsa-default"]
+no-std-rsa = ["rsa-default"]
 
 kyber = ["dep:pqcrypto-kyber", "dep:pqcrypto-traits"]
 
 dilithium = ["dep:pqcrypto-dilithium", "dep:pqcrypto-traits"]
 
-aes-gcm = ["dep:aes-gcm", "std-aes-gcm"]
-std-aes-gcm = ["aes-gcm/std"]
-no-std-aes-gcm = []
+aes-gcm-default = ["dep:aes-gcm"]
+aes-gcm = ["aes-gcm/std", "aes-gcm-default"]
+no-std-aes-gcm = ["aes-gcm-default"]
 
-chacha20-poly1305 = ["dep:chacha20poly1305", "std-chacha20poly1305"]
-std-chacha20poly1305 = ["chacha20poly1305/std"]
-no-std-chacha20poly1305 = []
+chacha20-poly1305-default = ["dep:chacha20poly1305"]
+chacha20-poly1305 = ["chacha20poly1305/std", "chacha20-poly1305-default"]
+no-std-chacha20poly1305 = ["chacha20-poly1305-default"]
 
 sha2 = ["dep:sha2"]
 
-ecc = [
+ecc-default = [
     "dep:elliptic-curve",
     "dep:ecdsa",
     "dep:p256",
@@ -128,26 +128,25 @@ ecc = [
     "p256/ecdsa",
     "dep:ed25519-dalek",
     "dep:signature",
-    "std-ecc",
 ]
-std-ecc = ["elliptic-curve/std", "ecdsa/std", "p256/std", "ed25519-dalek/std"]
-no-std-ecc = []
+ecc = ["elliptic-curve/std", "ecdsa/std", "p256/std", "ed25519-dalek/std", "ecc-default"]
+no-std-ecc = ["ecc-default"]
 
 ecdh = ["elliptic-curve/ecdh", "dep:p256", "p256/ecdh", "p256/pkcs8"]
 
-hkdf = ["dep:hkdf", "dep:hmac", "std-hkdf"]
-std-hkdf = ["hkdf/std", "hmac/std"]
-no-std-hkdf = []
+hkdf-default = ["dep:hkdf", "dep:hmac"]
+hkdf = ["hkdf/std", "hmac/std", "hkdf-default"]
+no-std-hkdf = ["hkdf-default"]
 
-pbkdf2 = ["dep:pbkdf2", "pbkdf2/hmac", "std-pbkdf2"]
-std-pbkdf2 = ["pbkdf2/std"]
-no-std-pbkdf2 = []
+pbkdf2-default = ["dep:pbkdf2", "pbkdf2/hmac"]
+pbkdf2 = ["pbkdf2/std", "pbkdf2-default"]
+no-std-pbkdf2 = ["pbkdf2-default"]
 
 shake = ["dep:sha3"]
 
-argon2 = ["dep:argon2", "dep:base64", "std-argon2"]
-std-argon2 = ["argon2/std"]
-no-std-argon2 = []
+argon2-default = ["dep:argon2", "dep:base64"]
+argon2 = ["argon2/std", "argon2-default"]
+no-std-argon2 = ["argon2-default"]
 
 # --- 算法集特性 ---
 # 第二级：为常用算法组合提供的便捷特性。
@@ -159,25 +158,20 @@ no-std-classic = ["no-std-rsa", "no-std-aes-gcm", "no-std-chacha20poly1305", "no
 pqc = ["kyber", "dilithium"] # 后量子密码学算法集 / Post-Quantum Cryptography algorithms set
 
 kdf = ["hkdf", "pbkdf2", "sha2", "shake", "argon2"]
-no-std-kdf = ["no-std-hkdf", "no-std-pbkdf2", "no-std-argon2"]
+no-std-kdf = ["no-std-hkdf", "no-std-pbkdf2", "shake", "no-std-argon2"]
 
 # --- 硬件加速特性 ---
-# 启用特定 CPU 指令集（如 AVX2 或 sha-ni）以加速计算。
+# 为特定算法启用硬件加速。
 # --- Hardware Acceleration Features ---
-# Enable specific CPU instruction sets (like AVX2 or sha-ni) to accelerate computations.
-avx2 = [
-    "pqcrypto-dilithium/avx2",
-    "pqcrypto-kyber/avx2"
-]
+# Enable hardware acceleration for specific algorithms.
+# AVX2 features for post-quantum algorithms
+kyber-avx2 = ["pqcrypto-kyber/avx2"]
+dilithium-avx2 = ["pqcrypto-dilithium/avx2"]
 
-# ASM 不支持 Windows
-# ASM not support Windows
-asm = [
-    "sha2/sha2-asm",
-    "sha2/asm",
-    "ed25519-dalek/asm",
-    "sha3/asm",
-]
+# ASM features for various algorithms (Note: may not be Windows-compatible)
+sha2-asm = ["sha2/sha2-asm", "sha2/asm"]
+ecc-asm = ["ed25519-dalek/asm"]
+shake-asm = ["sha3/asm"]
 
 # --- 完整特性 ---
 # 第三级：`full` 特性激活所有可用的算法实现。
