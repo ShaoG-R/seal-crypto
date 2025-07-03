@@ -56,4 +56,4 @@ fn main() -> Result<(), CryptoError> {
     println!("\nSHAKE XOF example completed successfully! / SHAKE XOF 示例成功完成！");
 
     Ok(())
-} 
+}

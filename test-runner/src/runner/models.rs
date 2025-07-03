@@ -1,7 +1,7 @@
-use std::path::PathBuf;
-use serde::Deserialize;
-use tempfile::TempDir;
 use crate::runner::config::TestCase;
+use serde::Deserialize;
+use std::path::PathBuf;
+use tempfile::TempDir;
 
 #[derive(Debug, Clone)]
 pub enum FailureReason {
@@ -54,4 +54,4 @@ pub struct CargoMessage {
 pub struct CargoTarget {
     pub name: String,
     pub test: bool,
-} 
+}

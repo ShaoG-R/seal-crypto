@@ -1,9 +1,9 @@
+use colored::*;
 use std::sync::Arc;
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio_util::sync::CancellationToken;
-use colored::*;
 
-use crate::runner::models::{CargoMessage};
+use crate::runner::models::CargoMessage;
 
 /// Extracts and formats compiler errors from `cargo` JSON output.
 pub fn format_build_error_output(raw_output: &str) -> String {
@@ -108,4 +108,4 @@ pub async fn spawn_and_capture(
     stderr_handle.await.unwrap();
 
     (status, output.lock().await.clone())
-} 
+}

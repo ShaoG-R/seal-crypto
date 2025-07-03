@@ -1,13 +1,13 @@
+use colored::*;
 use std::fs;
 use std::path::PathBuf;
-use colored::*;
 use tokio_util::sync::CancellationToken;
 
-use crate::runner::config::TestCase;
-use crate::runner::models::{TestResult, FailureReason, BuiltTest};
 use crate::runner::command::spawn_and_capture;
-use crate::runner::utils::{create_build_dir, copy_dir_all};
+use crate::runner::config::TestCase;
 use crate::runner::models::CargoMessage;
+use crate::runner::models::{BuiltTest, FailureReason, TestResult};
+use crate::runner::utils::{copy_dir_all, create_build_dir};
 
 /// Runs a test case, including building and running it.
 /// This function encapsulates the entire lifecycle of a single test configuration.
@@ -19,7 +19,7 @@ pub async fn run_test_case(
     // First, try to build the test case.
     // The `?` operator will propagate the `Err(TestResult)` if the build fails.
     let built_test = build_test_case(case.clone(), project_root, stop_token.clone()).await?;
-    
+
     // If the build is successful, run the test.
     run_built_test(built_test, stop_token).await
 }
@@ -32,7 +32,7 @@ async fn build_test_case(
     println!("{}", format!("Building test: {}", case.name).blue());
 
     let build_ctx = create_build_dir(&case.features, case.no_default_features);
-    
+
     let mut cmd = tokio::process::Command::new("cargo");
     cmd.kill_on_drop(true);
     cmd.current_dir(&project_root);
@@ -52,7 +52,7 @@ async fn build_test_case(
     if !case.features.is_empty() {
         cmd.arg("--features").arg(&case.features);
     }
-    
+
     let command_string = format!("cargo test --lib --no-run --message-format=json-diagnostic-rendered-ansi --locked --offline --target-dir \"{}\" {} {}",
         build_ctx.target_path.display(),
         if case.no_default_features { "--no-default-features" } else { "" },
@@ -63,9 +63,13 @@ async fn build_test_case(
     let status = status_res.expect("Error waiting for process to complete");
 
     if !status.success() {
-        let sanitized_name = case.name.chars().map(|c| if c.is_alphanumeric() { c } else { '_' }).collect::<String>();
+        let sanitized_name = case
+            .name
+            .chars()
+            .map(|c| if c.is_alphanumeric() { c } else { '_' })
+            .collect::<String>();
         let error_dir_path = project_root.join("target-errors").join(sanitized_name);
-        
+
         println!(
             "{}\n  Command: {}",
             format!(
@@ -78,12 +82,14 @@ async fn build_test_case(
         );
 
         if error_dir_path.exists() {
-             fs::remove_dir_all(&error_dir_path).expect("Failed to clean up old error artifacts directory");
+            fs::remove_dir_all(&error_dir_path)
+                .expect("Failed to clean up old error artifacts directory");
         }
-        
-        copy_dir_all(&build_ctx.target_path, &error_dir_path)
-            .unwrap_or_else(|e| eprintln!("Failed to copy error artifacts for '{}': {}", case.name, e));
-        
+
+        copy_dir_all(&build_ctx.target_path, &error_dir_path).unwrap_or_else(|e| {
+            eprintln!("Failed to copy error artifacts for '{}': {}", case.name, e)
+        });
+
         return Err(TestResult {
             case,
             output,
@@ -111,8 +117,11 @@ async fn build_test_case(
             None
         })
         .expect("Could not find test executable in cargo output");
-    
-    println!("{}", format!("Successfully built test: {}", case.name).green());
+
+    println!(
+        "{}",
+        format!("Successfully built test: {}", case.name).green()
+    );
 
     Ok(BuiltTest {
         case,
@@ -120,7 +129,6 @@ async fn build_test_case(
         build_ctx,
     })
 }
-
 
 async fn run_built_test(
     built_test: BuiltTest,
@@ -140,22 +148,33 @@ async fn run_built_test(
 
     let (status_res, output) = spawn_and_capture(cmd, stop_token).await;
     let status = status_res.expect("Error waiting for process to complete");
-    
+
     let duration = start_time.elapsed();
-    
-    println!("{}", format!("Finished test: {} in {:.2?}", case.name, duration).blue());
-    
+
+    println!(
+        "{}",
+        format!("Finished test: {} in {:.2?}", case.name, duration).blue()
+    );
+
     let result = TestResult {
         case: case.clone(),
         output,
         success: status.success(),
-        failure_reason: if status.success() { None } else { Some(FailureReason::Test) },
+        failure_reason: if status.success() {
+            None
+        } else {
+            Some(FailureReason::Test)
+        },
     };
 
     if !result.success {
-        let sanitized_name = case.name.chars().map(|c| if c.is_alphanumeric() { c } else { '_' }).collect::<String>();
+        let sanitized_name = case
+            .name
+            .chars()
+            .map(|c| if c.is_alphanumeric() { c } else { '_' })
+            .collect::<String>();
         let error_dir_path = project_root.join("target-errors").join(sanitized_name);
-        
+
         println!(
             "{}\n  Command: {}",
             format!(
@@ -168,17 +187,19 @@ async fn run_built_test(
         );
 
         if error_dir_path.exists() {
-             fs::remove_dir_all(&error_dir_path).expect("Failed to clean up old error artifacts directory");
+            fs::remove_dir_all(&error_dir_path)
+                .expect("Failed to clean up old error artifacts directory");
         }
-        
+
         // The build artifacts are already in the temp dir managed by build_ctx.
         // We just need to copy them.
-        copy_dir_all(&build_ctx.target_path, &error_dir_path)
-            .unwrap_or_else(|e| eprintln!("Failed to copy error artifacts for '{}': {}", case.name, e));
-        
+        copy_dir_all(&build_ctx.target_path, &error_dir_path).unwrap_or_else(|e| {
+            eprintln!("Failed to copy error artifacts for '{}': {}", case.name, e)
+        });
+
         Err(result)
     } else {
         // build_ctx is dropped here, cleaning up the temp dir
         Ok(result)
     }
-} 
+}

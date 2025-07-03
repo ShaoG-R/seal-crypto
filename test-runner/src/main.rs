@@ -1,12 +1,12 @@
 use clap::Parser;
 use colored::*;
-use futures::{stream, StreamExt};
+use futures::{StreamExt, stream};
 use std::fs;
 use std::path::{Path, PathBuf};
 use tokio_util::sync::CancellationToken;
 
 mod runner;
-use runner::config::{TestMatrix};
+use runner::config::TestMatrix;
 use runner::execution::run_test_case;
 use runner::reporting::{handle_unexpected_failure, print_summary};
 
@@ -35,9 +35,15 @@ async fn main() {
     let args = Args::parse();
     let num_cpus = num_cpus::get();
     let jobs = args.jobs.unwrap_or(num_cpus / 2 + 1);
-    
-    println!("{}", "Temporary directories will be auto-cleaned for successful tests.".green());
-    println!("{}", "Artifacts for failed tests will be preserved in './target-errors'.".yellow());
+
+    println!(
+        "{}",
+        "Temporary directories will be auto-cleaned for successful tests.".green()
+    );
+    println!(
+        "{}",
+        "Artifacts for failed tests will be preserved in './target-errors'.".yellow()
+    );
 
     // Determine the project root (parent of the test-runner's manifest dir)
     let manifest_dir = Path::new(env!("CARGO_MANIFEST_DIR"));
@@ -47,7 +53,10 @@ async fn main() {
         .to_path_buf();
 
     // --- Pre-fetch all dependencies ---
-    println!("\n{}", "Fetching all dependencies to avoid lock contention...".cyan());
+    println!(
+        "\n{}",
+        "Fetching all dependencies to avoid lock contention...".cyan()
+    );
     let mut fetch_cmd = std::process::Command::new("cargo");
     fetch_cmd.current_dir(&project_root);
     fetch_cmd.arg("fetch");
@@ -81,10 +90,18 @@ async fn main() {
         .into_iter()
         .filter(|case| case.arch.is_empty() || case.arch.iter().any(|a| a == current_arch))
         .collect();
-    
+
     let filtered_count = total_cases_count - all_cases.len();
     if filtered_count > 0 {
-        println!("{}", format!("Filtered out {} test case(s) based on current architecture. {} case(s) remaining.", filtered_count, all_cases.len()).yellow());
+        println!(
+            "{}",
+            format!(
+                "Filtered out {} test case(s) based on current architecture. {} case(s) remaining.",
+                filtered_count,
+                all_cases.len()
+            )
+            .yellow()
+        );
     }
 
     let cases_to_run = match (args.total_runners, args.runner_index) {
@@ -120,10 +137,13 @@ async fn main() {
     };
 
     if cases_to_run.is_empty() {
-        println!("{}", "No test cases to run for this runner, exiting successfully.".green());
+        println!(
+            "{}",
+            "No test cases to run for this runner, exiting successfully.".green()
+        );
         std::process::exit(0);
     }
-    
+
     let current_os = std::env::consts::OS;
     println!("Current OS detected: {}", current_os.yellow());
 
@@ -149,9 +169,7 @@ async fn main() {
         .map(|case| {
             let project_root = project_root.clone();
             let stop_token = stop_token.clone();
-            tokio::spawn(
-                async move { run_test_case(case, project_root, Some(stop_token)).await },
-            )
+            tokio::spawn(async move { run_test_case(case, project_root, Some(stop_token)).await })
         })
         .buffer_unordered(jobs);
 
@@ -205,9 +223,17 @@ async fn main() {
     let has_unexpected_failures = print_summary(&results);
 
     // Final status message about directories.
-    println!("{}", "\nTemporary build directories for successful tests have been cleaned up automatically.".green());
+    println!(
+        "{}",
+        "\nTemporary build directories for successful tests have been cleaned up automatically."
+            .green()
+    );
     if results.iter().any(|r| !r.success) {
-        println!("{}", "Build artifacts for any failed tests have been preserved in './target-errors'.".yellow());
+        println!(
+            "{}",
+            "Build artifacts for any failed tests have been preserved in './target-errors'."
+                .yellow()
+        );
     }
 
     if has_unexpected_failures {

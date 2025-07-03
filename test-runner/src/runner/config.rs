@@ -14,4 +14,4 @@ pub struct TestCase {
 #[derive(Debug, Deserialize)]
 pub struct TestMatrix {
     pub cases: Vec<TestCase>,
-} 
+}

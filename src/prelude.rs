@@ -41,7 +41,7 @@ pub use crate::traits::{
     Verifier,
 };
 #[cfg(feature = "digest")]
-pub use crate::traits::{XofDerivation, Hasher};
-pub use ::zeroize;
+pub use crate::traits::{Hasher, XofDerivation};
 #[cfg(feature = "digest")]
 pub use ::digest::XofReader as DigestXofReader;
+pub use ::zeroize;

@@ -1,6 +1,6 @@
-pub mod config;
-pub mod models;
-pub mod utils;
 pub mod command;
+pub mod config;
+pub mod execution;
+pub mod models;
 pub mod reporting;
-pub mod execution; 
+pub mod utils;
