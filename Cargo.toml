@@ -219,9 +219,11 @@ dilithium-avx2 = ["pqcrypto-dilithium/avx2"]
 
 # ASM features for various algorithms (Note: may not be Windows-compatible)
 sha2-asm = ["sha2/sha2-asm", "sha2/asm"]
+sha2-asm-aarch64 = ["sha2/asm-aarch64"]
+sha2-loongarch64-asm = ["sha2/loongarch64_asm"]
+sha3-asm = ["sha3/asm"]
 ecc-asm = ["ed25519-dalek/asm"]
 shake-asm = ["sha3/asm"]
-
 # --- 完整特性 ---
 # 第三级：`full` 特性激活所有可用的算法实现。
 # --- Full Feature ---
