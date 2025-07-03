@@ -25,8 +25,8 @@ use ed25519_dalek::{
     VerifyingKey as Ed25519VerifyingKey,
 };
 use elliptic_curve::pkcs8::{DecodePrivateKey, DecodePublicKey, EncodePrivateKey, EncodePublicKey};
-use elliptic_curve::rand_core::{OsRng, RngCore};
 use p256::{ecdsa::Signature as P256Signature, NistP256, SecretKey};
+use rand_core_elliptic_curve::{OsRng, RngCore};
 use std::convert::TryFrom;
 use std::marker::PhantomData;
 use zeroize::{Zeroize, Zeroizing};

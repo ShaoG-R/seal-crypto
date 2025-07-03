@@ -1,8 +1,10 @@
+#![cfg(feature = "ecdh")]
+
 use criterion::{criterion_group, Criterion};
 use seal_crypto::{prelude::*, schemes::asymmetric::traditional::ecdh::*};
 use std::hint::black_box;
 
-fn bench_ecdh(c: &mut Criterion) {
+pub fn bench_ecdh(c: &mut Criterion) {
     let mut group = c.benchmark_group("ECDH");
 
     // --- EcdhP256 ---

@@ -45,30 +45,34 @@ categories = ["cryptography"]
 # 这些是实际的加密算法实现库。它们是可选的，可以通过下面的 [features] 来启用。
 # --- Cryptography Backends ---
 # These are the actual cryptographic algorithm implementation libraries. They are optional and can be enabled via the [features] section below.
+base64 = { version = "0.22.1", optional = true, default-features = false }
 rsa = { version = "0.9.8", optional = true, default-features = false }
-pqcrypto-kyber = { version = "0.8.1", optional = true }
+pqcrypto-kyber = { version = "0.8.1", optional = true, default-features = false }
 aes-gcm = { version = "0.10.3", optional = true, default-features = false, features = ["aes", "getrandom", "alloc"] }
-sha2 = { version = "0.10.9", optional = true } # RSA-PSS dependency / RSA-PSS 依赖
+sha2 = { version = "0.10.9", optional = true, default-features = false } # RSA-PSS dependency / RSA-PSS 依赖
+sha3 = { version = "0.10.8", optional = true, default-features = false }
 chacha20poly1305 = { version = "0.10.1", optional = true, default-features = false, features = ["getrandom", "alloc"] }
-pqcrypto-dilithium = { version = "0.5.0", optional = true }
-elliptic-curve = { version = "0.13.8", optional = true, features = ["pkcs8"] }
-ecdsa = { version = "0.16.9", optional = true, features = ["der"] }
+pqcrypto-dilithium = { version = "0.5.0", optional = true, default-features = false }
+elliptic-curve = { version = "0.13.8", optional = true, default-features = false }
+ecdsa = { version = "0.16.9", optional = true, features = ["der"], default-features = false }
 p256 = { version = "0.13.2", optional = true, default-features = false }
-ed25519-dalek = { version = "2.1.1", optional = true, features = ["pkcs8"] }
-signature = { version = "2.2", optional = true, features = ["rand_core"] }
-digest = "0.10.7"
-hkdf_p = { package = "hkdf", version = "0.12.4", optional = true, default-features = false }
+ed25519-dalek = { version = "2.1.1", optional = true, default-features = false }
+signature = { version = "2.2.0", optional = true, default-features = false }
+digest = { version = "0.10.7", default-features = false }
+hkdf = { version = "0.12.4", optional = true, default-features = false }
 hmac = { version = "0.12.1", optional = true, default-features = false }
-pbkdf2_p = { package = "pbkdf2", version = "0.12.2", optional = true, default-features = false }
+pbkdf2 = { version = "0.12.2", optional = true, default-features = false }
+argon2 = { version = "0.5.3", optional = true, default-features = false }
 
 # --- 辅助 Crates ---
 # 这些 crate 提供了一些通用的辅助功能。
 # --- Helper Crates ---
 # These crates provide general helper functionalities.
 thiserror = { version = "2.0.12", optional = true } # 用于方便地定义错误类型。 / For easily defining error types.
-pqcrypto-traits = { version = "0.3.5", optional = true } # 后量子密码学算法所需的 traits。 / Traits required for post-quantum cryptography algorithms.
+pqcrypto-traits = { version = "0.3.5", optional = true, default-features = false } # 后量子密码学算法所需的 traits。 / Traits required for post-quantum cryptography algorithms.
 rand_core = { version = "0.9.3", default-features = false } # 随机数生成器所需的核心 traits。 / Core traits for random number generators.
-zeroize = { version = "1.8.1", features = ["derive"] } # 用于从内存中安全地擦除敏感数据（如密钥）。/ For securely wiping sensitive data (like keys) from memory.
+rand_core_elliptic_curve = { package = "rand_core", version = "0.6.4", optional = true, default-features = false }
+zeroize = { version = "1.8.1", features = ["derive", "alloc"], default-features = false } # 用于从内存中安全地擦除敏感数据（如密钥）。/ For securely wiping sensitive data (like keys) from memory.
 
 # [features] 区域允许您定义条件编译的标志。
 # 这对于提供可选功能、支持不同环境（如 `std` vs `no_std`）或配置依赖项非常有用。
@@ -83,17 +87,9 @@ zeroize = { version = "1.8.1", features = ["derive"] } # 用于从内存中安�
 # For `no_std` environments, you need to disable default features to compile.
 std = [
     "rand_core/std",
-    "aes-gcm/std",
-    "chacha20poly1305/std",
+    "zeroize/std",
+    "digest/std",
     "dep:thiserror",
-    "rsa/std",
-    "elliptic-curve/std",
-    "ecdsa/std",
-    "p256/std",
-    "ed25519-dalek/std",
-    "hkdf_p/std",
-    "hmac/std",
-    "pbkdf2_p/std"
 ]
 
 # --- 默认特性 ---
@@ -108,56 +104,118 @@ default = ["std"]
 # --- Algorithm Primitive Features ---
 # Level 1: Individual algorithm features. Enabling these brings in the corresponding crypto algorithm implementations.
 # The "dep:" syntax indicates an optional dependency.
-rsa = ["dep:rsa", "sha2"]
-kyber = ["dep:pqcrypto-kyber", "dep:pqcrypto-traits"]
-dilithium = ["dep:pqcrypto-dilithium", "dep:pqcrypto-traits"]
-aes-gcm = ["dep:aes-gcm"]
-chacha20-poly1305 = ["dep:chacha20poly1305"]
+rsa-default = ["dep:rsa", "rsa/getrandom", "sha2"]
+rsa = ["rsa/std", "rsa-default", "std"]
+no-std-rsa = ["rsa-default"]
+
+kyber-default = ["dep:pqcrypto-kyber", "dep:pqcrypto-traits"]
+kyber = ["kyber-default", "pqcrypto-kyber/std", "std"]
+no-std-kyber = ["kyber-default"]
+
+dilithium-default = ["dep:pqcrypto-dilithium", "dep:pqcrypto-traits"]
+dilithium = ["dilithium-default", "pqcrypto-dilithium/std", "pqcrypto-traits/std", "std"]
+no-std-dilithium = ["dilithium-default"]
+
+aes-gcm-default = ["dep:aes-gcm"]
+aes-gcm = ["aes-gcm/std", "aes-gcm-default", "std"]
+no-std-aes-gcm = ["aes-gcm-default"]
+
+chacha20-poly1305-default = ["dep:chacha20poly1305"]
+chacha20-poly1305 = ["chacha20poly1305/std", "chacha20-poly1305-default", "std"]
+no-std-chacha20poly1305 = ["chacha20-poly1305-default"]
+
 sha2 = ["dep:sha2"]
-ecc = [
+
+ecc-default = [
     "dep:elliptic-curve",
     "dep:ecdsa",
     "dep:p256",
+    "dep:ed25519-dalek",
+    "dep:signature",
+    "dep:rand_core_elliptic_curve",
     "p256/alloc",
     "p256/arithmetic",
     "p256/ecdsa",
-    "dep:ed25519-dalek",
-    "dep:signature",
+    "p256/pkcs8",
+    "ed25519-dalek/pkcs8",
+    "rand_core_elliptic_curve/getrandom",
 ]
-ecdh = ["elliptic-curve/ecdh", "dep:p256", "p256/ecdh", "p256/pkcs8"]
-hkdf = ["dep:hkdf_p", "dep:hmac"]
-pbkdf2 = ["dep:pbkdf2_p", "pbkdf2_p/hmac"]
+ecc = [
+    "elliptic-curve/std",
+    "ecdsa/std",
+    "p256/std",
+    "ed25519-dalek/std",
+    "signature/std",
+    "ecc-default",
+    "std"
+]
+no-std-ecc = ["ecc-default", "ed25519-dalek/alloc"]
+
+ecdh-default = [
+    "dep:elliptic-curve",
+    "dep:p256",
+    "dep:rand_core_elliptic_curve",
+    "elliptic-curve/ecdh",
+    "elliptic-curve/pkcs8",
+    "elliptic-curve/arithmetic",
+    "p256/ecdh",
+    "p256/pkcs8",
+    "rand_core_elliptic_curve/getrandom",
+]
+ecdh = ["ecdh-default", "elliptic-curve/std", "p256/std", "rand_core_elliptic_curve/std", "std"]
+no-std-ecdh = [
+    "ecdh-default",
+    "elliptic-curve/alloc",
+]
+
+hkdf-default = ["dep:hkdf", "sha2", "dep:hmac"]
+hkdf = ["hkdf/std", "hmac/std", "hkdf-default", "std"]
+no-std-hkdf = ["hkdf-default"]
+
+pbkdf2-default = ["dep:pbkdf2", "sha2", "pbkdf2/hmac"]
+pbkdf2 = ["pbkdf2/std", "pbkdf2-default", "std"]
+no-std-pbkdf2 = ["pbkdf2-default"]
+
+shake-default = ["dep:sha3"]
+shake = ["shake-default", "sha3/std", "std"]
+no-std-shake = ["shake-default"]
+
+argon2-default = ["dep:argon2", "dep:base64"]
+argon2 = ["argon2/std", "argon2-default", "std"]
+no-std-argon2 = ["argon2-default", "argon2/alloc"]
 
 # --- 算法集特性 ---
 # 第二级：为常用算法组合提供的便捷特性。
 # --- Algorithm Set Features ---
 # Level 2: Convenience features for common combinations of algorithms.
 classic = ["rsa", "aes-gcm", "chacha20-poly1305", "ecc", "ecdh"] # 经典加密算法集 / Classic cryptographic algorithms set
+no-std-classic = ["no-std-rsa", "no-std-aes-gcm", "no-std-chacha20poly1305", "no-std-ecc"]
+
 pqc = ["kyber", "dilithium"] # 后量子密码学算法集 / Post-Quantum Cryptography algorithms set
-kdf = ["hkdf", "pbkdf2", "sha2"]
+no-std-pqc = ["no-std-kyber", "no-std-dilithium"]
+
+kdf = ["hkdf", "pbkdf2", "sha2", "shake", "argon2"]
+no-std-kdf = ["no-std-hkdf", "no-std-pbkdf2", "no-std-shake", "no-std-argon2"]
 
 # --- 硬件加速特性 ---
-# 启用特定 CPU 指令集（如 AVX2 或 sha-ni）以加速计算。
+# 为特定算法启用硬件加速。
 # --- Hardware Acceleration Features ---
-# Enable specific CPU instruction sets (like AVX2 or sha-ni) to accelerate computations.
-avx2 = [
-    "pqcrypto-dilithium/avx2",
-    "pqcrypto-kyber/avx2"
-]
+# Enable hardware acceleration for specific algorithms.
+# AVX2 features for post-quantum algorithms
+kyber-avx2 = ["pqcrypto-kyber/avx2"]
+dilithium-avx2 = ["pqcrypto-dilithium/avx2"]
 
-# ASM 不支持 Windows
-# ASM not support Windows
-asm = [
-    "sha2/sha2-asm",
-    "sha2/asm",
-    "ed25519-dalek/asm",
-]
+# ASM features for various algorithms (Note: may not be Windows-compatible)
+sha2-asm = ["sha2/sha2-asm", "sha2/asm"]
+ecc-asm = ["ed25519-dalek/asm"]
+shake-asm = ["sha3/asm"]
 
 # --- 完整特性 ---
 # 第三级：`full` 特性激活所有可用的算法实现。
 # --- Full Feature ---
 # Level 3: The `full` feature activates all available algorithm implementations.
 full = ["classic", "pqc", "kdf"]
+no-std-full = ["no-std-classic", "no-std-pqc", "no-std-kdf"]
 
 # [[example]] 区域用于定义项目的示例代码。
 # 每个示例都可以有自己所需的特性。

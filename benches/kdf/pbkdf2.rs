@@ -1,3 +1,5 @@
+#![cfg(feature = "pbkdf2")]
+
 use criterion::{criterion_group, Criterion};
 use seal_crypto::{
     prelude::*,
@@ -9,7 +11,7 @@ use std::hint::black_box;
 // In a real application, use a much higher value (e.g., 600,000 or more).
 const BENCH_ITERATIONS: u32 = 1000;
 
-fn bench_pbkdf2(c: &mut Criterion) {
+pub fn bench_pbkdf2(c: &mut Criterion) {
     let mut group = c.benchmark_group("KDF-PBKDF2");
 
     let password = b"password-for-benchmarking";
@@ -18,31 +20,27 @@ fn bench_pbkdf2(c: &mut Criterion) {
 
     // --- PBKDF2-SHA256 ---
     let scheme_sha256 = Pbkdf2Sha256::new(BENCH_ITERATIONS);
-    group.bench_function(format!("PBKDF2-SHA256 ({} iterations)", BENCH_ITERATIONS), |b| {
-        b.iter(|| {
-            scheme_sha256.derive(
-                black_box(password),
-                black_box(Some(salt)),
-                black_box(None),
-                black_box(output_len),
-            )
-        })
-    });
+    group.bench_function(
+        format!("PBKDF2-SHA256 ({} iterations)", BENCH_ITERATIONS),
+        |b| {
+            b.iter(|| {
+                scheme_sha256.derive(black_box(password), black_box(salt), black_box(output_len))
+            })
+        },
+    );
 
     // --- PBKDF2-SHA512 ---
     let scheme_sha512 = Pbkdf2Sha512::new(BENCH_ITERATIONS);
-    group.bench_function(format!("PBKDF2-SHA512 ({} iterations)", BENCH_ITERATIONS), |b| {
-        b.iter(|| {
-            scheme_sha512.derive(
-                black_box(password),
-                black_box(Some(salt)),
-                black_box(None),
-                black_box(output_len),
-            )
-        })
-    });
+    group.bench_function(
+        format!("PBKDF2-SHA512 ({} iterations)", BENCH_ITERATIONS),
+        |b| {
+            b.iter(|| {
+                scheme_sha512.derive(black_box(password), black_box(salt), black_box(output_len))
+            })
+        },
+    );
 
     group.finish();
 }
 
-criterion_group!(benches, bench_pbkdf2); 
+criterion_group!(benches, bench_pbkdf2);
