@@ -3,7 +3,7 @@
 //! 定义了哈希算法的核心 trait。
 #[cfg(feature = "digest")]
 use digest::{Digest, DynDigest, ExtendableOutput, FixedOutputReset, Update};
-
+#[cfg(feature = "digest")]
 mod private {
     pub trait Sealed {}
 }

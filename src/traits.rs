@@ -11,6 +11,7 @@ pub mod symmetric;
 
 pub use algorithm::*;
 pub use asymmetric::*;
+#[cfg(feature = "digest")]
 pub use hash::*;
 pub use kdf::*;
 pub use key::*;
