@@ -2,12 +2,14 @@ use crate::runner::command::format_build_error_output;
 use crate::runner::models::{FailureReason, TestResult};
 use colored::*;
 
-/// Prints details for an unexpected test failure and exits the process.
-pub fn handle_unexpected_failure(result: &TestResult) {
+/// Prints details for an unexpected test failure.
+/// This function is called when a non-ignored test fails, to provide immediate feedback.
+pub fn print_unexpected_failure_details(result: &TestResult) {
     println!(
         "{}",
         "=================================================================".cyan()
     );
+    println!("{}", "UNEXPECTED FAILURE DETECTED".red().bold());
     println!(
         "{}",
         format!("  Failure details for: {}", result.case.name).cyan()
@@ -23,29 +25,15 @@ pub fn handle_unexpected_failure(result: &TestResult) {
     };
     println!("{}", output_to_print);
 
-    let failure_type = match result.failure_reason {
-        Some(FailureReason::Build) => "build",
-        Some(FailureReason::Test) => "test",
-        None => "task",
-    };
     println!(
         "{}",
-        format!(
-            "Unexpected {} failure for configuration: {}",
-            failure_type, result.case.name
-        )
-        .red()
+        "-----------------------------------------------------------------".cyan()
     );
-    println!(
-        "\n{}",
-        "==================== FINAL SUMMARY ====================".cyan()
-    );
-    println!("{}", "TEST MATRIX FAILED".red());
     println!(
         "{}",
-        format!("  - {} ({})", result.case.name, failure_type).red()
+        "Signaling all other running tests to stop. A final summary will be printed at the end."
+            .yellow()
     );
-    std::process::exit(1);
 }
 
 /// Prints the final summary of all test results.

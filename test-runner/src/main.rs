@@ -3,12 +3,13 @@ use colored::*;
 use futures::{StreamExt, stream};
 use std::fs;
 use std::path::{Path, PathBuf};
+use tokio::signal;
 use tokio_util::sync::CancellationToken;
 
 mod runner;
 use runner::config::TestMatrix;
 use runner::execution::run_test_case;
-use runner::reporting::{handle_unexpected_failure, print_summary};
+use runner::reporting::{print_summary, print_unexpected_failure_details};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -35,6 +36,20 @@ async fn main() {
     let args = Args::parse();
     let num_cpus = num_cpus::get();
     let jobs = args.jobs.unwrap_or(num_cpus / 2 + 1);
+
+    // Setup a global cancellation token for graceful shutdown
+    let overall_stop_token = CancellationToken::new();
+    let signal_token = overall_stop_token.clone();
+    tokio::spawn(async move {
+        signal::ctrl_c()
+            .await
+            .expect("Failed to listen for Ctrl+C signal");
+        println!(
+            "\n{}",
+            "Ctrl+C received, initiating graceful shutdown...".yellow()
+        );
+        signal_token.cancel();
+    });
 
     println!(
         "{}",
@@ -164,17 +179,21 @@ async fn main() {
         .cyan()
     );
 
-    let stop_token = CancellationToken::new();
     let mut safe_tests_stream = stream::iter(safe_cases)
         .map(|case| {
             let project_root = project_root.clone();
-            let stop_token = stop_token.clone();
+            let stop_token = overall_stop_token.clone();
             tokio::spawn(async move { run_test_case(case, project_root, Some(stop_token)).await })
         })
         .buffer_unordered(jobs);
 
     let mut unexpected_failure_observed = false;
     while let Some(res) = safe_tests_stream.next().await {
+        if unexpected_failure_observed || overall_stop_token.is_cancelled() {
+            // Drain the stream quickly if we're shutting down, to allow tasks to finish and clean up.
+            continue;
+        }
+
         let result = res.unwrap(); // Unwrap the JoinHandle result
         match result {
             Ok(test_result) => {
@@ -184,8 +203,8 @@ async fn main() {
                 if !unexpected_failure_observed {
                     // This is the first unexpected failure.
                     unexpected_failure_observed = true;
-                    stop_token.cancel(); // Signal all other tests to stop.
-                    handle_unexpected_failure(&test_result); // This will exit the process.
+                    overall_stop_token.cancel(); // Signal all other tests to stop.
+                    print_unexpected_failure_details(&test_result);
                 }
                 // Even though we're exiting, push the result for completeness if needed.
                 results.push(test_result);
@@ -204,7 +223,16 @@ async fn main() {
             .yellow()
         );
         for case in flaky_cases {
-            let result = run_test_case(case, project_root.clone(), None).await;
+            if overall_stop_token.is_cancelled() {
+                println!(
+                    "{}",
+                    format!("Shutdown triggered, skipping test: {}", case.name).yellow()
+                );
+                break;
+            }
+
+            let result =
+                run_test_case(case, project_root.clone(), Some(overall_stop_token.clone())).await;
             match result {
                 Ok(res) => {
                     results.push(res);
@@ -212,7 +240,12 @@ async fn main() {
                 Err(res) => {
                     let failure_allowed = res.case.allow_failure.iter().any(|os| os == current_os);
                     if !failure_allowed {
-                        handle_unexpected_failure(&res);
+                        // This path should ideally not be hit for flaky tests, but as a safeguard:
+                        if !unexpected_failure_observed {
+                            unexpected_failure_observed = true;
+                            overall_stop_token.cancel();
+                            print_unexpected_failure_details(&res);
+                        }
                     }
                     results.push(res);
                 }
