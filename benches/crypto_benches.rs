@@ -1,6 +1,7 @@
 mod asymmetric;
 mod kdf;
 mod symmetric;
+mod xof;
 
 use criterion::{criterion_group, criterion_main, Criterion};
 
@@ -23,10 +24,10 @@ fn all_benches(c: &mut Criterion) {
     kdf::hkdf::bench_hkdf(c);
     #[cfg(feature = "pbkdf2")]
     kdf::pbkdf2::bench_pbkdf2(c);
-    #[cfg(feature = "shake")]
-    kdf::shake::bench_shake(c);
     #[cfg(feature = "argon2")]
     kdf::argon2::bench_argon2(c);
+    #[cfg(feature = "shake")]
+    xof::shake::bench_shake(c);
 }
 
 criterion_group!(benches, all_benches);

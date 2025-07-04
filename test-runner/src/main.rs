@@ -1,14 +1,15 @@
 use clap::Parser;
 use colored::*;
-use futures::{stream, StreamExt};
+use futures::{StreamExt, stream};
 use std::fs;
 use std::path::{Path, PathBuf};
+use tokio::signal;
 use tokio_util::sync::CancellationToken;
 
 mod runner;
-use runner::config::{TestMatrix};
+use runner::config::TestMatrix;
 use runner::execution::run_test_case;
-use runner::reporting::{handle_unexpected_failure, print_summary};
+use runner::reporting::{print_summary, print_unexpected_failure_details};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -35,9 +36,29 @@ async fn main() {
     let args = Args::parse();
     let num_cpus = num_cpus::get();
     let jobs = args.jobs.unwrap_or(num_cpus / 2 + 1);
-    
-    println!("{}", "Temporary directories will be auto-cleaned for successful tests.".green());
-    println!("{}", "Artifacts for failed tests will be preserved in './target-errors'.".yellow());
+
+    // Setup a global cancellation token for graceful shutdown
+    let overall_stop_token = CancellationToken::new();
+    let signal_token = overall_stop_token.clone();
+    tokio::spawn(async move {
+        signal::ctrl_c()
+            .await
+            .expect("Failed to listen for Ctrl+C signal");
+        println!(
+            "\n{}",
+            "Ctrl+C received, initiating graceful shutdown...".yellow()
+        );
+        signal_token.cancel();
+    });
+
+    println!(
+        "{}",
+        "Temporary directories will be auto-cleaned for successful tests.".green()
+    );
+    println!(
+        "{}",
+        "Artifacts for failed tests will be preserved in './target-errors'.".yellow()
+    );
 
     // Determine the project root (parent of the test-runner's manifest dir)
     let manifest_dir = Path::new(env!("CARGO_MANIFEST_DIR"));
@@ -47,7 +68,10 @@ async fn main() {
         .to_path_buf();
 
     // --- Pre-fetch all dependencies ---
-    println!("\n{}", "Fetching all dependencies to avoid lock contention...".cyan());
+    println!(
+        "\n{}",
+        "Fetching all dependencies to avoid lock contention...".cyan()
+    );
     let mut fetch_cmd = std::process::Command::new("cargo");
     fetch_cmd.current_dir(&project_root);
     fetch_cmd.arg("fetch");
@@ -72,7 +96,29 @@ async fn main() {
     let test_matrix: TestMatrix =
         toml::from_str(&config_content).expect("Failed to parse TOML config file");
 
-    let all_cases = test_matrix.cases;
+    let total_cases_count = test_matrix.cases.len();
+    let current_arch = std::env::consts::ARCH;
+    println!("Current architecture detected: {}", current_arch.yellow());
+
+    let all_cases: Vec<_> = test_matrix
+        .cases
+        .into_iter()
+        .filter(|case| case.arch.is_empty() || case.arch.iter().any(|a| a == current_arch))
+        .collect();
+
+    let filtered_count = total_cases_count - all_cases.len();
+    if filtered_count > 0 {
+        println!(
+            "{}",
+            format!(
+                "Filtered out {} test case(s) based on current architecture. {} case(s) remaining.",
+                filtered_count,
+                all_cases.len()
+            )
+            .yellow()
+        );
+    }
+
     let cases_to_run = match (args.total_runners, args.runner_index) {
         (Some(total), Some(index)) => {
             if index >= total {
@@ -106,10 +152,13 @@ async fn main() {
     };
 
     if cases_to_run.is_empty() {
-        println!("{}", "No test cases to run for this runner, exiting successfully.".green());
+        println!(
+            "{}",
+            "No test cases to run for this runner, exiting successfully.".green()
+        );
         std::process::exit(0);
     }
-    
+
     let current_os = std::env::consts::OS;
     println!("Current OS detected: {}", current_os.yellow());
 
@@ -130,14 +179,11 @@ async fn main() {
         .cyan()
     );
 
-    let stop_token = CancellationToken::new();
     let mut safe_tests_stream = stream::iter(safe_cases)
         .map(|case| {
             let project_root = project_root.clone();
-            let stop_token = stop_token.clone();
-            tokio::spawn(
-                async move { run_test_case(case, project_root, Some(stop_token)).await },
-            )
+            let stop_token = overall_stop_token.clone();
+            tokio::spawn(async move { run_test_case(case, project_root, Some(stop_token)).await })
         })
         .buffer_unordered(jobs);
 
@@ -149,13 +195,15 @@ async fn main() {
                 results.push(test_result);
             }
             Err(test_result) => {
-                if !unexpected_failure_observed {
-                    // This is the first unexpected failure.
-                    unexpected_failure_observed = true;
-                    stop_token.cancel(); // Signal all other tests to stop.
-                    handle_unexpected_failure(&test_result); // This will exit the process.
+                // Only treat genuine failures as "unexpected"
+                if test_result.failure_reason != Some(runner::models::FailureReason::Cancelled) {
+                    if !unexpected_failure_observed {
+                        // This is the first unexpected failure.
+                        unexpected_failure_observed = true;
+                        overall_stop_token.cancel(); // Signal all other tests to stop.
+                        print_unexpected_failure_details(&test_result);
+                    }
                 }
-                // Even though we're exiting, push the result for completeness if needed.
                 results.push(test_result);
             }
         }
@@ -172,17 +220,40 @@ async fn main() {
             .yellow()
         );
         for case in flaky_cases {
-            let result = run_test_case(case, project_root.clone(), None).await;
-            match result {
-                Ok(res) => {
-                    results.push(res);
-                }
-                Err(res) => {
-                    let failure_allowed = res.case.allow_failure.iter().any(|os| os == current_os);
-                    if !failure_allowed {
-                        handle_unexpected_failure(&res);
+            if overall_stop_token.is_cancelled() {
+                println!(
+                    "{}",
+                    format!("Shutdown triggered, skipping test: {}", case.name).yellow()
+                );
+                results.push(runner::models::TestResult {
+                    case,
+                    output: "Test skipped due to cancellation.".to_string(),
+                    success: false,
+                    failure_reason: Some(runner::models::FailureReason::Cancelled),
+                });
+            } else {
+                let result =
+                    run_test_case(case, project_root.clone(), Some(overall_stop_token.clone()))
+                        .await;
+                match result {
+                    Ok(res) => {
+                        results.push(res);
                     }
-                    results.push(res);
+                    Err(res) => {
+                        // Only treat genuine failures as "unexpected"
+                        if res.failure_reason != Some(runner::models::FailureReason::Cancelled) {
+                            let failure_allowed =
+                                res.case.allow_failure.iter().any(|os| os == current_os);
+                            if !failure_allowed {
+                                if !unexpected_failure_observed {
+                                    unexpected_failure_observed = true;
+                                    overall_stop_token.cancel();
+                                    print_unexpected_failure_details(&res);
+                                }
+                            }
+                        }
+                        results.push(res);
+                    }
                 }
             }
         }
@@ -191,9 +262,17 @@ async fn main() {
     let has_unexpected_failures = print_summary(&results);
 
     // Final status message about directories.
-    println!("{}", "\nTemporary build directories for successful tests have been cleaned up automatically.".green());
+    println!(
+        "{}",
+        "\nTemporary build directories for successful tests have been cleaned up automatically."
+            .green()
+    );
     if results.iter().any(|r| !r.success) {
-        println!("{}", "Build artifacts for any failed tests have been preserved in './target-errors'.".yellow());
+        println!(
+            "{}",
+            "Build artifacts for any failed tests have been preserved in './target-errors'."
+                .yellow()
+        );
     }
 
     if has_unexpected_failures {
