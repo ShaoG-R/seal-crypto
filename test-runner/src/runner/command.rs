@@ -38,10 +38,16 @@ pub fn format_build_error_output(raw_output: &str) -> String {
 
 /// Spawns a command and captures its stdout and stderr streams.
 /// If a stop_signal is provided and set, it will attempt to kill the child process.
+/// Returns the exit status, the combined output, and a boolean indicating if the process
+/// was killed due to the cancellation token.
 pub async fn spawn_and_capture(
     mut cmd: tokio::process::Command,
     stop_token: Option<CancellationToken>,
-) -> (std::io::Result<std::process::ExitStatus>, String) {
+) -> (
+    std::io::Result<std::process::ExitStatus>,
+    String,
+    bool, // was_cancelled
+) {
     // Capture stdout and stderr
     let mut child = match cmd
         .stdout(std::process::Stdio::piped())
@@ -51,7 +57,7 @@ pub async fn spawn_and_capture(
         Ok(child) => child,
         Err(e) => {
             // If spawning fails, we return the error and an empty string for the output.
-            return (Err(e), String::new());
+            return (Err(e), String::new(), false);
         }
     };
 
@@ -88,24 +94,24 @@ pub async fn spawn_and_capture(
         }
     });
 
-    let status = if let Some(token) = stop_token {
+    let (status, was_cancelled) = if let Some(token) = stop_token {
         tokio::select! {
             _ = token.cancelled() => {
                 if let Err(e) = child.start_kill() {
                     eprintln!("Failed to kill child process: {}", e);
                 }
-                child.wait().await
+                (child.wait().await, true)
             },
             status = child.wait() => {
-                status
+                (status, false)
             }
         }
     } else {
-        child.wait().await
+        (child.wait().await, false)
     };
 
     stdout_handle.await.unwrap();
     stderr_handle.await.unwrap();
 
-    (status, output.lock().await.clone())
+    (status, output.lock().await.clone(), was_cancelled)
 }

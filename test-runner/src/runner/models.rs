@@ -3,10 +3,11 @@ use serde::Deserialize;
 use std::path::PathBuf;
 use tempfile::TempDir;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum FailureReason {
     Build,
     Test,
+    Cancelled,
 }
 
 #[derive(Debug, Clone)]

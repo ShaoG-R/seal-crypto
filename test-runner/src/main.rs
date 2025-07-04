@@ -189,24 +189,21 @@ async fn main() {
 
     let mut unexpected_failure_observed = false;
     while let Some(res) = safe_tests_stream.next().await {
-        if unexpected_failure_observed || overall_stop_token.is_cancelled() {
-            // Drain the stream quickly if we're shutting down, to allow tasks to finish and clean up.
-            continue;
-        }
-
         let result = res.unwrap(); // Unwrap the JoinHandle result
         match result {
             Ok(test_result) => {
                 results.push(test_result);
             }
             Err(test_result) => {
-                if !unexpected_failure_observed {
-                    // This is the first unexpected failure.
-                    unexpected_failure_observed = true;
-                    overall_stop_token.cancel(); // Signal all other tests to stop.
-                    print_unexpected_failure_details(&test_result);
+                // Only treat genuine failures as "unexpected"
+                if test_result.failure_reason != Some(runner::models::FailureReason::Cancelled) {
+                    if !unexpected_failure_observed {
+                        // This is the first unexpected failure.
+                        unexpected_failure_observed = true;
+                        overall_stop_token.cancel(); // Signal all other tests to stop.
+                        print_unexpected_failure_details(&test_result);
+                    }
                 }
-                // Even though we're exiting, push the result for completeness if needed.
                 results.push(test_result);
             }
         }
@@ -228,26 +225,35 @@ async fn main() {
                     "{}",
                     format!("Shutdown triggered, skipping test: {}", case.name).yellow()
                 );
-                break;
-            }
-
-            let result =
-                run_test_case(case, project_root.clone(), Some(overall_stop_token.clone())).await;
-            match result {
-                Ok(res) => {
-                    results.push(res);
-                }
-                Err(res) => {
-                    let failure_allowed = res.case.allow_failure.iter().any(|os| os == current_os);
-                    if !failure_allowed {
-                        // This path should ideally not be hit for flaky tests, but as a safeguard:
-                        if !unexpected_failure_observed {
-                            unexpected_failure_observed = true;
-                            overall_stop_token.cancel();
-                            print_unexpected_failure_details(&res);
-                        }
+                results.push(runner::models::TestResult {
+                    case,
+                    output: "Test skipped due to cancellation.".to_string(),
+                    success: false,
+                    failure_reason: Some(runner::models::FailureReason::Cancelled),
+                });
+            } else {
+                let result =
+                    run_test_case(case, project_root.clone(), Some(overall_stop_token.clone()))
+                        .await;
+                match result {
+                    Ok(res) => {
+                        results.push(res);
                     }
-                    results.push(res);
+                    Err(res) => {
+                        // Only treat genuine failures as "unexpected"
+                        if res.failure_reason != Some(runner::models::FailureReason::Cancelled) {
+                            let failure_allowed =
+                                res.case.allow_failure.iter().any(|os| os == current_os);
+                            if !failure_allowed {
+                                if !unexpected_failure_observed {
+                                    unexpected_failure_observed = true;
+                                    overall_stop_token.cancel();
+                                    print_unexpected_failure_details(&res);
+                                }
+                            }
+                        }
+                        results.push(res);
+                    }
                 }
             }
         }
