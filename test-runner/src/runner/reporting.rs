@@ -1,12 +1,23 @@
-use colored::*;
-use crate::runner::models::{TestResult, FailureReason};
 use crate::runner::command::format_build_error_output;
+use crate::runner::models::{FailureReason, TestResult};
+use colored::*;
 
-/// Prints details for an unexpected test failure and exits the process.
-pub fn handle_unexpected_failure(result: &TestResult) {
-    println!("{}", "=================================================================".cyan());
-    println!("{}", format!("  Failure details for: {}", result.case.name).cyan());
-    println!("{}", "-----------------------------------------------------------------".cyan());
+/// Prints details for an unexpected test failure.
+/// This function is called when a non-ignored test fails, to provide immediate feedback.
+pub fn print_unexpected_failure_details(result: &TestResult) {
+    println!(
+        "{}",
+        "=================================================================".cyan()
+    );
+    println!("{}", "UNEXPECTED FAILURE DETECTED".red().bold());
+    println!(
+        "{}",
+        format!("  Failure details for: {}", result.case.name).cyan()
+    );
+    println!(
+        "{}",
+        "-----------------------------------------------------------------".cyan()
+    );
 
     let output_to_print = match &result.failure_reason {
         Some(FailureReason::Build) => format_build_error_output(&result.output),
@@ -14,55 +25,104 @@ pub fn handle_unexpected_failure(result: &TestResult) {
     };
     println!("{}", output_to_print);
 
-    let failure_type = match result.failure_reason {
-        Some(FailureReason::Build) => "build",
-        Some(FailureReason::Test) => "test",
-        None => "task",
-    };
-    println!("{}", format!("Unexpected {} failure for configuration: {}", failure_type, result.case.name).red());
-    println!("\n{}", "==================== FINAL SUMMARY ====================".cyan());
-    println!("{}", "TEST MATRIX FAILED".red());
-    println!("{}", format!("  - {} ({})", result.case.name, failure_type).red());
-    std::process::exit(1);
+    println!(
+        "{}",
+        "-----------------------------------------------------------------".cyan()
+    );
+    println!(
+        "{}",
+        "Signaling all other running tests to stop. A final summary will be printed at the end."
+            .yellow()
+    );
 }
 
 /// Prints the final summary of all test results.
-/// Returns true if there were any unexpected failures.
-pub fn print_summary(final_results: &[TestResult]) -> bool {
-    println!("\n{}", "==================== FINAL SUMMARY ====================".cyan());
+/// Returns true if there were any unexpected failures or cancellations.
+pub fn print_summary(results: &[TestResult]) -> bool {
+    let mut successes = Vec::new();
+    let mut allowed_failures = Vec::new();
+    let mut unexpected_failures = Vec::new();
+    let mut cancelled_tests = Vec::new();
 
-    let mut has_unexpected_failures = false;
-    for result in final_results.iter() {
-        println!("{}", "=================================================================".cyan());
-        println!("{}", format!("  Test results for: {}", result.case.name).cyan());
-        println!("{}", "-----------------------------------------------------------------".cyan());
-        
-        let output_to_print = if !result.success {
-            match &result.failure_reason {
-                Some(FailureReason::Build) => format_build_error_output(&result.output),
-                _ => result.output.clone(),
-            }
-        } else {
-            result.output.clone()
-        };
-        println!("{}", output_to_print);
+    let current_os = std::env::consts::OS;
 
+    for result in results {
         if result.success {
-            println!("{}", format!("Test successful for configuration: {}", result.case.name).green());
+            successes.push(result);
         } else {
-            let current_os = std::env::consts::OS;
+            // Distinguish between genuine failures and cancellations
+            if result.failure_reason == Some(FailureReason::Cancelled) {
+                cancelled_tests.push(result);
+                continue;
+            }
+
+            // Check if the failure was allowed for the current OS
             let failure_allowed = result.case.allow_failure.iter().any(|os| os == current_os);
 
             if failure_allowed {
-                println!("{}", format!("Test failed for configuration: {}", result.case.name).red());
-                println!("{}", format!("NOTE: This failure was expected on '{}' and will be ignored.", current_os).yellow());
+                allowed_failures.push(result);
             } else {
-                // This branch should not be reached due to early exit, but is kept for safety.
-                has_unexpected_failures = true;
-                println!("{}", format!("Test failed for configuration: {}", result.case.name).red());
+                unexpected_failures.push(result);
             }
         }
-        println!();
     }
-    has_unexpected_failures
-} 
+
+    println!(
+        "\n{}",
+        "==================== FINAL SUMMARY ====================".cyan()
+    );
+
+    if !successes.is_empty() {
+        println!("\n{}", "--- Successful Tests ---".green());
+        for result in successes {
+            println!("  - {}", result.case.name.green());
+        }
+    }
+
+    if !allowed_failures.is_empty() {
+        println!("\n{}", "--- Allowed Failures ---".yellow());
+        for result in allowed_failures {
+            println!(
+                "  - {} (failed as expected on {})",
+                result.case.name.yellow(),
+                current_os
+            );
+        }
+    }
+
+    if !cancelled_tests.is_empty() {
+        println!("\n{}", "--- Cancelled Tests ---".yellow());
+        for result in &cancelled_tests {
+            println!("  - {} (Cancelled)", result.case.name.yellow());
+        }
+    }
+
+    if !unexpected_failures.is_empty() {
+        println!("\n{}", "--- Unexpected Failures ---".red().bold());
+        for result in &unexpected_failures {
+            let failure_type = match result.failure_reason {
+                Some(FailureReason::Build) => "Build",
+                Some(FailureReason::Test) => "Test",
+                _ => "Unknown", // Should not happen with current logic
+            };
+            println!(
+                "  - {} ({} Failure)",
+                result.case.name.red(),
+                failure_type
+            );
+        }
+    }
+
+    println!(); // Add a blank line for spacing
+
+    if !unexpected_failures.is_empty() {
+        println!("{}", "TEST MATRIX FAILED".red().bold());
+        true
+    } else if !cancelled_tests.is_empty() {
+        println!("{}", "TEST MATRIX EXECUTION CANCELLED".yellow().bold());
+        true
+    } else {
+        println!("{}", "TEST MATRIX PASSED SUCCESSFULLY".green().bold());
+        false
+    }
+}
