@@ -11,6 +11,7 @@ use seal_crypto::{
         pbkdf2::{Pbkdf2Sha256, Pbkdf2Sha512, PBKDF2_DEFAULT_ITERATIONS},
     },
 };
+use secrecy::SecretBox;
 
 fn main() -> Result<(), CryptoError> {
     println!("Running KDF example... / 正在运行 KDF 示例...");
@@ -51,7 +52,7 @@ fn main() -> Result<(), CryptoError> {
     // PBKDF2 因其可配置的迭代次数，非常适合从密码等低熵输入中派生密钥，
     // 因为它能减慢暴力破解攻击的速度。
     println!("\n--- PBKDF2-SHA256 ---");
-    let password = b"a-very-common-password";
+    let password = SecretBox::new(Box::from(b"a-very-common-password".as_slice()));
     let salt_pbkdf2 = b"another-unique-salt";
     let output_len_pbkdf2 = 32;
 
@@ -63,10 +64,11 @@ fn main() -> Result<(), CryptoError> {
         pbkdf2_default_scheme.iterations
     );
     let derived_key_pbkdf2_default =
-        pbkdf2_default_scheme.derive(password, salt_pbkdf2, output_len_pbkdf2)?;
+        pbkdf2_default_scheme.derive(&password, salt_pbkdf2, output_len_pbkdf2)?;
+    use secrecy::ExposeSecret;
     println!(
         "  - PBKDF2 Input Password: \"{}\"",
-        String::from_utf8_lossy(password)
+        String::from_utf8_lossy(password.expose_secret())
     );
     println!(
         "  - Derived Key (Default Iterations): 0x{}",
@@ -84,7 +86,7 @@ fn main() -> Result<(), CryptoError> {
         pbkdf2_custom_scheme.iterations
     );
     let derived_key_pbkdf2_custom =
-        pbkdf2_custom_scheme.derive(password, salt_pbkdf2, output_len_pbkdf2)?;
+        pbkdf2_custom_scheme.derive(&password, salt_pbkdf2, output_len_pbkdf2)?;
     println!(
         "  - Derived Key (Custom Iterations): 0x{}",
         hex::encode(derived_key_pbkdf2_custom.as_bytes())
@@ -99,7 +101,7 @@ fn main() -> Result<(), CryptoError> {
     // Using PBKDF2-SHA512 is also straightforward.
     // 使用 PBKDF2-SHA512 也同样直接。
     let pbkdf2_sha512_scheme = Pbkdf2Sha512::new(PBKDF2_DEFAULT_ITERATIONS);
-    let _derived_key_pbkdf2_512 = pbkdf2_sha512_scheme.derive(password, salt_pbkdf2, 64)?;
+    let _derived_key_pbkdf2_512 = pbkdf2_sha512_scheme.derive(&password, salt_pbkdf2, 64)?;
 
     println!("\nKDF example completed successfully! / KDF 示例成功完成！");
 

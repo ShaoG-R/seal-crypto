@@ -16,7 +16,7 @@ name = "seal-crypto"
 version = "0.1.2-rc5"
 # 指定项目使用的 Rust edition。
 # Specifies the Rust edition used by the project.
-edition = "2021"
+edition = "2024"
 # 项目作者列表。
 # A list of the project's authors.
 authors = ["GlorYouth <admin@gloryouth.com>"]
@@ -192,7 +192,6 @@ no-std-pbkdf2 = ["pbkdf2-default"]
 
 argon2-default = ["dep:argon2", "dep:base64", "secrecy"]
 argon2 = ["argon2/std", "argon2-default", "std"]
-no-std-argon2 = ["argon2-default", "argon2/alloc"]
 
 digest = ["dep:digest"]
 shake-default = ["dep:sha3", "digest"]
@@ -210,7 +209,7 @@ pqc = ["kyber", "dilithium"] # 后量子密码学算法集 / Post-Quantum Crypto
 no-std-pqc = ["no-std-kyber", "no-std-dilithium"]
 
 kdf = ["hkdf", "pbkdf2", "sha2", "argon2"]
-no-std-kdf = ["no-std-hkdf", "no-std-pbkdf2", "no-std-argon2"]
+no-std-kdf = ["no-std-hkdf", "no-std-pbkdf2"]
 
 xof = ["shake"]
 no-std-xof = ["no-std-shake"]

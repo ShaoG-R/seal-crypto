@@ -2,6 +2,7 @@
 
 use criterion::{criterion_group, Criterion};
 use seal_crypto::{prelude::*, schemes::kdf::argon2::Argon2Scheme};
+use secrecy::SecretBox;
 use std::hint::black_box;
 
 // Use low-cost parameters for benchmarks to ensure they run quickly.
@@ -13,7 +14,7 @@ const BENCH_P_COST: u32 = 1;
 pub fn bench_argon2(c: &mut Criterion) {
     let mut group = c.benchmark_group("KDF-Argon2");
 
-    let password = b"password-for-benchmarking";
+    let password = SecretBox::new(Box::from(b"password-for-benchmarking".as_slice()));
     let salt = b"salt-for-benchmarking";
     let output_len = 32;
 
@@ -24,7 +25,7 @@ pub fn bench_argon2(c: &mut Criterion) {
     );
 
     group.bench_function(&bench_name, |b| {
-        b.iter(|| scheme.derive(black_box(password), black_box(salt), black_box(output_len)))
+        b.iter(|| scheme.derive(black_box(&password), black_box(salt), black_box(output_len)))
     });
 
     group.finish();

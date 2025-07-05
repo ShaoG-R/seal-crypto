@@ -10,7 +10,7 @@ use crate::{
         kdf::{Derivation, DerivedKey, PasswordBasedDerivation},
     },
 };
-use secrecy::{ExposeSecret, SecretVec};
+use secrecy::{ExposeSecret, SecretBox};
 use pbkdf2::pbkdf2_hmac;
 use std::marker::PhantomData;
 
@@ -58,7 +58,7 @@ impl<H: Hasher> Algorithm for Pbkdf2Scheme<H> {
 
 #[cfg(feature = "sha2")]
 impl PasswordBasedDerivation for Pbkdf2Scheme<Sha256> {
-    fn derive(&self, password: &SecretVec<u8>, salt: &[u8], output_len: usize) -> Result<DerivedKey, Error> {
+    fn derive(&self, password: &SecretBox<[u8]>, salt: &[u8], output_len: usize) -> Result<DerivedKey, Error> {
         let mut okm = vec![0u8; output_len];
 
         pbkdf2_hmac::<sha2::Sha256>(password.expose_secret(), salt, self.iterations, &mut okm);
@@ -69,7 +69,7 @@ impl PasswordBasedDerivation for Pbkdf2Scheme<Sha256> {
 
 #[cfg(feature = "sha2")]
 impl PasswordBasedDerivation for Pbkdf2Scheme<Sha384> {
-    fn derive(&self, password: &SecretVec<u8>, salt: &[u8], output_len: usize) -> Result<DerivedKey, Error> {
+    fn derive(&self, password: &SecretBox<[u8]>, salt: &[u8], output_len: usize) -> Result<DerivedKey, Error> {
         let mut okm = vec![0u8; output_len];
 
         pbkdf2_hmac::<sha2::Sha384>(password.expose_secret(), salt, self.iterations, &mut okm);
@@ -80,7 +80,7 @@ impl PasswordBasedDerivation for Pbkdf2Scheme<Sha384> {
 
 #[cfg(feature = "sha2")]
 impl PasswordBasedDerivation for Pbkdf2Scheme<Sha512> {
-    fn derive(&self, password: &SecretVec<u8>, salt: &[u8], output_len: usize) -> Result<DerivedKey, Error> {
+    fn derive(&self, password: &SecretBox<[u8]>, salt: &[u8], output_len: usize) -> Result<DerivedKey, Error> {
         let mut okm = vec![0u8; output_len];
 
         pbkdf2_hmac::<sha2::Sha512>(password.expose_secret(), salt, self.iterations, &mut okm);
@@ -121,7 +121,7 @@ mod tests {
     where
         Pbkdf2Scheme<H>: PasswordBasedDerivation,
     {
-        let password = SecretVec::new(b"password".to_vec());
+        let password = SecretBox::new(Box::from(b"password".as_slice()));
         let salt = b"salt";
         let output_len = 32;
         let custom_iterations = 1000; // Use a low number for fast tests

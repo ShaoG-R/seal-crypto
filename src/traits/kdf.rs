@@ -10,7 +10,7 @@ use digest::XofReader as DigestXofReader;
 use thiserror::Error;
 use zeroize::Zeroizing;
 #[cfg(feature = "secrecy")]
-use secrecy::SecretVec;
+use secrecy::SecretBox;
 
 /// A key derived from a KDF, wrapped in `Zeroizing` for security.
 ///
@@ -124,7 +124,7 @@ pub trait PasswordBasedDerivation: Derivation {
     ///
     /// # 返回
     /// 派生出的密钥，长度为 `output_len`。
-    fn derive(&self, password: &SecretVec<u8>, salt: &[u8], output_len: usize) -> Result<DerivedKey, Error>;
+    fn derive(&self, password: &SecretBox<[u8]>, salt: &[u8], output_len: usize) -> Result<DerivedKey, Error>;
 }
 
 /// A reader for extendable-output functions (XOFs).
