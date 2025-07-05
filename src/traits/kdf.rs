@@ -9,6 +9,8 @@ use digest::XofReader as DigestXofReader;
 #[cfg(feature = "std")]
 use thiserror::Error;
 use zeroize::Zeroizing;
+#[cfg(feature = "secrecy")]
+use secrecy::SecretVec;
 
 /// A key derived from a KDF, wrapped in `Zeroizing` for security.
 ///
@@ -99,6 +101,7 @@ pub trait KeyBasedDerivation: Derivation {
 ///
 /// 用于从低熵密码派生密钥的基于密码的密钥派生函数 (PBKDF) 的 trait。
 /// 这些函数通常是计算密集型的，以防止暴力破解攻击。
+#[cfg(feature = "secrecy")]
 pub trait PasswordBasedDerivation: Derivation {
     /// Derives a secure key from a password.
     ///
@@ -121,7 +124,7 @@ pub trait PasswordBasedDerivation: Derivation {
     ///
     /// # 返回
     /// 派生出的密钥，长度为 `output_len`。
-    fn derive(&self, password: &[u8], salt: &[u8], output_len: usize) -> Result<DerivedKey, Error>;
+    fn derive(&self, password: &SecretVec<u8>, salt: &[u8], output_len: usize) -> Result<DerivedKey, Error>;
 }
 
 /// A reader for extendable-output functions (XOFs).

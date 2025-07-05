@@ -11,6 +11,7 @@ use crate::{
 };
 #[cfg(feature = "std")]
 use argon2::Argon2 as Argon2_p;
+use secrecy::SecretVec;
 
 /// Argon2id default memory cost (in kibibytes). OWASP recommendation: 19 MiB = 19456 KiB.
 /// We use a slightly more conservative value that is a power of 2.
@@ -82,7 +83,9 @@ impl Algorithm for Argon2Scheme {
 
 impl PasswordBasedDerivation for Argon2Scheme {
     #[cfg(feature = "std")]
-    fn derive(&self, password: &[u8], salt: &[u8], output_len: usize) -> Result<DerivedKey, Error> {
+    fn derive(&self, password: &SecretVec<u8>, salt: &[u8], output_len: usize) -> Result<DerivedKey, Error> {
+        use secrecy::ExposeSecret;
+
         let params = argon2::Params::new(self.m_cost, self.t_cost, self.p_cost, Some(output_len))
             .map_err(|_| Error::Kdf(KdfError::DerivationFailed))?;
 
@@ -95,7 +98,7 @@ impl PasswordBasedDerivation for Argon2Scheme {
         // 这是将 Argon2 用于密钥派生的最直接方法。
         let mut output = vec![0u8; output_len];
         argon2
-            .hash_password_into(password, salt, &mut output)
+            .hash_password_into(password.expose_secret(), salt, &mut output)
             .map_err(|_| Error::Kdf(KdfError::DerivationFailed))?;
 
         Ok(DerivedKey::new(output))
@@ -133,14 +136,14 @@ mod tests {
     #[cfg(feature = "std")]
     #[test]
     fn test_argon2_derivation_std() {
-        let password = b"password";
+        let password = SecretVec::new(b"password".to_vec());
         let salt = b"some-random-salt";
         let output_len = 32;
 
         // Use low-cost parameters for fast testing
         let scheme = Argon2Scheme::new(16, 1, 1);
 
-        let derived_key_result = scheme.derive(password, salt, output_len);
+        let derived_key_result = scheme.derive(&password, salt, output_len);
         assert!(derived_key_result.is_ok());
 
         let derived_key = derived_key_result.unwrap();
@@ -148,14 +151,14 @@ mod tests {
 
         // Test with default parameters
         let default_scheme = Argon2Scheme::default();
-        let derived_key_default_result = default_scheme.derive(password, salt, output_len);
+        let derived_key_default_result = default_scheme.derive(&password, salt, output_len);
         assert!(derived_key_default_result.is_ok());
     }
 
     #[cfg(not(feature = "std"))]
     #[test]
     fn test_argon2_derivation_no_std() {
-        let password = b"password";
+        let password = SecretVec::new(b"password".to_vec());
         let salt = b"some-random-salt";
         let output_len = 32;
         let scheme = Argon2Scheme::new(16, 1, 1);
@@ -171,13 +174,13 @@ mod tests {
     #[cfg(feature = "std")]
     #[test]
     fn test_argon2_determinism() {
-        let password = b"a-secure-password";
+        let password = SecretVec::new(b"a-secure-password".to_vec());
         let salt = b"a-unique-salt-for-this-user";
         let output_len = 64;
         let scheme = Argon2Scheme::new(16, 1, 1);
 
-        let key1 = scheme.derive(password, salt, output_len).unwrap();
-        let key2 = scheme.derive(password, salt, output_len).unwrap();
+        let key1 = scheme.derive(&password, salt, output_len).unwrap();
+        let key2 = scheme.derive(&password, salt, output_len).unwrap();
 
         assert_eq!(key1.as_bytes(), key2.as_bytes());
     }
@@ -185,14 +188,14 @@ mod tests {
     #[cfg(feature = "std")]
     #[test]
     fn test_argon2_different_salts() {
-        let password = b"another-password";
+        let password = SecretVec::new(b"another-password".to_vec());
         let salt1 = b"salt-number-one";
         let salt2 = b"salt-number-two";
         let output_len = 32;
         let scheme = Argon2Scheme::new(16, 1, 1);
 
-        let key1 = scheme.derive(password, salt1, output_len).unwrap();
-        let key2 = scheme.derive(password, salt2, output_len).unwrap();
+        let key1 = scheme.derive(&password, salt1, output_len).unwrap();
+        let key2 = scheme.derive(&password, salt2, output_len).unwrap();
 
         assert_ne!(key1.as_bytes(), key2.as_bytes());
     }

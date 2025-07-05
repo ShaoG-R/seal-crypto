@@ -10,6 +10,7 @@ use crate::{
         kdf::{Derivation, DerivedKey, PasswordBasedDerivation},
     },
 };
+use secrecy::{ExposeSecret, SecretVec};
 use pbkdf2::pbkdf2_hmac;
 use std::marker::PhantomData;
 
@@ -57,10 +58,10 @@ impl<H: Hasher> Algorithm for Pbkdf2Scheme<H> {
 
 #[cfg(feature = "sha2")]
 impl PasswordBasedDerivation for Pbkdf2Scheme<Sha256> {
-    fn derive(&self, password: &[u8], salt: &[u8], output_len: usize) -> Result<DerivedKey, Error> {
+    fn derive(&self, password: &SecretVec<u8>, salt: &[u8], output_len: usize) -> Result<DerivedKey, Error> {
         let mut okm = vec![0u8; output_len];
 
-        pbkdf2_hmac::<sha2::Sha256>(password, salt, self.iterations, &mut okm);
+        pbkdf2_hmac::<sha2::Sha256>(password.expose_secret(), salt, self.iterations, &mut okm);
 
         Ok(DerivedKey::new(okm))
     }
@@ -68,10 +69,10 @@ impl PasswordBasedDerivation for Pbkdf2Scheme<Sha256> {
 
 #[cfg(feature = "sha2")]
 impl PasswordBasedDerivation for Pbkdf2Scheme<Sha384> {
-    fn derive(&self, password: &[u8], salt: &[u8], output_len: usize) -> Result<DerivedKey, Error> {
+    fn derive(&self, password: &SecretVec<u8>, salt: &[u8], output_len: usize) -> Result<DerivedKey, Error> {
         let mut okm = vec![0u8; output_len];
 
-        pbkdf2_hmac::<sha2::Sha384>(password, salt, self.iterations, &mut okm);
+        pbkdf2_hmac::<sha2::Sha384>(password.expose_secret(), salt, self.iterations, &mut okm);
 
         Ok(DerivedKey::new(okm))
     }
@@ -79,10 +80,10 @@ impl PasswordBasedDerivation for Pbkdf2Scheme<Sha384> {
 
 #[cfg(feature = "sha2")]
 impl PasswordBasedDerivation for Pbkdf2Scheme<Sha512> {
-    fn derive(&self, password: &[u8], salt: &[u8], output_len: usize) -> Result<DerivedKey, Error> {
+    fn derive(&self, password: &SecretVec<u8>, salt: &[u8], output_len: usize) -> Result<DerivedKey, Error> {
         let mut okm = vec![0u8; output_len];
 
-        pbkdf2_hmac::<sha2::Sha512>(password, salt, self.iterations, &mut okm);
+        pbkdf2_hmac::<sha2::Sha512>(password.expose_secret(), salt, self.iterations, &mut okm);
 
         Ok(DerivedKey::new(okm))
     }
@@ -120,21 +121,21 @@ mod tests {
     where
         Pbkdf2Scheme<H>: PasswordBasedDerivation,
     {
-        let password = b"password";
+        let password = SecretVec::new(b"password".to_vec());
         let salt = b"salt";
         let output_len = 32;
         let custom_iterations = 1000; // Use a low number for fast tests
 
         // Test with a custom iteration count
         let scheme_custom = Pbkdf2Scheme::<H>::new(custom_iterations);
-        let derived_key_result_custom = scheme_custom.derive(password, salt, output_len);
+        let derived_key_result_custom = scheme_custom.derive(&password, salt, output_len);
         assert!(derived_key_result_custom.is_ok());
         let derived_key_custom = derived_key_result_custom.unwrap();
         assert_eq!(derived_key_custom.as_bytes().len(), output_len);
 
         // Test with default iteration count
         let scheme_default = Pbkdf2Scheme::<H>::default();
-        let derived_key_result_default = scheme_default.derive(password, salt, output_len);
+        let derived_key_result_default = scheme_default.derive(&password, salt, output_len);
         assert!(derived_key_result_default.is_ok());
 
         // Test without salt is no longer needed, as the function signature enforces it.

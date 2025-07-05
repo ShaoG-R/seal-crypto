@@ -24,7 +24,6 @@ pub use crate::traits::{
     // asymmetric
     KeyGenerator,
     KeyPair,
-    PasswordBasedDerivation,
     PrivateKey,
     PublicKey,
     Signature,
@@ -42,6 +41,8 @@ pub use crate::traits::{
 };
 #[cfg(feature = "digest")]
 pub use crate::traits::{Hasher, XofDerivation};
+#[cfg(feature = "secrecy")]
+pub use crate::traits::PasswordBasedDerivation;
 #[cfg(feature = "digest")]
 pub use ::digest::XofReader as DigestXofReader;
 pub use ::zeroize;
