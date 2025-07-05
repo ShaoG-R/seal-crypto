@@ -181,7 +181,6 @@ This layered approach ensures that every trait has a clear purpose, preventing a
 | **AEAD** | AES-GCM (128/256 bits) | `aes-gcm` |
 | | ChaCha20-Poly1305 | `chacha20-poly1305` |
 | **Key Derivation (KDF)** | HKDF (SHA-256, SHA-384, SHA-512) | `hkdf` |
-| | PBKDF2 (SHA-256, SHA-384, SHA-512) | `pbkdf2` |
 | **Password Derivation (PBKDF)** | PBKDF2 (SHA-256, SHA-384, SHA-512) | `pbkdf2` |
 | | Argon2id (configurable) | `argon2` |
 | **Extendable-Output Function (XOF)** | SHAKE (128, 256) | `shake` |
