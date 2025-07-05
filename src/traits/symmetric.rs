@@ -94,7 +94,7 @@ pub trait SymmetricCipher {
 /// A trait for Authenticated Encryption with Associated Data (AEAD) ciphers.
 ///
 /// 用于带关联数据的认证加密 (AEAD) 密码的 trait。
-pub trait SymmetricEncryptor: SymmetricKeySet + SymmetricCipher {
+pub trait SymmetricEncryptor: SymmetricKeySet + SymmetricCipher  {
     /// Encrypts a plaintext with a given nonce, producing a ciphertext with tag.
     ///
     /// # Arguments

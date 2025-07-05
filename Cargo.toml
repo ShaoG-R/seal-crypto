@@ -86,6 +86,7 @@ rand_core = { version = "0.9.3", default-features = false } # 随机数生成器
 rand_core_elliptic_curve = { package = "rand_core", version = "0.6.4", optional = true, default-features = false }
 zeroize = { version = "1.8.1", features = ["derive", "alloc"], default-features = false } # 用于从内存中安全地擦除敏感数据（如密钥）。/ For securely wiping sensitive data (like keys) from memory.
 secrecy = { version = "0.10.3", optional = true, default-feature = false }
+getrandom = { version = "0.3.3", optional = true, default-feature = false }
 
 # [features] 区域允许您定义条件编译的标志。
 # 这对于提供可选功能、支持不同环境（如 `std` vs `no_std`）或配置依赖项非常有用。
@@ -186,17 +187,21 @@ no-std-hkdf = ["hkdf-default"]
 
 secrecy = ["dep:secrecy"]
 
-pbkdf2-default = ["dep:pbkdf2", "sha2", "pbkdf2/hmac", "secrecy"]
-pbkdf2 = ["pbkdf2/std", "pbkdf2-default", "std"]
+getrandom = ["dep:getrandom"]
+kdf-base = ["getrandom"]
+kdf-std-base = ["getrandom/std"]
+
+pbkdf2-default = ["dep:pbkdf2", "sha2", "pbkdf2/hmac", "secrecy", "kdf-base"]
+pbkdf2 = ["pbkdf2/std", "pbkdf2-default", "std", "kdf-std-base"]
 no-std-pbkdf2 = ["pbkdf2-default"]
 
-argon2-default = ["dep:argon2", "dep:base64", "secrecy"]
-argon2 = ["argon2/std", "argon2-default", "std"]
+argon2-default = ["dep:argon2", "dep:base64", "secrecy", "kdf-base"]
+argon2 = ["argon2/std", "argon2-default", "std", "kdf-std-base"]
 
 digest = ["dep:digest"]
 shake-default = ["dep:sha3", "digest"]
-shake = ["shake-default", "sha3/std", "digest/std", "std"]
-no-std-shake = ["shake-default", "digest/alloc"]
+shake = ["shake-default", "sha3/std", "digest/std", "std", "kdf-base"]
+no-std-shake = ["shake-default", "digest/alloc", "kdf-std-base"]
 
 # --- 算法集特性 ---
 # 第二级：为常用算法组合提供的便捷特性。

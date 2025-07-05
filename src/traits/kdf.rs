@@ -46,6 +46,12 @@ pub enum KdfError {
     #[cfg_attr(feature = "std", error("Invalid output length for this KDF"))]
     InvalidOutputLength,
 
+    /// Salt generation failed.
+    ///
+    /// 盐生成失败。
+    #[cfg_attr(feature = "std", error("Salt generation failed"))]
+    SaltGenerationFailed,
+
     /// The operation is not supported in `no_std` environment.
     ///
     /// 该操作在 `no_std` 环境中不受支持。
@@ -103,6 +109,32 @@ pub trait KeyBasedDerivation: Derivation {
 /// 这些函数通常是计算密集型的，以防止暴力破解攻击。
 #[cfg(feature = "secrecy")]
 pub trait PasswordBasedDerivation: Derivation {
+    /// The recommended length for the salt, in bytes.
+    ///
+    /// 推荐的盐长度（以字节为单位）。
+    const RECOMMENDED_SALT_LENGTH: usize = 16;
+
+    /// Generates a cryptographically secure salt.
+    ///
+    /// This default implementation uses `getrandom` to generate a salt of `RECOMMENDED_SALT_LENGTH`.
+    /// Schemes can override this method if they have specific requirements for salt generation.
+    ///
+    /// # Returns
+    /// A `Vec<u8>` containing the generated salt.
+    ///
+    /// 生成一个加密安全的盐。
+    ///
+    /// 此默认实现使用 `getrandom` 来生成长度为 `RECOMMENDED_SALT_LENGTH` 的盐。
+    /// 如果方案有特定的盐生成要求，可以重写此方法。
+    ///
+    /// # 返回
+    /// 包含生成的盐的 `Vec<u8>`。
+    fn generate_salt(&self) -> Result<Vec<u8>, Error> {
+
+        let mut salt = vec![0u8; Self::RECOMMENDED_SALT_LENGTH];
+        getrandom::fill(&mut salt).map_err(|_| Error::Kdf(KdfError::SaltGenerationFailed))?;
+        Ok(salt)
+    }
     /// Derives a secure key from a password.
     ///
     /// # Arguments

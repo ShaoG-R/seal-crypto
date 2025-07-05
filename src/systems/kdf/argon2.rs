@@ -162,4 +162,21 @@ mod tests {
 
         assert_ne!(key1.as_bytes(), key2.as_bytes());
     }
+
+    #[cfg(feature = "std")]
+    #[test]
+    fn test_argon2_generate_salt() {
+        let scheme = Argon2Scheme::default();
+        let salt_result = scheme.generate_salt();
+        assert!(salt_result.is_ok());
+        let salt = salt_result.unwrap();
+        assert_eq!(
+            salt.len(),
+            <Argon2Scheme as PasswordBasedDerivation>::RECOMMENDED_SALT_LENGTH
+        );
+
+        // Generate another salt to ensure they are not identical
+        let salt2 = scheme.generate_salt().unwrap();
+        assert_ne!(salt, salt2, "Generated salts should be random and not identical");
+    }
 }

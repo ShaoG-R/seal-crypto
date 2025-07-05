@@ -141,6 +141,24 @@ mod tests {
         // Test without salt is no longer needed, as the function signature enforces it.
     }
 
+    fn run_pbkdf2_generate_salt_test<H: Hasher>()
+    where
+        Pbkdf2Scheme<H>: PasswordBasedDerivation,
+    {
+        let scheme = Pbkdf2Scheme::<H>::default();
+        let salt_result = scheme.generate_salt();
+        assert!(salt_result.is_ok());
+        let salt = salt_result.unwrap();
+        assert_eq!(
+            salt.len(),
+            <Pbkdf2Scheme<H> as PasswordBasedDerivation>::RECOMMENDED_SALT_LENGTH
+        );
+
+        // Generate another salt to ensure they are not identical
+        let salt2 = scheme.generate_salt().unwrap();
+        assert_ne!(salt, salt2, "Generated salts should be random and not identical");
+    }
+
     #[test]
     #[cfg(feature = "sha2")]
     fn test_pbkdf2_sha256() {
@@ -157,5 +175,23 @@ mod tests {
     #[cfg(feature = "sha2")]
     fn test_pbkdf2_sha512() {
         run_pbkdf2_test::<Sha512>();
+    }
+
+    #[test]
+    #[cfg(feature = "sha2")]
+    fn test_pbkdf2_sha256_generate_salt() {
+        run_pbkdf2_generate_salt_test::<Sha256>();
+    }
+
+    #[test]
+    #[cfg(feature = "sha2")]
+    fn test_pbkdf2_sha384_generate_salt() {
+        run_pbkdf2_generate_salt_test::<Sha384>();
+    }
+
+    #[test]
+    #[cfg(feature = "sha2")]
+    fn test_pbkdf2_sha512_generate_salt() {
+        run_pbkdf2_generate_salt_test::<Sha512>();
     }
 }
