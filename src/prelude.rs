@@ -45,4 +45,3 @@ pub use crate::traits::{Hasher, XofDerivation};
 pub use crate::traits::PasswordBasedDerivation;
 #[cfg(feature = "digest")]
 pub use ::digest::XofReader as DigestXofReader;
-pub use ::zeroize;

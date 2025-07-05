@@ -10,4 +10,7 @@ pub mod schemes;
 pub(crate) mod systems;
 pub(crate) mod traits;
 
-pub use zeroize;
+pub use ::zeroize;
+
+#[cfg(feature = "secrecy")]
+pub use ::secrecy;
