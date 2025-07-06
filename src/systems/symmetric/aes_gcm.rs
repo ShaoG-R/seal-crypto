@@ -27,6 +27,10 @@ pub trait AesGcmParams: private::Sealed + Send + Sync + 'static {
     ///
     /// 签名算法的唯一名称（例如，"AES-128-GCM"）。
     const NAME: &'static str;
+    /// The unique ID for the scheme.
+    ///
+    /// 方案的唯一ID。
+    const ID: u32;
     /// The underlying `aes_gcm` AEAD cipher type.
     ///
     /// 底层的 `aes_gcm` AEAD 密码类型。
@@ -53,6 +57,7 @@ pub struct Aes128GcmParams;
 impl private::Sealed for Aes128GcmParams {}
 impl AesGcmParams for Aes128GcmParams {
     const NAME: &'static str = "AES-128-GCM";
+    const ID: u32 = 0x02_01_01_01;
     type AeadCipher = Aes128GcmCore;
     const KEY_SIZE: usize = 16;
     const NONCE_SIZE: usize = 12;
@@ -67,6 +72,7 @@ pub struct Aes256GcmParams;
 impl private::Sealed for Aes256GcmParams {}
 impl AesGcmParams for Aes256GcmParams {
     const NAME: &'static str = "AES-256-GCM";
+    const ID: u32 = 0x02_01_01_02;
     type AeadCipher = Aes256GcmCore;
     const KEY_SIZE: usize = 32;
     const NONCE_SIZE: usize = 12;
@@ -88,6 +94,7 @@ impl<P: AesGcmParams> Algorithm for AesGcmScheme<P> {
     fn name() -> String {
         P::NAME.to_string()
     }
+    const ID: u32 = P::ID;
 }
 
 impl<P: AesGcmParams> SymmetricKeySet for AesGcmScheme<P> {

@@ -56,6 +56,7 @@ impl<H: Hasher> Algorithm for Pbkdf2Scheme<H> {
     fn name() -> String {
         format!("PBKDF2-HMAC-{}", H::NAME)
     }
+    const ID: u32 = 0x03_03_00_00 + H::ID_OFFSET;
 }
 
 #[cfg(feature = "sha2")]

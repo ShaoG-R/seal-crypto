@@ -29,6 +29,10 @@ pub trait Chacha20Poly1305Params: private::Sealed + Send + Sync + 'static {
     ///
     /// 签名算法的唯一名称（例如，"ChaCha20-Poly1305"）。
     const NAME: &'static str;
+    /// The unique ID for the scheme.
+    ///
+    /// 方案的唯一ID。
+    const ID: u32;
     /// The underlying `chacha20poly1305` AEAD cipher type.
     ///
     /// 底层的 `chacha20poly1305` AEAD 密码类型。
@@ -55,6 +59,7 @@ pub struct ChaCha20Poly1305Params;
 impl private::Sealed for ChaCha20Poly1305Params {}
 impl Chacha20Poly1305Params for ChaCha20Poly1305Params {
     const NAME: &'static str = "ChaCha20-Poly1305";
+    const ID: u32 = 0x02_02_01_01;
     type AeadCipher = ChaCha20Poly1305Core;
     const KEY_SIZE: usize = 32;
     const NONCE_SIZE: usize = 12;
@@ -69,6 +74,7 @@ pub struct XChaCha20Poly1305Params;
 impl private::Sealed for XChaCha20Poly1305Params {}
 impl Chacha20Poly1305Params for XChaCha20Poly1305Params {
     const NAME: &'static str = "XChaCha20-Poly1305";
+    const ID: u32 = 0x02_02_02_01;
     type AeadCipher = XChaCha20Poly1305Core;
     const KEY_SIZE: usize = 32;
     const NONCE_SIZE: usize = 24;
@@ -90,6 +96,7 @@ impl<P: Chacha20Poly1305Params> Algorithm for Chacha20Poly1305Scheme<P> {
     fn name() -> String {
         P::NAME.to_string()
     }
+    const ID: u32 = P::ID;
 }
 
 impl<P: Chacha20Poly1305Params> SymmetricKeySet for Chacha20Poly1305Scheme<P> {

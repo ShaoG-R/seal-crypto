@@ -30,6 +30,7 @@ mod private {
 /// 这是一个密封的 trait，意味着只有此 crate 中的类型才能实现它。
 pub trait KyberParams: private::Sealed + Send + Sync + 'static + Clone {
     const NAME: &'static str;
+    const ID: u32;
     type PqPublicKey: PqPublicKey + Clone;
     type PqSecretKey: PqSecretKey + Clone;
     type PqCiphertext: PqCiphertext + Copy;
@@ -52,6 +53,7 @@ pub struct Kyber512Params;
 impl private::Sealed for Kyber512Params {}
 impl KyberParams for Kyber512Params {
     const NAME: &'static str = "Kyber512";
+    const ID: u32 = 0x01_02_02_01;
     type PqPublicKey = kyber512::PublicKey;
     type PqSecretKey = kyber512::SecretKey;
     type PqCiphertext = kyber512::Ciphertext;
@@ -80,6 +82,7 @@ pub struct Kyber768Params;
 impl private::Sealed for Kyber768Params {}
 impl KyberParams for Kyber768Params {
     const NAME: &'static str = "Kyber768";
+    const ID: u32 = 0x01_02_02_02;
     type PqPublicKey = kyber768::PublicKey;
     type PqSecretKey = kyber768::SecretKey;
     type PqCiphertext = kyber768::Ciphertext;
@@ -108,6 +111,7 @@ pub struct Kyber1024Params;
 impl private::Sealed for Kyber1024Params {}
 impl KyberParams for Kyber1024Params {
     const NAME: &'static str = "Kyber1024";
+    const ID: u32 = 0x01_02_02_03;
     type PqPublicKey = kyber1024::PublicKey;
     type PqSecretKey = kyber1024::SecretKey;
     type PqCiphertext = kyber1024::Ciphertext;
@@ -260,6 +264,7 @@ impl<P: KyberParams + Clone> Algorithm for KyberScheme<P> {
     fn name() -> String {
         format!("KYBER-KEM-{}", P::NAME)
     }
+    const ID: u32 = P::ID;
 }
 
 impl<P: KyberParams + Clone> KeyGenerator for KyberScheme<P> {

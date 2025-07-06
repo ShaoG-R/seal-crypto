@@ -81,6 +81,7 @@ impl Algorithm for Argon2Scheme {
     fn name() -> String {
         "Argon2id".to_string()
     }
+    const ID: u32 = 0x03_01_01_01;
 }
 
 impl PasswordBasedDerivation for Argon2Scheme {

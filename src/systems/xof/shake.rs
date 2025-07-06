@@ -27,6 +27,7 @@ impl<X: Xof> Algorithm for ShakeScheme<X> {
     fn name() -> String {
         X::NAME.to_string()
     }
+    const ID: u32 = 0x05_01_00_00 + X::ID_OFFSET;
 }
 
 impl<X: Xof> KeyBasedDerivation for ShakeScheme<X> {

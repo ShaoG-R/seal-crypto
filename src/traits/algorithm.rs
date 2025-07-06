@@ -10,4 +10,9 @@ pub trait Algorithm: 'static + Sized {
     ///
     /// 签名算法的唯一名称（例如，"RSA-PSS-SHA256"）。
     fn name() -> String;
+
+    /// A unique, stable, machine-readable identifier for the algorithm.
+    ///
+    /// 一个唯一的、稳定的、机器可读的算法标识符。
+    const ID: u32;
 }

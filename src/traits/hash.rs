@@ -24,6 +24,10 @@ pub trait Hasher: private::Sealed + Send + Sync + 'static {
     ///
     /// 哈希函数的名称。
     const NAME: &'static str;
+    /// The unique offset for the hash function's ID.
+    ///
+    /// 哈希函数ID的唯一偏移量。
+    const ID_OFFSET: u32;
 }
 
 /// `sha2` family hash functions
@@ -40,6 +44,7 @@ impl private::Sealed for Sha256 {}
 impl Hasher for Sha256 {
     type Digest = Sha256_;
     const NAME: &'static str = "SHA-256";
+    const ID_OFFSET: u32 = 1;
 }
 
 #[cfg(feature = "sha2")]
@@ -52,6 +57,7 @@ impl private::Sealed for Sha384 {}
 impl Hasher for Sha384 {
     type Digest = Sha384_;
     const NAME: &'static str = "SHA-384";
+    const ID_OFFSET: u32 = 2;
 }
 
 #[cfg(feature = "sha2")]
@@ -64,6 +70,7 @@ impl private::Sealed for Sha512 {}
 impl Hasher for Sha512 {
     type Digest = Sha512_;
     const NAME: &'static str = "SHA-512";
+    const ID_OFFSET: u32 = 3;
 }
 
 /// A sealed trait representing an Extendable-Output Function (XOF).
@@ -81,6 +88,10 @@ pub trait Xof: private::Sealed + Send + Sync + 'static {
     ///
     /// XOF 的名称。
     const NAME: &'static str;
+    /// The unique offset for the XOF's ID.
+    ///
+    /// XOF ID的唯一偏移量。
+    const ID_OFFSET: u32;
 }
 
 /// `sha3` family hash functions
@@ -98,6 +109,7 @@ impl private::Sealed for Shake128 {}
 impl Xof for Shake128 {
     type Xof = Shake128_;
     const NAME: &'static str = "SHAKE128";
+    const ID_OFFSET: u32 = 1;
 }
 
 #[cfg(feature = "shake-default")]
@@ -111,4 +123,5 @@ impl private::Sealed for Shake256 {}
 impl Xof for Shake256 {
     type Xof = Shake256_;
     const NAME: &'static str = "SHAKE256";
+    const ID_OFFSET: u32 = 2;
 }

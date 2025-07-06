@@ -34,6 +34,7 @@ mod private {
 /// 这是一个密封的 trait，意味着只有此 crate 中的类型才能实现它。
 pub trait EcdhParams: private::Sealed + Send + Sync + 'static + Clone {
     const NAME: &'static str;
+    const ID: u32;
     type Curve: elliptic_curve::Curve + elliptic_curve::PrimeCurveArithmetic;
 
     fn validate_public_key(bytes: &[u8]) -> Result<(), Error>;
@@ -48,6 +49,7 @@ pub struct EcdhP256Params;
 impl private::Sealed for EcdhP256Params {}
 impl EcdhParams for EcdhP256Params {
     const NAME: &'static str = "ECDH-P256";
+    const ID: u32 = 0x01_01_03_01;
     type Curve = NistP256;
 
     fn validate_public_key(bytes: &[u8]) -> Result<(), Error> {
@@ -173,6 +175,7 @@ impl<P: EcdhParams + Clone> Algorithm for EcdhScheme<P> {
     fn name() -> String {
         P::NAME.to_string()
     }
+    const ID: u32 = P::ID;
 }
 
 impl KeyGenerator for EcdhScheme<EcdhP256Params> {

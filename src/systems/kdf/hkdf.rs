@@ -37,6 +37,7 @@ impl<H: Hasher> Algorithm for HkdfScheme<H> {
     fn name() -> String {
         format!("HKDF-{}", H::NAME)
     }
+    const ID: u32 = 0x03_02_00_00 + H::ID_OFFSET;
 }
 
 // 实现针对具体哈希算法的HKDF方案，而不是通用的方案

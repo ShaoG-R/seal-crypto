@@ -45,6 +45,7 @@ mod private {
 /// 这是一个密封的 trait，意味着只有此 crate 中的类型才能实现它。
 pub trait EccParams: private::Sealed + Send + Sync + 'static + Clone {
     const NAME: &'static str;
+    const ID: u32;
 
     fn generate_keypair() -> Result<(Vec<u8>, Zeroizing<Vec<u8>>), Error>;
     fn sign(private_key_der: &[u8], message: &[u8]) -> Result<Signature, Error>;
@@ -61,6 +62,7 @@ pub struct EcdsaP256Params;
 impl private::Sealed for EcdsaP256Params {}
 impl EccParams for EcdsaP256Params {
     const NAME: &'static str = "ECDSA-P256-SHA256";
+    const ID: u32 = 0x01_01_02_01;
 
     fn generate_keypair() -> Result<(Vec<u8>, Zeroizing<Vec<u8>>), Error> {
         let private_key = SecretKey::random(&mut OsRng);
@@ -121,6 +123,7 @@ pub struct Ed25519Params;
 impl private::Sealed for Ed25519Params {}
 impl EccParams for Ed25519Params {
     const NAME: &'static str = "Ed25519";
+    const ID: u32 = 0x01_01_02_02;
 
     fn generate_keypair() -> Result<(Vec<u8>, Zeroizing<Vec<u8>>), Error> {
         let mut secret_bytes = [0u8; 32];
@@ -285,6 +288,7 @@ impl<P: EccParams + Clone> Algorithm for EccScheme<P> {
     fn name() -> String {
         P::NAME.to_string()
     }
+    const ID: u32 = P::ID;
 }
 
 impl<P: EccParams + Clone> KeyGenerator for EccScheme<P> {
