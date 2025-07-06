@@ -178,7 +178,11 @@ impl EccParams for Ed25519Params {
 // ------------------- Newtype Wrappers for ECC Keys -------------------
 // ------------------- ECC 密钥的 Newtype 包装器 -------------------
 
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
+
 #[derive(Debug)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct EccPublicKey<P: EccParams> {
     bytes: Vec<u8>,
     _params: PhantomData<P>,
@@ -232,6 +236,7 @@ impl<P: EccParams> PublicKey for EccPublicKey<P> {}
 
 #[derive(Debug, Zeroize, Clone, Eq, PartialEq)]
 #[zeroize(drop)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct EccPrivateKey<P: EccParams> {
     bytes: Zeroizing<Vec<u8>>,
     _params: PhantomData<P>,

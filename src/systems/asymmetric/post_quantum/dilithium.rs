@@ -149,7 +149,11 @@ impl DilithiumParams for Dilithium5Params {
 // ------------------- Newtype Wrappers for Dilithium Keys -------------------
 // ------------------- Dilithium 密钥的 Newtype 包装器 -------------------
 
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
+
 #[derive(Debug, Eq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct DilithiumPublicKey<P: DilithiumParams> {
     bytes: Vec<u8>,
     _params: PhantomData<P>,
@@ -184,6 +188,7 @@ impl<P: DilithiumParams> TryFrom<&[u8]> for DilithiumPublicKey<P> {
 }
 
 #[derive(Debug, Zeroize, Clone, Eq, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[zeroize(drop)]
 pub struct DilithiumSecretKey<P: DilithiumParams + Clone> {
     bytes: Zeroizing<Vec<u8>>,

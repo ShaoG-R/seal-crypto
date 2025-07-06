@@ -87,6 +87,7 @@ rand_core_elliptic_curve = { package = "rand_core", version = "0.6.4", optional 
 zeroize = { version = "1.8.1", features = ["derive", "alloc"], default-features = false } # 用于从内存中安全地擦除敏感数据（如密钥）。/ For securely wiping sensitive data (like keys) from memory.
 secrecy = { version = "0.10.3", optional = true, default-feature = false }
 getrandom = { version = "0.3.3", optional = true, default-feature = false }
+serde = { version = "1.0.215", optional = true, default-features = false }
 
 # [features] 区域允许您定义条件编译的标志。
 # 这对于提供可选功能、支持不同环境（如 `std` vs `no_std`）或配置依赖项非常有用。
@@ -110,6 +111,10 @@ std = [
 # --- Default Features ---
 # The set of features that are enabled by default when a user doesn't specify any.
 default = ["std"]
+
+# serde 特性用于序列化/反序列化。
+# serde feature is used for serialization/deserialization.
+serde = ["dep:serde", "zeroize/serde", "rsa/serde"]
 
 # --- 算法原语特性 ---
 # 第一级：单个算法特性。启用这些特性会引入对应的加密算法实现。
@@ -238,8 +243,8 @@ shake-asm = ["sha3/asm"]
 # 第三级：`full` 特性激活所有可用的算法实现。
 # --- Full Feature ---
 # Level 3: The `full` feature activates all available algorithm implementations.
-full = ["classic", "pqc", "kdf", "xof"]
-no-std-full = ["no-std-classic", "no-std-pqc", "no-std-kdf"]
+full = ["classic", "pqc", "kdf", "xof", "serde"]
+no-std-full = ["no-std-classic", "no-std-pqc", "no-std-kdf", "serde"]
 
 # [[example]] 区域用于定义项目的示例代码。
 # 每个示例都可以有自己所需的特性。

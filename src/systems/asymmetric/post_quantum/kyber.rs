@@ -127,7 +127,11 @@ impl KyberParams for Kyber1024Params {
 // ------------------- Newtype Wrappers for Kyber Keys -------------------
 // ------------------- Kyber 密钥的 Newtype 包装器 -------------------
 
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
+
 #[derive(Debug)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct KyberPublicKey<P: KyberParams> {
     bytes: Vec<u8>,
     _params: PhantomData<P>,
@@ -192,6 +196,7 @@ impl<P: KyberParams> PublicKey for KyberPublicKey<P> {}
 
 #[derive(Debug, Zeroize, Clone, Eq, PartialEq)]
 #[zeroize(drop)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct KyberSecretKey<P: KyberParams> {
     bytes: Zeroizing<Vec<u8>>,
     _params: PhantomData<P>,

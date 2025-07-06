@@ -66,7 +66,11 @@ impl EcdhParams for EcdhP256Params {
 // ------------------- Newtype Wrappers for ECDH Keys -------------------
 // ------------------- ECDH 密钥的 Newtype 包装器 -------------------
 
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
+
 #[derive(Debug)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct EcdhPublicKey<P: EcdhParams> {
     bytes: Vec<u8>,
     _params: PhantomData<P>,
@@ -120,6 +124,7 @@ impl<P: EcdhParams> PublicKey for EcdhPublicKey<P> {}
 
 #[derive(Debug, Zeroize, Clone, Eq, PartialEq)]
 #[zeroize(drop)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct EcdhPrivateKey<P: EcdhParams> {
     bytes: Zeroizing<Vec<u8>>,
     _params: PhantomData<P>,

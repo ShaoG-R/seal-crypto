@@ -3,7 +3,10 @@
 //! 定义了加密密钥的核心 trait。
 use crate::errors::Error;
 use crate::traits::algorithm::Algorithm;
-use zeroize::{Zeroize, Zeroizing};
+use zeroize::Zeroize;
+
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 
 /// Defines errors that can occur during key operations.
 ///
@@ -23,10 +26,26 @@ pub enum KeyError {
     InvalidEncoding,
 }
 
+#[cfg(feature = "serde")]
+/// A helper trait for conditionally adding serde support.
+///
+/// 当 `serde` feature 开启时，为密钥添加 serde 支持的辅助 trait。
+pub trait ConditionallySerde: Serialize + for<'de> Deserialize<'de> {}
+#[cfg(feature = "serde")]
+impl<T: Serialize + for<'de> Deserialize<'de>> ConditionallySerde for T {}
+
+#[cfg(not(feature = "serde"))]
+/// A helper trait for conditionally adding serde support.
+///
+/// 当 `serde` feature 关闭时，这是一个空的辅助 trait。
+pub trait ConditionallySerde {}
+#[cfg(not(feature = "serde"))]
+impl<T> ConditionallySerde for T {}
+
 /// A blanket trait for all key types, defining common properties and behaviors.
 ///
 /// 适用于所有密钥类型的通用 trait，定义了通用的属性和行为。
-pub trait Key: Sized + Send + Sync + 'static + Clone {
+pub trait Key: Sized + Send + Sync + 'static + Clone + ConditionallySerde {
     /// Deserializes a key from its byte representation.
     ///
     /// 从字节表示反序列化密钥。

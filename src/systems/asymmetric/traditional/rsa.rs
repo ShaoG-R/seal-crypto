@@ -70,11 +70,16 @@ impl RsaKeyParams for Rsa4096Params {
 // ------------------- Newtype Wrappers for RSA Keys -------------------
 // ------------------- RSA 密钥的 Newtype 包装器 -------------------
 
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
+
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct RsaPublicKey(rsa::RsaPublicKey);
 
 #[derive(Debug, Zeroize, Clone, Eq, PartialEq)]
 #[zeroize(drop)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct RsaPrivateKey(Zeroizing<Vec<u8>>);
 
 impl Key for RsaPublicKey {
