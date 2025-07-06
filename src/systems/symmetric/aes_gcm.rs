@@ -85,7 +85,9 @@ pub struct AesGcmScheme<P: AesGcmParams> {
 }
 
 impl<P: AesGcmParams> Algorithm for AesGcmScheme<P> {
-    const NAME: &'static str = P::NAME;
+    fn name() -> String {
+        P::NAME.to_string()
+    }
 }
 
 impl<P: AesGcmParams> SymmetricKeySet for AesGcmScheme<P> {

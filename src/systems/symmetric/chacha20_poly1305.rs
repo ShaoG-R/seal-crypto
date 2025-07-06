@@ -87,7 +87,9 @@ pub struct Chacha20Poly1305Scheme<P: Chacha20Poly1305Params> {
 }
 
 impl<P: Chacha20Poly1305Params> Algorithm for Chacha20Poly1305Scheme<P> {
-    const NAME: &'static str = P::NAME;
+    fn name() -> String {
+        P::NAME.to_string()
+    }
 }
 
 impl<P: Chacha20Poly1305Params> SymmetricKeySet for Chacha20Poly1305Scheme<P> {

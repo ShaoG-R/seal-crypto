@@ -170,7 +170,9 @@ impl<P: EcdhParams + Clone> AsymmetricKeySet for EcdhScheme<P> {
 }
 
 impl<P: EcdhParams + Clone> Algorithm for EcdhScheme<P> {
-    const NAME: &'static str = P::NAME;
+    fn name() -> String {
+        P::NAME.to_string()
+    }
 }
 
 impl KeyGenerator for EcdhScheme<EcdhP256Params> {

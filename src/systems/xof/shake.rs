@@ -24,7 +24,9 @@ pub struct ShakeScheme<X: Xof> {
 impl<X: Xof> Derivation for ShakeScheme<X> {}
 
 impl<X: Xof> Algorithm for ShakeScheme<X> {
-    const NAME: &'static str = "SHAKE";
+    fn name() -> String {
+        X::NAME.to_string()
+    }
 }
 
 impl<X: Xof> KeyBasedDerivation for ShakeScheme<X> {

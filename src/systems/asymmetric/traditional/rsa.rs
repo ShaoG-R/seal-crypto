@@ -45,6 +45,10 @@ pub trait RsaKeyParams: private::Sealed + Send + Sync + 'static {
     ///
     /// RSA 密钥的位数。
     const KEY_BITS: usize;
+    /// The name of the key size.
+    ///
+    /// 密钥大小的名称。
+    const NAME: &'static str;
 }
 
 /// Marker struct for RSA with a 2048-bit key.
@@ -55,6 +59,7 @@ pub struct Rsa2048Params;
 impl private::Sealed for Rsa2048Params {}
 impl RsaKeyParams for Rsa2048Params {
     const KEY_BITS: usize = 2048;
+    const NAME: &'static str = "2048";
 }
 
 /// Marker struct for RSA with a 4096-bit key.
@@ -65,6 +70,7 @@ pub struct Rsa4096Params;
 impl private::Sealed for Rsa4096Params {}
 impl RsaKeyParams for Rsa4096Params {
     const KEY_BITS: usize = 4096;
+    const NAME: &'static str = "4096";
 }
 
 // ------------------- Newtype Wrappers for RSA Keys -------------------
@@ -154,7 +160,9 @@ impl<KP: RsaKeyParams, H: Hasher + 'static> AsymmetricKeySet for RsaScheme<KP, H
 }
 
 impl<KP: RsaKeyParams, H: Hasher + 'static> Algorithm for RsaScheme<KP, H> {
-    const NAME: &'static str = "RSA-PSS";
+    fn name() -> String {
+        format!("RSA-PSS-{}-{}", KP::NAME, H::NAME)
+    }
 }
 
 impl<KP: RsaKeyParams, H: Hasher> KeyGenerator for RsaScheme<KP, H> {

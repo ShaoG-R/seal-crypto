@@ -9,5 +9,5 @@ pub trait Algorithm: 'static + Sized {
     /// The unique name of the signature algorithm (e.g., "RSA-PSS-SHA256").
     ///
     /// 签名算法的唯一名称（例如，"RSA-PSS-SHA256"）。
-    const NAME: &'static str;
+    fn name() -> String;
 }

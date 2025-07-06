@@ -19,6 +19,11 @@ pub trait Hasher: private::Sealed + Send + Sync + 'static {
     ///
     /// 来自 `digest` crate 的实际摘要实现。
     type Digest: Digest + Clone + Send + Sync + 'static + FixedOutputReset + DynDigest;
+
+    /// The name of the hash function.
+    ///
+    /// 哈希函数的名称。
+    const NAME: &'static str;
 }
 
 /// `sha2` family hash functions
@@ -34,6 +39,7 @@ impl private::Sealed for Sha256 {}
 #[cfg(feature = "sha2")]
 impl Hasher for Sha256 {
     type Digest = Sha256_;
+    const NAME: &'static str = "SHA-256";
 }
 
 #[cfg(feature = "sha2")]
@@ -45,6 +51,7 @@ impl private::Sealed for Sha384 {}
 #[cfg(feature = "sha2")]
 impl Hasher for Sha384 {
     type Digest = Sha384_;
+    const NAME: &'static str = "SHA-384";
 }
 
 #[cfg(feature = "sha2")]
@@ -56,6 +63,7 @@ impl private::Sealed for Sha512 {}
 #[cfg(feature = "sha2")]
 impl Hasher for Sha512 {
     type Digest = Sha512_;
+    const NAME: &'static str = "SHA-512";
 }
 
 /// A sealed trait representing an Extendable-Output Function (XOF).
@@ -69,6 +77,10 @@ pub trait Xof: private::Sealed + Send + Sync + 'static {
     ///
     /// 来自 `digest` crate 的实际 XOF 实现。
     type Xof: ExtendableOutput + Clone + Send + Sync + 'static + Update + Default;
+    /// The name of the XOF.
+    ///
+    /// XOF 的名称。
+    const NAME: &'static str;
 }
 
 /// `sha3` family hash functions
@@ -85,6 +97,7 @@ impl private::Sealed for Shake128 {}
 #[cfg(feature = "shake-default")]
 impl Xof for Shake128 {
     type Xof = Shake128_;
+    const NAME: &'static str = "SHAKE128";
 }
 
 #[cfg(feature = "shake-default")]
@@ -97,4 +110,5 @@ impl private::Sealed for Shake256 {}
 #[cfg(feature = "shake-default")]
 impl Xof for Shake256 {
     type Xof = Shake256_;
+    const NAME: &'static str = "SHAKE256";
 }

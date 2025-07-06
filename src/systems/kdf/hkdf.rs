@@ -34,7 +34,9 @@ impl<H: Hasher> Default for HkdfScheme<H> {
 impl<H: Hasher> Derivation for HkdfScheme<H> {}
 
 impl<H: Hasher> Algorithm for HkdfScheme<H> {
-    const NAME: &'static str = "HKDF";
+    fn name() -> String {
+        format!("HKDF-{}", H::NAME)
+    }
 }
 
 // 实现针对具体哈希算法的HKDF方案，而不是通用的方案

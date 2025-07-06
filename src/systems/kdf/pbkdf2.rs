@@ -53,7 +53,9 @@ impl<H: Hasher> Default for Pbkdf2Scheme<H> {
 impl<H: Hasher> Derivation for Pbkdf2Scheme<H> {}
 
 impl<H: Hasher> Algorithm for Pbkdf2Scheme<H> {
-    const NAME: &'static str = "PBKDF2";
+    fn name() -> String {
+        format!("PBKDF2-HMAC-{}", H::NAME)
+    }
 }
 
 #[cfg(feature = "sha2")]

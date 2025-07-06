@@ -282,7 +282,9 @@ impl<P: EccParams + Clone> AsymmetricKeySet for EccScheme<P> {
 }
 
 impl<P: EccParams + Clone> Algorithm for EccScheme<P> {
-    const NAME: &'static str = P::NAME;
+    fn name() -> String {
+        P::NAME.to_string()
+    }
 }
 
 impl<P: EccParams + Clone> KeyGenerator for EccScheme<P> {

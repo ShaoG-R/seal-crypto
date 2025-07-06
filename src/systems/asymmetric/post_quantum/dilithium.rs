@@ -28,6 +28,7 @@ mod private {
 /// 一个定义特定 Dilithium 安全级别参数的 trait。
 /// 这是一个密封的 trait，意味着只有此 crate 中的类型才能实现它。
 pub trait DilithiumParams: private::Sealed + Send + Sync + 'static {
+    const NAME: &'static str;
     type PqPublicKey: PqPublicKey + Clone;
     type PqSecretKey: PqSecretKey + Clone;
     type PqDetachedSignature: PqDetachedSignature;
@@ -51,6 +52,7 @@ pub trait DilithiumParams: private::Sealed + Send + Sync + 'static {
 pub struct Dilithium2Params;
 impl private::Sealed for Dilithium2Params {}
 impl DilithiumParams for Dilithium2Params {
+    const NAME: &'static str = "Dilithium2";
     type PqPublicKey = dilithium2::PublicKey;
     type PqSecretKey = dilithium2::SecretKey;
     type PqDetachedSignature = dilithium2::DetachedSignature;
@@ -85,6 +87,7 @@ impl DilithiumParams for Dilithium2Params {
 pub struct Dilithium3Params;
 impl private::Sealed for Dilithium3Params {}
 impl DilithiumParams for Dilithium3Params {
+    const NAME: &'static str = "Dilithium3";
     type PqPublicKey = dilithium3::PublicKey;
     type PqSecretKey = dilithium3::SecretKey;
     type PqDetachedSignature = dilithium3::DetachedSignature;
@@ -119,6 +122,7 @@ impl DilithiumParams for Dilithium3Params {
 pub struct Dilithium5Params;
 impl private::Sealed for Dilithium5Params {}
 impl DilithiumParams for Dilithium5Params {
+    const NAME: &'static str = "Dilithium5";
     type PqPublicKey = dilithium5::PublicKey;
     type PqSecretKey = dilithium5::SecretKey;
     type PqDetachedSignature = dilithium5::DetachedSignature;
@@ -252,7 +256,9 @@ impl<P: DilithiumParams + Clone> AsymmetricKeySet for DilithiumScheme<P> {
 }
 
 impl<P: DilithiumParams + Clone + 'static> Algorithm for DilithiumScheme<P> {
-    const NAME: &'static str = "Dilithium";
+    fn name() -> String {
+        format!("Dilithium-{}", P::NAME)
+    }
 }
 
 impl<P: DilithiumParams + Clone> KeyGenerator for DilithiumScheme<P> {

@@ -78,7 +78,9 @@ impl Default for Argon2Scheme {
 impl Derivation for Argon2Scheme {}
 
 impl Algorithm for Argon2Scheme {
-    const NAME: &'static str = "Argon2id";
+    fn name() -> String {
+        "Argon2id".to_string()
+    }
 }
 
 impl PasswordBasedDerivation for Argon2Scheme {
