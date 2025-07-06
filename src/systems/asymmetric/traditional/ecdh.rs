@@ -14,7 +14,7 @@ use crate::traits::{
     PrivateKey, PublicKey, SharedSecret,
 };
 use elliptic_curve::pkcs8::{DecodePrivateKey, DecodePublicKey, EncodePrivateKey, EncodePublicKey};
-use p256::{ecdh, NistP256, PublicKey as P256PublicKey, SecretKey};
+use p256::{NistP256, PublicKey as P256PublicKey, SecretKey, ecdh};
 use rand_core_elliptic_curve::OsRng;
 use std::convert::TryFrom;
 use std::marker::PhantomData;
@@ -32,7 +32,7 @@ mod private {
 ///
 /// 一个定义特定 ECDH 方案参数的 trait。
 /// 这是一个密封的 trait，意味着只有此 crate 中的类型才能实现它。
-pub trait EcdhParams: private::Sealed + Send + Sync + 'static {
+pub trait EcdhParams: private::Sealed + Send + Sync + 'static + Clone {
     const NAME: &'static str;
     type Curve: elliptic_curve::Curve + elliptic_curve::PrimeCurveArithmetic;
 

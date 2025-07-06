@@ -3,7 +3,7 @@ mod kdf;
 mod symmetric;
 mod xof;
 
-use criterion::{criterion_group, criterion_main, Criterion};
+use criterion::{Criterion, criterion_group, criterion_main};
 
 fn all_benches(c: &mut Criterion) {
     #[cfg(feature = "aes-gcm")]

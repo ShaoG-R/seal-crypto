@@ -1,6 +1,6 @@
 #![cfg(feature = "argon2")]
 
-use criterion::{criterion_group, Criterion};
+use criterion::{Criterion, criterion_group};
 use seal_crypto::{prelude::*, schemes::kdf::argon2::Argon2Scheme};
 use secrecy::SecretBox;
 use std::hint::black_box;

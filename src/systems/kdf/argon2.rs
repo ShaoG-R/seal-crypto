@@ -82,7 +82,12 @@ impl Algorithm for Argon2Scheme {
 }
 
 impl PasswordBasedDerivation for Argon2Scheme {
-    fn derive(&self, password: &SecretBox<[u8]>, salt: &[u8], output_len: usize) -> Result<DerivedKey, Error> {
+    fn derive(
+        &self,
+        password: &SecretBox<[u8]>,
+        salt: &[u8],
+        output_len: usize,
+    ) -> Result<DerivedKey, Error> {
         use secrecy::ExposeSecret;
 
         let params = argon2::Params::new(self.m_cost, self.t_cost, self.p_cost, Some(output_len))
@@ -177,6 +182,9 @@ mod tests {
 
         // Generate another salt to ensure they are not identical
         let salt2 = scheme.generate_salt().unwrap();
-        assert_ne!(salt, salt2, "Generated salts should be random and not identical");
+        assert_ne!(
+            salt, salt2,
+            "Generated salts should be random and not identical"
+        );
     }
 }

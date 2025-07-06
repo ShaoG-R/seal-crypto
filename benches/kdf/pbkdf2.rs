@@ -1,6 +1,6 @@
 #![cfg(feature = "pbkdf2")]
 
-use criterion::{criterion_group, Criterion};
+use criterion::{Criterion, criterion_group};
 use seal_crypto::{
     prelude::*,
     schemes::kdf::pbkdf2::{Pbkdf2Sha256, Pbkdf2Sha512},

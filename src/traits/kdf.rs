@@ -6,11 +6,11 @@ use crate::errors::Error;
 use crate::traits::algorithm::Algorithm;
 #[cfg(feature = "digest")]
 use digest::XofReader as DigestXofReader;
+#[cfg(feature = "secrecy")]
+use secrecy::SecretBox;
 #[cfg(feature = "std")]
 use thiserror::Error;
 use zeroize::Zeroizing;
-#[cfg(feature = "secrecy")]
-use secrecy::SecretBox;
 
 /// A key derived from a KDF, wrapped in `Zeroizing` for security.
 ///
@@ -65,7 +65,7 @@ pub enum KdfError {
 /// A top-level trait for all derivation algorithms (KDFs, PBKDFs, etc.).
 ///
 /// 所有派生算法（KDF、PBKDF 等）的顶层 trait。
-pub trait Derivation: Algorithm {}
+pub trait Derivation: Algorithm + Sync + Send {}
 
 /// A trait for Key Derivation Functions (KDFs) that derive keys from a high-entropy Input Keying Material (IKM).
 ///
@@ -130,7 +130,6 @@ pub trait PasswordBasedDerivation: Derivation {
     /// # 返回
     /// 包含生成的盐的 `Vec<u8>`。
     fn generate_salt(&self) -> Result<Vec<u8>, Error> {
-
         let mut salt = vec![0u8; Self::RECOMMENDED_SALT_LENGTH];
         getrandom::fill(&mut salt).map_err(|_| Error::Kdf(KdfError::SaltGenerationFailed))?;
         Ok(salt)
@@ -156,7 +155,12 @@ pub trait PasswordBasedDerivation: Derivation {
     ///
     /// # 返回
     /// 派生出的密钥，长度为 `output_len`。
-    fn derive(&self, password: &SecretBox<[u8]>, salt: &[u8], output_len: usize) -> Result<DerivedKey, Error>;
+    fn derive(
+        &self,
+        password: &SecretBox<[u8]>,
+        salt: &[u8],
+        output_len: usize,
+    ) -> Result<DerivedKey, Error>;
 }
 
 /// A reader for extendable-output functions (XOFs).

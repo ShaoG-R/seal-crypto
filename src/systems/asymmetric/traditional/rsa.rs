@@ -20,10 +20,10 @@ use crate::traits::{
 };
 use rsa::signature::{RandomizedSigner, SignatureEncoding};
 use rsa::{
+    Oaep,
     pkcs8::{DecodePrivateKey, DecodePublicKey, EncodePrivateKey, EncodePublicKey},
     pss::{SigningKey, VerifyingKey},
     rand_core::{OsRng, RngCore},
-    Oaep,
 };
 use std::convert::TryFrom;
 use std::marker::PhantomData;

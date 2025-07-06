@@ -1,6 +1,6 @@
 #![cfg(feature = "aes-gcm")]
 
-use criterion::{criterion_group, Criterion};
+use criterion::{Criterion, criterion_group};
 use seal_crypto::{
     prelude::*,
     schemes::symmetric::aes_gcm::{Aes128Gcm, Aes256Gcm},

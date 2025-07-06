@@ -1,6 +1,6 @@
 #![cfg(feature = "ecc")]
 
-use criterion::{criterion_group, Criterion};
+use criterion::{Criterion, criterion_group};
 use seal_crypto::{
     prelude::*,
     schemes::asymmetric::traditional::ecc::{EcdsaP256, Ed25519},

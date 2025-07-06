@@ -105,11 +105,7 @@ pub fn print_summary(results: &[TestResult]) -> bool {
                 Some(FailureReason::Test) => "Test",
                 _ => "Unknown", // Should not happen with current logic
             };
-            println!(
-                "  - {} ({} Failure)",
-                result.case.name.red(),
-                failure_type
-            );
+            println!("  - {} ({} Failure)", result.case.name.red(), failure_type);
         }
     }
 

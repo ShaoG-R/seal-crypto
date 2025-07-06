@@ -10,8 +10,8 @@ use crate::{
         kdf::{Derivation, DerivedKey, PasswordBasedDerivation},
     },
 };
-use secrecy::{ExposeSecret, SecretBox};
 use pbkdf2::pbkdf2_hmac;
+use secrecy::{ExposeSecret, SecretBox};
 use std::marker::PhantomData;
 
 // A reasonable default for iterations, based on OWASP recommendations.
@@ -58,7 +58,12 @@ impl<H: Hasher> Algorithm for Pbkdf2Scheme<H> {
 
 #[cfg(feature = "sha2")]
 impl PasswordBasedDerivation for Pbkdf2Scheme<Sha256> {
-    fn derive(&self, password: &SecretBox<[u8]>, salt: &[u8], output_len: usize) -> Result<DerivedKey, Error> {
+    fn derive(
+        &self,
+        password: &SecretBox<[u8]>,
+        salt: &[u8],
+        output_len: usize,
+    ) -> Result<DerivedKey, Error> {
         let mut okm = vec![0u8; output_len];
 
         pbkdf2_hmac::<sha2::Sha256>(password.expose_secret(), salt, self.iterations, &mut okm);
@@ -69,7 +74,12 @@ impl PasswordBasedDerivation for Pbkdf2Scheme<Sha256> {
 
 #[cfg(feature = "sha2")]
 impl PasswordBasedDerivation for Pbkdf2Scheme<Sha384> {
-    fn derive(&self, password: &SecretBox<[u8]>, salt: &[u8], output_len: usize) -> Result<DerivedKey, Error> {
+    fn derive(
+        &self,
+        password: &SecretBox<[u8]>,
+        salt: &[u8],
+        output_len: usize,
+    ) -> Result<DerivedKey, Error> {
         let mut okm = vec![0u8; output_len];
 
         pbkdf2_hmac::<sha2::Sha384>(password.expose_secret(), salt, self.iterations, &mut okm);
@@ -80,7 +90,12 @@ impl PasswordBasedDerivation for Pbkdf2Scheme<Sha384> {
 
 #[cfg(feature = "sha2")]
 impl PasswordBasedDerivation for Pbkdf2Scheme<Sha512> {
-    fn derive(&self, password: &SecretBox<[u8]>, salt: &[u8], output_len: usize) -> Result<DerivedKey, Error> {
+    fn derive(
+        &self,
+        password: &SecretBox<[u8]>,
+        salt: &[u8],
+        output_len: usize,
+    ) -> Result<DerivedKey, Error> {
         let mut okm = vec![0u8; output_len];
 
         pbkdf2_hmac::<sha2::Sha512>(password.expose_secret(), salt, self.iterations, &mut okm);
@@ -156,7 +171,10 @@ mod tests {
 
         // Generate another salt to ensure they are not identical
         let salt2 = scheme.generate_salt().unwrap();
-        assert_ne!(salt, salt2, "Generated salts should be random and not identical");
+        assert_ne!(
+            salt, salt2,
+            "Generated salts should be random and not identical"
+        );
     }
 
     #[test]

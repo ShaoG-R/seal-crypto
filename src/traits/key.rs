@@ -3,7 +3,7 @@
 //! 定义了加密密钥的核心 trait。
 use crate::errors::Error;
 use crate::traits::algorithm::Algorithm;
-use zeroize::Zeroize;
+use zeroize::{Zeroize, Zeroizing};
 
 /// Defines errors that can occur during key operations.
 ///
@@ -26,7 +26,7 @@ pub enum KeyError {
 /// A blanket trait for all key types, defining common properties and behaviors.
 ///
 /// 适用于所有密钥类型的通用 trait，定义了通用的属性和行为。
-pub trait Key: Sized + Send + Sync + 'static {
+pub trait Key: Sized + Send + Sync + 'static + Clone {
     /// Deserializes a key from its byte representation.
     ///
     /// 从字节表示反序列化密钥。

@@ -8,7 +8,7 @@ use seal_crypto::{
     prelude::*,
     schemes::kdf::{
         hkdf::{HkdfSha256, HkdfSha512},
-        pbkdf2::{Pbkdf2Sha256, Pbkdf2Sha512, PBKDF2_DEFAULT_ITERATIONS},
+        pbkdf2::{PBKDF2_DEFAULT_ITERATIONS, Pbkdf2Sha256, Pbkdf2Sha512},
     },
 };
 use secrecy::SecretBox;
@@ -96,7 +96,9 @@ fn main() -> Result<(), CryptoError> {
     // An attempt to call `derive` without a salt would not compile.
     // 使用新的 `PasswordBasedDerivation` trait，在编译时就强制要求提供盐。
     // 任何不带盐调用 `derive` 的尝试都无法通过编译。
-    println!("  - Salt is now required by the function signature, preventing misuse. / 函数签名现在要求提供盐，防止误用。");
+    println!(
+        "  - Salt is now required by the function signature, preventing misuse. / 函数签名现在要求提供盐，防止误用。"
+    );
 
     // Using PBKDF2-SHA512 is also straightforward.
     // 使用 PBKDF2-SHA512 也同样直接。

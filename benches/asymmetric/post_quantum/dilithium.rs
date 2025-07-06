@@ -1,6 +1,6 @@
 #![cfg(feature = "dilithium")]
 
-use criterion::{criterion_group, Criterion};
+use criterion::{Criterion, criterion_group};
 use seal_crypto::{
     prelude::*,
     schemes::asymmetric::post_quantum::dilithium::{Dilithium2, Dilithium3, Dilithium5},
