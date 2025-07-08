@@ -5,7 +5,7 @@
 /// A trait that provides a unique name for a cryptographic algorithm.
 ///
 /// 为加密算法提供唯一名称的 trait。
-pub trait Algorithm: 'static + Sized {
+pub trait Algorithm: 'static + Sized + Send + Sync {
     /// The unique name of the signature algorithm (e.g., "RSA-PSS-SHA256").
     ///
     /// 签名算法的唯一名称（例如，"RSA-PSS-SHA256"）。
