@@ -22,7 +22,7 @@ mod private {
 /// A sealed trait that defines the parameters for an AES-GCM scheme.
 ///
 /// 一个密封的 trait，用于定义 AES-GCM 方案的参数。
-pub trait AesGcmParams: private::Sealed + Send + Sync + 'static {
+pub trait AesGcmParams: private::Sealed + Send + Sync + 'static + Clone + Default {
     /// The unique name of the signature algorithm (e.g., "AES-128-GCM").
     ///
     /// 签名算法的唯一名称（例如，"AES-128-GCM"）。
@@ -52,7 +52,7 @@ pub trait AesGcmParams: private::Sealed + Send + Sync + 'static {
 /// Marker struct for AES-128-GCM.
 ///
 /// AES-128-GCM 的标记结构体。
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct Aes128GcmParams;
 impl private::Sealed for Aes128GcmParams {}
 impl AesGcmParams for Aes128GcmParams {
@@ -67,7 +67,7 @@ impl AesGcmParams for Aes128GcmParams {
 /// Marker struct for AES-256-GCM.
 ///
 /// AES-256-GCM 的标记结构体。
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct Aes256GcmParams;
 impl private::Sealed for Aes256GcmParams {}
 impl AesGcmParams for Aes256GcmParams {
@@ -85,7 +85,7 @@ impl AesGcmParams for Aes256GcmParams {
 /// A generic struct representing the AES-GCM cryptographic system for a given parameter set.
 ///
 /// 一个通用结构体，表示给定参数集的 AES-GCM 密码系统。
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct AesGcmScheme<P: AesGcmParams> {
     _params: PhantomData<P>,
 }

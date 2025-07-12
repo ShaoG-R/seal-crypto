@@ -24,7 +24,9 @@ mod private {
 /// A sealed trait that defines the parameters for a ChaCha20-Poly1305 scheme.
 ///
 /// 一个密封的 trait，用于定义 ChaCha20-Poly1305 方案的参数。
-pub trait Chacha20Poly1305Params: private::Sealed + Send + Sync + 'static {
+pub trait Chacha20Poly1305Params:
+    private::Sealed + Send + Sync + 'static + Clone + Default
+{
     /// The unique name of the signature algorithm (e.g., "ChaCha20-Poly1305").
     ///
     /// 签名算法的唯一名称（例如，"ChaCha20-Poly1305"）。
@@ -54,7 +56,7 @@ pub trait Chacha20Poly1305Params: private::Sealed + Send + Sync + 'static {
 /// Marker struct for ChaCha20-Poly1305.
 ///
 /// ChaCha20-Poly1305 的标记结构体。
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct ChaCha20Poly1305Params;
 impl private::Sealed for ChaCha20Poly1305Params {}
 impl Chacha20Poly1305Params for ChaCha20Poly1305Params {
@@ -69,7 +71,7 @@ impl Chacha20Poly1305Params for ChaCha20Poly1305Params {
 /// Marker struct for XChaCha20-Poly1305.
 ///
 /// XChaCha20-Poly1305 的标记结构体。
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct XChaCha20Poly1305Params;
 impl private::Sealed for XChaCha20Poly1305Params {}
 impl Chacha20Poly1305Params for XChaCha20Poly1305Params {
@@ -87,7 +89,7 @@ impl Chacha20Poly1305Params for XChaCha20Poly1305Params {
 /// A generic struct representing the ChaCha20-Poly1305 cryptographic system.
 ///
 /// 一个通用结构体，表示 ChaCha20-Poly1305 密码系统。
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct Chacha20Poly1305Scheme<P: Chacha20Poly1305Params> {
     _params: PhantomData<P>,
 }

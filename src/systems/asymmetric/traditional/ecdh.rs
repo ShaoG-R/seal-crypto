@@ -32,7 +32,9 @@ mod private {
 ///
 /// 一个定义特定 ECDH 方案参数的 trait。
 /// 这是一个密封的 trait，意味着只有此 crate 中的类型才能实现它。
-pub trait EcdhParams: private::Sealed + Send + Sync + 'static + Clone {
+pub trait EcdhParams:
+    private::Sealed + Send + Sync + 'static + Clone + Default
+{
     const NAME: &'static str;
     const ID: u32;
     type Curve: elliptic_curve::Curve + elliptic_curve::PrimeCurveArithmetic;
@@ -161,7 +163,7 @@ impl<P: EcdhParams + Clone> PrivateKey<EcdhPublicKey<P>> for EcdhPrivateKey<P> {
 /// A generic struct representing the ECDH scheme for a given parameter set.
 ///
 /// 一个通用结构体，表示给定参数集的 ECDH 方案。
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct EcdhScheme<P: EcdhParams> {
     _params: PhantomData<P>,
 }

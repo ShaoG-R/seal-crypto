@@ -43,7 +43,9 @@ mod private {
 ///
 /// 一个定义特定 ECC 方案参数的 trait。
 /// 这是一个密封的 trait，意味着只有此 crate 中的类型才能实现它。
-pub trait EccParams: private::Sealed + Send + Sync + 'static + Clone {
+pub trait EccParams:
+    private::Sealed + Send + Sync + 'static + Clone + Default
+{
     const NAME: &'static str;
     const ID: u32;
 
@@ -274,7 +276,7 @@ impl<P: EccParams + Clone> PrivateKey<EccPublicKey<P>> for EccPrivateKey<P> {}
 /// A generic struct representing the ECC signature scheme for a given parameter set.
 ///
 /// 一个通用结构体，表示给定参数集的 ECC 签名方案。
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct EccScheme<P: EccParams> {
     _params: PhantomData<P>,
 }

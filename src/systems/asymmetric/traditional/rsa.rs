@@ -40,7 +40,9 @@ mod private {
 ///
 /// 一个为 RSA 方案定义密钥大小的 trait。
 /// 这是一个密封的 trait，意味着只有此 crate 中的类型才能实现它。
-pub trait RsaKeyParams: private::Sealed + Send + Sync + 'static {
+pub trait RsaKeyParams:
+    private::Sealed + Send + Sync + 'static + Clone + Default
+{
     /// The number of bits for the RSA key.
     ///
     /// RSA 密钥的位数。
@@ -154,7 +156,7 @@ const SHARED_SECRET_SIZE: usize = 32;
 ///
 /// 一个通用结构体，表示 RSA 密码学方案。
 /// 它在 RSA 密钥参数（密钥大小）和哈希函数上是通用的。
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct RsaScheme<KP: RsaKeyParams, H: Hasher = Sha256> {
     _key_params: PhantomData<KP>,
     _hasher: PhantomData<H>,

@@ -27,7 +27,9 @@ mod private {
 ///
 /// 一个定义特定 Dilithium 安全级别参数的 trait。
 /// 这是一个密封的 trait，意味着只有此 crate 中的类型才能实现它。
-pub trait DilithiumParams: private::Sealed + Send + Sync + 'static {
+pub trait DilithiumParams:
+    private::Sealed + Send + Sync + 'static + Clone + Default
+{
     const NAME: &'static str;
     const ID: u32;
     type PqPublicKey: PqPublicKey + Clone;
@@ -249,7 +251,7 @@ impl<P: DilithiumParams + Clone> PrivateKey<DilithiumPublicKey<P>> for Dilithium
 /// A generic struct representing the Dilithium cryptographic system.
 ///
 /// 一个通用结构体，表示 Dilithium 密码系统。
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct DilithiumScheme<P: DilithiumParams> {
     _params: PhantomData<P>,
 }

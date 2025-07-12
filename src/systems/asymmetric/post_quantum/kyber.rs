@@ -28,7 +28,9 @@ mod private {
 ///
 /// 一个定义特定 Kyber 安全级别参数的 trait。
 /// 这是一个密封的 trait，意味着只有此 crate 中的类型才能实现它。
-pub trait KyberParams: private::Sealed + Send + Sync + 'static + Clone {
+pub trait KyberParams:
+    private::Sealed + Send + Sync + 'static + Clone + Default
+{
     const NAME: &'static str;
     const ID: u32;
     type PqPublicKey: PqPublicKey + Clone;
@@ -250,7 +252,7 @@ impl<P: KyberParams + Clone> PrivateKey<KyberPublicKey<P>> for KyberSecretKey<P>
 /// A generic struct representing the Kyber cryptographic system for a given parameter set.
 ///
 /// 一个通用结构体，表示给定参数集的 Kyber 密码系统。
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct KyberScheme<P: KyberParams> {
     _params: PhantomData<P>,
 }
