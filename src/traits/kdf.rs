@@ -65,7 +65,7 @@ pub enum KdfError {
 /// A top-level trait for all derivation algorithms (KDFs, PBKDFs, etc.).
 ///
 /// 所有派生算法（KDF、PBKDF 等）的顶层 trait。
-pub trait Derivation: Algorithm + Sync + Send {}
+pub trait Derivation: Algorithm + Sync + Send + Default {}
 
 /// A trait for Key Derivation Functions (KDFs) that derive keys from a high-entropy Input Keying Material (IKM).
 ///

@@ -23,7 +23,7 @@ pub const PBKDF2_DEFAULT_ITERATIONS: u32 = 600_000;
 /// A generic struct representing the PBKDF2 cryptographic system for a given hash function.
 ///
 /// 一个通用的 PBKDF2 系统结构体，它在哈希函数上是通用的。
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Debug)]
 pub struct Pbkdf2Scheme<H: Hasher> {
     pub iterations: u32,
     _hasher: PhantomData<H>,

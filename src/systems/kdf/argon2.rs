@@ -33,7 +33,7 @@ pub const ARGON2_DEFAULT_P_COST: u32 = 1;
 /// A struct representing the Argon2id cryptographic system.
 ///
 /// 代表 Argon2id 加密系统的结构体。
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Debug)]
 pub struct Argon2Scheme {
     /// Memory cost in kibibytes.
     ///

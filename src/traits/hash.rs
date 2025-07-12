@@ -79,7 +79,7 @@ impl Hasher for Sha512 {
 /// 一个代表可扩展输出函数 (XOF) 的密封 trait。
 /// 它关联一个具体的 `digest::ExtendableOutput` 实现。
 #[cfg(feature = "digest")]
-pub trait Xof: private::Sealed + Send + Sync + 'static {
+pub trait Xof: private::Sealed + Send + Sync + 'static + Default {
     /// The actual XOF implementation from the `digest` crate.
     ///
     /// 来自 `digest` crate 的实际 XOF 实现。

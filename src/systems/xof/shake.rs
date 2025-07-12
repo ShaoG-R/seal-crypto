@@ -16,7 +16,7 @@ use std::marker::PhantomData;
 /// A generic struct representing the SHAKE cryptographic system for a given XOF.
 ///
 /// 一个通用的 SHAKE 系统结构体，它在 XOF 上是通用的。
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct ShakeScheme<X: Xof> {
     _xof: PhantomData<X>,
 }
