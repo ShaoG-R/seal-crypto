@@ -43,3 +43,5 @@ pub use crate::traits::{
 };
 #[cfg(feature = "digest")]
 pub use crate::traits::{Hasher, XofDerivation, XofReader};
+#[cfg(feature = "digest")]
+pub use digest::XofReader as DigestXofReader;

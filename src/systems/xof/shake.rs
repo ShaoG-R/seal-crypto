@@ -7,7 +7,8 @@ use crate::{
     traits::{
         algorithm::Algorithm,
         hash::Xof,
-        kdf::{Derivation, DerivedKey, KeyBasedDerivation, XofDerivation, XofReader},
+        kdf::{Derivation, DerivedKey, KeyBasedDerivation},
+        xof::{XofDerivation, XofReader},
     },
 };
 use digest::{ExtendableOutput, Update, XofReader as DigestXofReader};
