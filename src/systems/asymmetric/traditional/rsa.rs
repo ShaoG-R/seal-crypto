@@ -40,9 +40,7 @@ mod private {
 ///
 /// 一个为 RSA 方案定义密钥大小的 trait。
 /// 这是一个密封的 trait，意味着只有此 crate 中的类型才能实现它。
-pub trait RsaKeyParams:
-    private::Sealed + Send + Sync + 'static + Clone + Default
-{
+pub trait RsaKeyParams: private::Sealed + Send + Sync + 'static + Clone + Default {
     /// The number of bits for the RSA key.
     ///
     /// RSA 密钥的位数。

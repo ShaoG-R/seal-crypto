@@ -32,9 +32,7 @@ mod private {
 ///
 /// 一个定义特定 ECDH 方案参数的 trait。
 /// 这是一个密封的 trait，意味着只有此 crate 中的类型才能实现它。
-pub trait EcdhParams:
-    private::Sealed + Send + Sync + 'static + Clone + Default
-{
+pub trait EcdhParams: private::Sealed + Send + Sync + 'static + Clone + Default {
     const NAME: &'static str;
     const ID: u32;
     type Curve: elliptic_curve::Curve + elliptic_curve::PrimeCurveArithmetic;
