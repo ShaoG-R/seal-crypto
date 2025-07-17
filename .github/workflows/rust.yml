@@ -49,7 +49,7 @@ jobs:
           ${{ runner.os }}-cargo-tests-
 
     - name: Install matrix-runner
-      run: cargo install --git "https://github.com/ShaoG-R/matrix-runner"
+      run: cargo install --git "https://github.com/ShaoG-R/matrix-runner" --force
 
     - name: Run test matrix shard
       shell: bash
