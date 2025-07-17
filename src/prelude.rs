@@ -4,6 +4,8 @@
 //! `seal-crypto` crate 用户的 "prelude"。
 //! 这个 prelude 设计为通过 glob 导入，即 `use seal_crypto::prelude::*;`。
 pub use crate::errors::Error as CryptoError;
+#[cfg(all(feature = "secrecy", feature = "getrandom"))] 
+pub use crate::traits::PasswordBasedDerivation;
 pub use crate::traits::{
     AeadScheme,
     // core
@@ -24,7 +26,6 @@ pub use crate::traits::{
     // asymmetric
     KeyGenerator,
     KeyPair,
-    PasswordBasedDerivation,
     PrivateKey,
     PublicKey,
     Signature,
@@ -41,7 +42,6 @@ pub use crate::traits::{
     Verifier,
 };
 #[cfg(feature = "digest")]
-pub use crate::traits::{Hasher, XofDerivation};
+pub use crate::traits::{Hasher, XofDerivation, XofReader};
 #[cfg(feature = "digest")]
-pub use ::digest::XofReader as DigestXofReader;
-pub use ::zeroize;
+pub use digest::XofReader as DigestXofReader;

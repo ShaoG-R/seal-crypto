@@ -3,6 +3,7 @@
 //! 定义了非对称加密操作的 trait。
 
 use crate::errors::Error;
+use crate::traits::Key;
 use crate::traits::key::AsymmetricKeySet;
 #[cfg(feature = "std")]
 use thiserror::Error;
@@ -128,6 +129,16 @@ pub type SharedSecret = Zeroizing<Vec<u8>>;
 #[allow(dead_code)]
 pub type EncapsulatedKey = Vec<u8>;
 
+impl Key for EncapsulatedKey {
+    fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
+        Ok(bytes.to_vec())
+    }
+
+    fn to_bytes(&self) -> Vec<u8> {
+        self.to_vec()
+    }
+}
+
 /// Defines the errors that can occur during KEM operations.
 ///
 /// 定义 KEM 操作期间可能发生的错误。
@@ -175,7 +186,7 @@ pub enum KemError {
 ///
 /// KEM 是一类用于安全建立共享密钥的公钥密码系统。
 pub trait Kem: AsymmetricKeySet {
-    type EncapsulatedKey;
+    type EncapsulatedKey: Key;
 
     /// Generates and encapsulates a shared secret using the recipient's public key.
     ///

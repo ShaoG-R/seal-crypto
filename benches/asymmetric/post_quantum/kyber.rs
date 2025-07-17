@@ -1,9 +1,9 @@
 #![cfg(feature = "kyber")]
 
-use criterion::{criterion_group, Criterion};
+use criterion::{Criterion, criterion_group};
 use seal_crypto::{
     prelude::*,
-    schemes::asymmetric::post_quantum::kyber::{Kyber1024, Kyber512, Kyber768},
+    schemes::asymmetric::post_quantum::kyber::{Kyber512, Kyber768, Kyber1024},
 };
 use std::hint::black_box;
 

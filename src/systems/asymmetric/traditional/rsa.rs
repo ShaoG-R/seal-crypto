@@ -20,10 +20,10 @@ use crate::traits::{
 };
 use rsa::signature::{RandomizedSigner, SignatureEncoding};
 use rsa::{
+    Oaep,
     pkcs8::{DecodePrivateKey, DecodePublicKey, EncodePrivateKey, EncodePublicKey},
     pss::{SigningKey, VerifyingKey},
     rand_core::{OsRng, RngCore},
-    Oaep,
 };
 use std::convert::TryFrom;
 use std::marker::PhantomData;
@@ -40,11 +40,19 @@ mod private {
 ///
 /// 一个为 RSA 方案定义密钥大小的 trait。
 /// 这是一个密封的 trait，意味着只有此 crate 中的类型才能实现它。
-pub trait RsaKeyParams: private::Sealed + Send + Sync + 'static {
+pub trait RsaKeyParams: private::Sealed + Send + Sync + 'static + Clone + Default {
     /// The number of bits for the RSA key.
     ///
     /// RSA 密钥的位数。
     const KEY_BITS: usize;
+    /// The name of the key size.
+    ///
+    /// 密钥大小的名称。
+    const NAME: &'static str;
+    /// The base value for the key's ID.
+    ///
+    /// 密钥ID的基础值。
+    const ID_BASE: u32;
 }
 
 /// Marker struct for RSA with a 2048-bit key.
@@ -55,6 +63,8 @@ pub struct Rsa2048Params;
 impl private::Sealed for Rsa2048Params {}
 impl RsaKeyParams for Rsa2048Params {
     const KEY_BITS: usize = 2048;
+    const NAME: &'static str = "2048";
+    const ID_BASE: u32 = 0x01_01_01_00;
 }
 
 /// Marker struct for RSA with a 4096-bit key.
@@ -65,16 +75,23 @@ pub struct Rsa4096Params;
 impl private::Sealed for Rsa4096Params {}
 impl RsaKeyParams for Rsa4096Params {
     const KEY_BITS: usize = 4096;
+    const NAME: &'static str = "4096";
+    const ID_BASE: u32 = 0x01_01_01_10;
 }
 
 // ------------------- Newtype Wrappers for RSA Keys -------------------
 // ------------------- RSA 密钥的 Newtype 包装器 -------------------
 
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
+
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct RsaPublicKey(rsa::RsaPublicKey);
 
 #[derive(Debug, Zeroize, Clone, Eq, PartialEq)]
 #[zeroize(drop)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct RsaPrivateKey(Zeroizing<Vec<u8>>);
 
 impl Key for RsaPublicKey {
@@ -137,7 +154,7 @@ const SHARED_SECRET_SIZE: usize = 32;
 ///
 /// 一个通用结构体，表示 RSA 密码学方案。
 /// 它在 RSA 密钥参数（密钥大小）和哈希函数上是通用的。
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct RsaScheme<KP: RsaKeyParams, H: Hasher = Sha256> {
     _key_params: PhantomData<KP>,
     _hasher: PhantomData<H>,
@@ -149,7 +166,10 @@ impl<KP: RsaKeyParams, H: Hasher + 'static> AsymmetricKeySet for RsaScheme<KP, H
 }
 
 impl<KP: RsaKeyParams, H: Hasher + 'static> Algorithm for RsaScheme<KP, H> {
-    const NAME: &'static str = "RSA-PSS";
+    fn name() -> String {
+        format!("RSA-PSS-{}-{}", KP::NAME, H::NAME)
+    }
+    const ID: u32 = KP::ID_BASE + H::ID_OFFSET;
 }
 
 impl<KP: RsaKeyParams, H: Hasher> KeyGenerator for RsaScheme<KP, H> {

@@ -19,13 +19,13 @@ use crate::traits::{
     Algorithm, AsymmetricKeySet, Key, KeyError, KeyGenerator, PrivateKey, PublicKey, Signature,
     SignatureError, Signer, Verifier,
 };
-use ecdsa::{signature::RandomizedSigner, Signature as EcdsaSignature, SigningKey, VerifyingKey};
+use ecdsa::{Signature as EcdsaSignature, SigningKey, VerifyingKey, signature::RandomizedSigner};
 use ed25519_dalek::{
     Signature as Ed25519Signature, Signer as Ed25519DalekSigner, SigningKey as Ed25519SigningKey,
     VerifyingKey as Ed25519VerifyingKey,
 };
 use elliptic_curve::pkcs8::{DecodePrivateKey, DecodePublicKey, EncodePrivateKey, EncodePublicKey};
-use p256::{ecdsa::Signature as P256Signature, NistP256, SecretKey};
+use p256::{NistP256, SecretKey, ecdsa::Signature as P256Signature};
 use rand_core_elliptic_curve::{OsRng, RngCore};
 use std::convert::TryFrom;
 use std::marker::PhantomData;
@@ -43,8 +43,9 @@ mod private {
 ///
 /// 一个定义特定 ECC 方案参数的 trait。
 /// 这是一个密封的 trait，意味着只有此 crate 中的类型才能实现它。
-pub trait EccParams: private::Sealed + Send + Sync + 'static {
+pub trait EccParams: private::Sealed + Send + Sync + 'static + Clone + Default {
     const NAME: &'static str;
+    const ID: u32;
 
     fn generate_keypair() -> Result<(Vec<u8>, Zeroizing<Vec<u8>>), Error>;
     fn sign(private_key_der: &[u8], message: &[u8]) -> Result<Signature, Error>;
@@ -61,6 +62,7 @@ pub struct EcdsaP256Params;
 impl private::Sealed for EcdsaP256Params {}
 impl EccParams for EcdsaP256Params {
     const NAME: &'static str = "ECDSA-P256-SHA256";
+    const ID: u32 = 0x01_01_02_01;
 
     fn generate_keypair() -> Result<(Vec<u8>, Zeroizing<Vec<u8>>), Error> {
         let private_key = SecretKey::random(&mut OsRng);
@@ -121,6 +123,7 @@ pub struct Ed25519Params;
 impl private::Sealed for Ed25519Params {}
 impl EccParams for Ed25519Params {
     const NAME: &'static str = "Ed25519";
+    const ID: u32 = 0x01_01_02_02;
 
     fn generate_keypair() -> Result<(Vec<u8>, Zeroizing<Vec<u8>>), Error> {
         let mut secret_bytes = [0u8; 32];
@@ -178,7 +181,11 @@ impl EccParams for Ed25519Params {
 // ------------------- Newtype Wrappers for ECC Keys -------------------
 // ------------------- ECC 密钥的 Newtype 包装器 -------------------
 
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
+
 #[derive(Debug)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct EccPublicKey<P: EccParams> {
     bytes: Vec<u8>,
     _params: PhantomData<P>,
@@ -232,6 +239,7 @@ impl<P: EccParams> PublicKey for EccPublicKey<P> {}
 
 #[derive(Debug, Zeroize, Clone, Eq, PartialEq)]
 #[zeroize(drop)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct EccPrivateKey<P: EccParams> {
     bytes: Zeroizing<Vec<u8>>,
     _params: PhantomData<P>,
@@ -266,7 +274,7 @@ impl<P: EccParams + Clone> PrivateKey<EccPublicKey<P>> for EccPrivateKey<P> {}
 /// A generic struct representing the ECC signature scheme for a given parameter set.
 ///
 /// 一个通用结构体，表示给定参数集的 ECC 签名方案。
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct EccScheme<P: EccParams> {
     _params: PhantomData<P>,
 }
@@ -277,7 +285,10 @@ impl<P: EccParams + Clone> AsymmetricKeySet for EccScheme<P> {
 }
 
 impl<P: EccParams + Clone> Algorithm for EccScheme<P> {
-    const NAME: &'static str = P::NAME;
+    fn name() -> String {
+        P::NAME.to_string()
+    }
+    const ID: u32 = P::ID;
 }
 
 impl<P: EccParams + Clone> KeyGenerator for EccScheme<P> {

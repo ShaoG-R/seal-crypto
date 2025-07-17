@@ -18,7 +18,9 @@ fn main() -> Result<(), CryptoError> {
     //    A user generates an RSA key pair.
     // 1. 密钥生成
     //    一个用户生成一个 RSA 密钥对。
-    println!("\nStep 1: User generates an RSA-4096 key pair with SHA-256. / 步骤1：用户生成 RSA-4096 SHA-256 密钥对。");
+    println!(
+        "\nStep 1: User generates an RSA-4096 key pair with SHA-256. / 步骤1：用户生成 RSA-4096 SHA-256 密钥对。"
+    );
     let (public_key, private_key) = MyRsa::generate_keypair()?;
     println!("  - Public Key generated. / 已生成公钥。");
     println!("  - Private Key generated. / 已生成私钥。");

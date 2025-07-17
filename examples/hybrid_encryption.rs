@@ -20,7 +20,9 @@ fn main() -> Result<(), CryptoError> {
     //    The recipient generates a Kyber key pair.
     // 1. 密钥生成（接收方）
     //    接收方生成一个 Kyber 密钥对。
-    println!("\nStep 1: Recipient generates a Kyber-1024 key pair. / 步骤1：接收方生成 Kyber-1024 密钥对。");
+    println!(
+        "\nStep 1: Recipient generates a Kyber-1024 key pair. / 步骤1：接收方生成 Kyber-1024 密钥对。"
+    );
     let (public_key, private_key) = MyKEM::generate_keypair()?;
     println!(
         "  - Public Key generated ({} bytes) / 已生成公钥（{}字节）",
@@ -37,7 +39,9 @@ fn main() -> Result<(), CryptoError> {
     //    The sender uses the recipient's public key to perform hybrid encryption.
     // 2. 加密（发送方）
     //    发送方使用接收方的公钥来执行混合加密。
-    println!("\nStep 2: Sender encrypts a secret message using the recipient's public key. / 步骤2：发送方使用接收方的公钥加密一条秘密消息。");
+    println!(
+        "\nStep 2: Sender encrypts a secret message using the recipient's public key. / 步骤2：发送方使用接收方的公钥加密一条秘密消息。"
+    );
     let secret_message = b"This is a super secret message!";
     let associated_data = b"Hybrid Encryption Example";
     println!(
@@ -109,7 +113,9 @@ fn main() -> Result<(), CryptoError> {
         &ciphertext,
         Some(associated_data),
     )?;
-    println!("  - Ciphertext successfully decrypted with AES-256-GCM. / 密文已通过 AES-256-GCM 成功解密。");
+    println!(
+        "  - Ciphertext successfully decrypted with AES-256-GCM. / 密文已通过 AES-256-GCM 成功解密。"
+    );
 
     // 4. Verification
     //    Verify that the decrypted message matches the original.
@@ -117,7 +123,9 @@ fn main() -> Result<(), CryptoError> {
     //    验证解密后的消息与原始消息是否匹配。
     println!("\nStep 4: Verifying the result. / 步骤4：验证结果。");
     assert_eq!(secret_message.to_vec(), decrypted_plaintext);
-    println!("  - Success! Decrypted message matches the original secret message. / 成功！解密后的消息与原始秘密消息匹配。");
+    println!(
+        "  - Success! Decrypted message matches the original secret message. / 成功！解密后的消息与原始秘密消息匹配。"
+    );
 
     println!("\nHybrid encryption flow completed successfully! / 混合加密流程成功完成！");
 

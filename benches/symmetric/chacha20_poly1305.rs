@@ -1,6 +1,6 @@
 #![cfg(feature = "chacha20-poly1305")]
 
-use criterion::{criterion_group, Criterion};
+use criterion::{Criterion, criterion_group};
 use seal_crypto::{
     prelude::*,
     schemes::symmetric::chacha20_poly1305::{ChaCha20Poly1305, XChaCha20Poly1305},

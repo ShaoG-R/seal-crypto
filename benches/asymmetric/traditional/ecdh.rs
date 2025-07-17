@@ -1,6 +1,6 @@
 #![cfg(feature = "ecdh")]
 
-use criterion::{criterion_group, Criterion};
+use criterion::{Criterion, criterion_group};
 use seal_crypto::{prelude::*, schemes::asymmetric::traditional::ecdh::*};
 use std::hint::black_box;
 

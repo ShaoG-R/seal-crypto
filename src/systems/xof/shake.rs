@@ -7,7 +7,8 @@ use crate::{
     traits::{
         algorithm::Algorithm,
         hash::Xof,
-        kdf::{Derivation, DerivedKey, KeyBasedDerivation, XofDerivation, XofReader},
+        kdf::{Derivation, DerivedKey, KeyBasedDerivation},
+        xof::{XofDerivation, XofReader},
     },
 };
 use digest::{ExtendableOutput, Update, XofReader as DigestXofReader};
@@ -16,7 +17,7 @@ use std::marker::PhantomData;
 /// A generic struct representing the SHAKE cryptographic system for a given XOF.
 ///
 /// 一个通用的 SHAKE 系统结构体，它在 XOF 上是通用的。
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct ShakeScheme<X: Xof> {
     _xof: PhantomData<X>,
 }
@@ -24,7 +25,10 @@ pub struct ShakeScheme<X: Xof> {
 impl<X: Xof> Derivation for ShakeScheme<X> {}
 
 impl<X: Xof> Algorithm for ShakeScheme<X> {
-    const NAME: &'static str = "SHAKE";
+    fn name() -> String {
+        X::NAME.to_string()
+    }
+    const ID: u32 = 0x05_01_00_00 + X::ID_OFFSET;
 }
 
 impl<X: Xof> KeyBasedDerivation for ShakeScheme<X> {

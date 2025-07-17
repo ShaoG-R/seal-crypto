@@ -48,9 +48,12 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-cargo-tests-
 
+    - name: Install matrix-runner
+      run: cargo install --git "https://github.com/ShaoG-R/matrix-runner" --force
+
     - name: Run test matrix shard
       shell: bash
-      run: cargo run --package test-runner --release -- --runner-index $((${{ matrix.shard }} - 1)) --total-runners 4
+      run: matrix-runner run --runner-index $((${{ matrix.shard }} - 1)) --total-runners 4
       env:
         CC_x86_64_pc_windows_msvc: clang-cl
         CXX_x86_64_pc_windows_msvc: clang-cl 

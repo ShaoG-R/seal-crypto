@@ -51,7 +51,9 @@ fn main() -> Result<(), CryptoError> {
     // Verify the first key from the stream matches the one from derive()
     // 验证从流中得到的第一个密钥与从 derive() 中得到的密钥匹配
     assert_eq!(derived_key_shake.as_bytes(), &key1);
-    println!("    - Verified: First 32 bytes from stream match the `derive` output. / 验证：流中的前 32 字节与 `derive` 输出匹配。");
+    println!(
+        "    - Verified: First 32 bytes from stream match the `derive` output. / 验证：流中的前 32 字节与 `derive` 输出匹配。"
+    );
 
     println!("\nSHAKE XOF example completed successfully! / SHAKE XOF 示例成功完成！");
 
