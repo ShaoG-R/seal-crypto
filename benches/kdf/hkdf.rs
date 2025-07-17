@@ -1,6 +1,6 @@
 #![cfg(feature = "hkdf")]
 
-use criterion::{criterion_group, Criterion};
+use criterion::{Criterion, criterion_group};
 use seal_crypto::{
     prelude::*,
     schemes::kdf::hkdf::{HkdfSha256, HkdfSha512},

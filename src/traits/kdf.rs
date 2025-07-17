@@ -4,8 +4,9 @@
 
 use crate::errors::Error;
 use crate::traits::algorithm::Algorithm;
-#[cfg(feature = "digest")]
-use digest::XofReader as DigestXofReader;
+
+#[cfg(feature = "secrecy")]
+use secrecy::SecretBox;
 #[cfg(feature = "std")]
 use thiserror::Error;
 use zeroize::Zeroizing;
@@ -44,6 +45,12 @@ pub enum KdfError {
     #[cfg_attr(feature = "std", error("Invalid output length for this KDF"))]
     InvalidOutputLength,
 
+    /// Salt generation failed.
+    ///
+    /// 盐生成失败。
+    #[cfg_attr(feature = "std", error("Salt generation failed"))]
+    SaltGenerationFailed,
+
     /// The operation is not supported in `no_std` environment.
     ///
     /// 该操作在 `no_std` 环境中不受支持。
@@ -57,7 +64,7 @@ pub enum KdfError {
 /// A top-level trait for all derivation algorithms (KDFs, PBKDFs, etc.).
 ///
 /// 所有派生算法（KDF、PBKDF 等）的顶层 trait。
-pub trait Derivation: Algorithm {}
+pub trait Derivation: Algorithm + Sync + Send {}
 
 /// A trait for Key Derivation Functions (KDFs) that derive keys from a high-entropy Input Keying Material (IKM).
 ///
@@ -99,7 +106,33 @@ pub trait KeyBasedDerivation: Derivation {
 ///
 /// 用于从低熵密码派生密钥的基于密码的密钥派生函数 (PBKDF) 的 trait。
 /// 这些函数通常是计算密集型的，以防止暴力破解攻击。
+#[cfg(all(feature = "secrecy", feature = "getrandom"))]
 pub trait PasswordBasedDerivation: Derivation {
+    /// The recommended length for the salt, in bytes.
+    ///
+    /// 推荐的盐长度（以字节为单位）。
+    const RECOMMENDED_SALT_LENGTH: usize = 16;
+
+    /// Generates a cryptographically secure salt.
+    ///
+    /// This default implementation uses `getrandom` to generate a salt of `RECOMMENDED_SALT_LENGTH`.
+    /// Schemes can override this method if they have specific requirements for salt generation.
+    ///
+    /// # Returns
+    /// A `Vec<u8>` containing the generated salt.
+    ///
+    /// 生成一个加密安全的盐。
+    ///
+    /// 此默认实现使用 `getrandom` 来生成长度为 `RECOMMENDED_SALT_LENGTH` 的盐。
+    /// 如果方案有特定的盐生成要求，可以重写此方法。
+    ///
+    /// # 返回
+    /// 包含生成的盐的 `Vec<u8>`。
+    fn generate_salt(&self) -> Result<Vec<u8>, Error> {
+        let mut salt = vec![0u8; Self::RECOMMENDED_SALT_LENGTH];
+        getrandom::fill(&mut salt).map_err(|_| Error::Kdf(KdfError::SaltGenerationFailed))?;
+        Ok(salt)
+    }
     /// Derives a secure key from a password.
     ///
     /// # Arguments
@@ -121,77 +154,12 @@ pub trait PasswordBasedDerivation: Derivation {
     ///
     /// # 返回
     /// 派生出的密钥，长度为 `output_len`。
-    fn derive(&self, password: &[u8], salt: &[u8], output_len: usize) -> Result<DerivedKey, Error>;
-}
-
-/// A reader for extendable-output functions (XOFs).
-///
-/// This struct wraps a boxed `digest::XofReader` to provide a concrete type
-/// that can be returned from trait methods.
-///
-/// 可扩展输出函数 (XOF) 的读取器。
-///
-/// 此结构体包装了一个盒装的 `digest::XofReader`，以提供可从 trait 方法返回的具体类型。
-#[cfg(feature = "digest")]
-pub struct XofReader<'a> {
-    reader: Box<dyn DigestXofReader + 'a>,
-}
-
-#[cfg(feature = "digest")]
-impl<'a> XofReader<'a> {
-    /// Creates a new `XofReader` from a boxed `digest::XofReader`.
-    ///
-    /// 从盒装的 `digest::XofReader` 创建一个新的 `XofReader`。
-    pub fn new<R: DigestXofReader + 'a>(reader: R) -> Self {
-        Self {
-            reader: Box::new(reader),
-        }
-    }
-}
-
-#[cfg(feature = "digest")]
-impl<'a> DigestXofReader for XofReader<'a> {
-    fn read(&mut self, buffer: &mut [u8]) {
-        self.reader.read(buffer);
-    }
-}
-
-/// A trait for Key Derivation Functions based on Extendable-Output Functions (XOFs).
-///
-/// This trait allows for deriving a stream of bytes from Input Keying Material (IKM),
-/// which is useful for generating multiple keys or keys of a length not known beforehand.
-///
-/// 基于可扩展输出函数 (XOF) 的密钥派生函数 trait。
-///
-/// 此 trait 允许从输入密钥材料 (IKM) 派生字节流，
-/// 这对于生成多个密钥或预先未知长度的密钥非常有用。
-#[cfg(feature = "digest")]
-pub trait XofDerivation: Derivation {
-    /// Derives a byte stream from Input Keying Material (IKM).
-    ///
-    /// # Arguments
-    /// * `ikm` - The Input Keying Material.
-    /// * `salt` - An optional salt.
-    /// * `info` - Optional context and application-specific information.
-    ///
-    /// # Returns
-    /// An `XofReader` that can be used to read an arbitrary number of bytes.
-    ///
-    /// 从输入密钥材料 (IKM) 派生字节流。
-    ///
-    /// # 参数
-    /// * `ikm` - 输入密钥材料。
-    /// * `salt` - 可选的盐。
-    /// * `info` - 可选的上下文和应用程序特定信息。
-    ///
-    /// # 返回
-    /// 一个可用于读取任意数量字节的 `XofReader`。
-    fn reader<'a>(
+    fn derive(
         &self,
-        ikm: &'a [u8],
-        salt: Option<&'a [u8]>,
-        info: Option<&'a [u8]>,
-    ) -> Result<XofReader<'a>, Error>;
+        password: &SecretBox<[u8]>,
+        salt: &[u8],
+        output_len: usize,
+    ) -> Result<DerivedKey, Error>;
 }
 
 #[cfg(test)]

@@ -11,6 +11,7 @@ use crate::{
 };
 #[cfg(feature = "std")]
 use argon2::Argon2 as Argon2_p;
+use secrecy::SecretBox;
 
 /// Argon2id default memory cost (in kibibytes). OWASP recommendation: 19 MiB = 19456 KiB.
 /// We use a slightly more conservative value that is a power of 2.
@@ -32,7 +33,7 @@ pub const ARGON2_DEFAULT_P_COST: u32 = 1;
 /// A struct representing the Argon2id cryptographic system.
 ///
 /// 代表 Argon2id 加密系统的结构体。
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Debug)]
 pub struct Argon2Scheme {
     /// Memory cost in kibibytes.
     ///
@@ -77,12 +78,21 @@ impl Default for Argon2Scheme {
 impl Derivation for Argon2Scheme {}
 
 impl Algorithm for Argon2Scheme {
-    const NAME: &'static str = "Argon2id";
+    fn name() -> String {
+        "Argon2id".to_string()
+    }
+    const ID: u32 = 0x03_01_01_01;
 }
 
 impl PasswordBasedDerivation for Argon2Scheme {
-    #[cfg(feature = "std")]
-    fn derive(&self, password: &[u8], salt: &[u8], output_len: usize) -> Result<DerivedKey, Error> {
+    fn derive(
+        &self,
+        password: &SecretBox<[u8]>,
+        salt: &[u8],
+        output_len: usize,
+    ) -> Result<DerivedKey, Error> {
+        use secrecy::ExposeSecret;
+
         let params = argon2::Params::new(self.m_cost, self.t_cost, self.p_cost, Some(output_len))
             .map_err(|_| Error::Kdf(KdfError::DerivationFailed))?;
 
@@ -95,29 +105,10 @@ impl PasswordBasedDerivation for Argon2Scheme {
         // 这是将 Argon2 用于密钥派生的最直接方法。
         let mut output = vec![0u8; output_len];
         argon2
-            .hash_password_into(password, salt, &mut output)
+            .hash_password_into(password.expose_secret(), salt, &mut output)
             .map_err(|_| Error::Kdf(KdfError::DerivationFailed))?;
 
         Ok(DerivedKey::new(output))
-    }
-
-    #[cfg(not(feature = "std"))]
-    fn derive(
-        &self,
-        _password: &[u8],
-        _salt: &[u8],
-        _output_len: usize,
-    ) -> Result<DerivedKey, Error> {
-        // In a `no_std` environment, we cannot dynamically allocate the memory needed for Argon2's `m_cost`.
-        // The `hash_password_into_with_memory` function requires a pre-allocated buffer, but `m_cost` is a
-        // runtime parameter, making stack allocation impossible without a fixed, constant size.
-        // Therefore, Argon2 derivation is not supported in `no_std` mode with the current API design.
-        //
-        // 在 `no_std` 环境中，我们无法为 Argon2 的 `m_cost` 动态分配所需的内存。
-        // `hash_password_into_with_memory` 函数需要一个预先分配的缓冲区，但 `m_cost` 是一个运行时参数，
-        // 这使得在没有固定常量大小的情况下无法进行栈分配。
-        // 因此，在当前的 API 设计下，`no_std` 模式不支持 Argon2 派生。
-        Err(Error::Kdf(KdfError::UnsupportedInNoStd))
     }
 }
 
@@ -130,17 +121,16 @@ pub type Argon2 = Argon2Scheme;
 mod tests {
     use super::*;
 
-    #[cfg(feature = "std")]
     #[test]
     fn test_argon2_derivation_std() {
-        let password = b"password";
+        let password = SecretBox::new(Box::from(b"password".as_slice()));
         let salt = b"some-random-salt";
         let output_len = 32;
 
         // Use low-cost parameters for fast testing
         let scheme = Argon2Scheme::new(16, 1, 1);
 
-        let derived_key_result = scheme.derive(password, salt, output_len);
+        let derived_key_result = scheme.derive(&password, salt, output_len);
         assert!(derived_key_result.is_ok());
 
         let derived_key = derived_key_result.unwrap();
@@ -148,36 +138,20 @@ mod tests {
 
         // Test with default parameters
         let default_scheme = Argon2Scheme::default();
-        let derived_key_default_result = default_scheme.derive(password, salt, output_len);
+        let derived_key_default_result = default_scheme.derive(&password, salt, output_len);
         assert!(derived_key_default_result.is_ok());
-    }
-
-    #[cfg(not(feature = "std"))]
-    #[test]
-    fn test_argon2_derivation_no_std() {
-        let password = b"password";
-        let salt = b"some-random-salt";
-        let output_len = 32;
-        let scheme = Argon2Scheme::new(16, 1, 1);
-
-        let derived_key_result = scheme.derive(password, salt, output_len);
-        assert!(derived_key_result.is_err());
-        assert_eq!(
-            derived_key_result.unwrap_err(),
-            Error::Kdf(KdfError::UnsupportedInNoStd)
-        );
     }
 
     #[cfg(feature = "std")]
     #[test]
     fn test_argon2_determinism() {
-        let password = b"a-secure-password";
+        let password = SecretBox::new(Box::from(b"a-secure-password".as_slice()));
         let salt = b"a-unique-salt-for-this-user";
         let output_len = 64;
         let scheme = Argon2Scheme::new(16, 1, 1);
 
-        let key1 = scheme.derive(password, salt, output_len).unwrap();
-        let key2 = scheme.derive(password, salt, output_len).unwrap();
+        let key1 = scheme.derive(&password, salt, output_len).unwrap();
+        let key2 = scheme.derive(&password, salt, output_len).unwrap();
 
         assert_eq!(key1.as_bytes(), key2.as_bytes());
     }
@@ -185,15 +159,35 @@ mod tests {
     #[cfg(feature = "std")]
     #[test]
     fn test_argon2_different_salts() {
-        let password = b"another-password";
+        let password = SecretBox::new(Box::from(b"another-password".as_slice()));
         let salt1 = b"salt-number-one";
         let salt2 = b"salt-number-two";
         let output_len = 32;
         let scheme = Argon2Scheme::new(16, 1, 1);
 
-        let key1 = scheme.derive(password, salt1, output_len).unwrap();
-        let key2 = scheme.derive(password, salt2, output_len).unwrap();
+        let key1 = scheme.derive(&password, salt1, output_len).unwrap();
+        let key2 = scheme.derive(&password, salt2, output_len).unwrap();
 
         assert_ne!(key1.as_bytes(), key2.as_bytes());
+    }
+
+    #[cfg(feature = "std")]
+    #[test]
+    fn test_argon2_generate_salt() {
+        let scheme = Argon2Scheme::default();
+        let salt_result = scheme.generate_salt();
+        assert!(salt_result.is_ok());
+        let salt = salt_result.unwrap();
+        assert_eq!(
+            salt.len(),
+            <Argon2Scheme as PasswordBasedDerivation>::RECOMMENDED_SALT_LENGTH
+        );
+
+        // Generate another salt to ensure they are not identical
+        let salt2 = scheme.generate_salt().unwrap();
+        assert_ne!(
+            salt, salt2,
+            "Generated salts should be random and not identical"
+        );
     }
 }

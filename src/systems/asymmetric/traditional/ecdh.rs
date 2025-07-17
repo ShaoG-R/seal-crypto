@@ -14,7 +14,7 @@ use crate::traits::{
     PrivateKey, PublicKey, SharedSecret,
 };
 use elliptic_curve::pkcs8::{DecodePrivateKey, DecodePublicKey, EncodePrivateKey, EncodePublicKey};
-use p256::{ecdh, NistP256, PublicKey as P256PublicKey, SecretKey};
+use p256::{NistP256, PublicKey as P256PublicKey, SecretKey, ecdh};
 use rand_core_elliptic_curve::OsRng;
 use std::convert::TryFrom;
 use std::marker::PhantomData;
@@ -32,8 +32,9 @@ mod private {
 ///
 /// 一个定义特定 ECDH 方案参数的 trait。
 /// 这是一个密封的 trait，意味着只有此 crate 中的类型才能实现它。
-pub trait EcdhParams: private::Sealed + Send + Sync + 'static {
+pub trait EcdhParams: private::Sealed + Send + Sync + 'static + Clone + Default {
     const NAME: &'static str;
+    const ID: u32;
     type Curve: elliptic_curve::Curve + elliptic_curve::PrimeCurveArithmetic;
 
     fn validate_public_key(bytes: &[u8]) -> Result<(), Error>;
@@ -48,6 +49,7 @@ pub struct EcdhP256Params;
 impl private::Sealed for EcdhP256Params {}
 impl EcdhParams for EcdhP256Params {
     const NAME: &'static str = "ECDH-P256";
+    const ID: u32 = 0x01_01_03_01;
     type Curve = NistP256;
 
     fn validate_public_key(bytes: &[u8]) -> Result<(), Error> {
@@ -66,7 +68,11 @@ impl EcdhParams for EcdhP256Params {
 // ------------------- Newtype Wrappers for ECDH Keys -------------------
 // ------------------- ECDH 密钥的 Newtype 包装器 -------------------
 
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
+
 #[derive(Debug)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct EcdhPublicKey<P: EcdhParams> {
     bytes: Vec<u8>,
     _params: PhantomData<P>,
@@ -120,6 +126,7 @@ impl<P: EcdhParams> PublicKey for EcdhPublicKey<P> {}
 
 #[derive(Debug, Zeroize, Clone, Eq, PartialEq)]
 #[zeroize(drop)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct EcdhPrivateKey<P: EcdhParams> {
     bytes: Zeroizing<Vec<u8>>,
     _params: PhantomData<P>,
@@ -154,7 +161,7 @@ impl<P: EcdhParams + Clone> PrivateKey<EcdhPublicKey<P>> for EcdhPrivateKey<P> {
 /// A generic struct representing the ECDH scheme for a given parameter set.
 ///
 /// 一个通用结构体，表示给定参数集的 ECDH 方案。
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct EcdhScheme<P: EcdhParams> {
     _params: PhantomData<P>,
 }
@@ -165,7 +172,10 @@ impl<P: EcdhParams + Clone> AsymmetricKeySet for EcdhScheme<P> {
 }
 
 impl<P: EcdhParams + Clone> Algorithm for EcdhScheme<P> {
-    const NAME: &'static str = P::NAME;
+    fn name() -> String {
+        P::NAME.to_string()
+    }
+    const ID: u32 = P::ID;
 }
 
 impl KeyGenerator for EcdhScheme<EcdhP256Params> {

@@ -1,6 +1,6 @@
 #![cfg(feature = "shake")]
 
-use criterion::{criterion_group, Criterion};
+use criterion::{Criterion, criterion_group};
 use seal_crypto::{
     prelude::*,
     schemes::xof::shake::{Shake128, Shake256},

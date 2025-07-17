@@ -24,11 +24,17 @@ mod private {
 /// A sealed trait that defines the parameters for a ChaCha20-Poly1305 scheme.
 ///
 /// 一个密封的 trait，用于定义 ChaCha20-Poly1305 方案的参数。
-pub trait Chacha20Poly1305Params: private::Sealed + Send + Sync + 'static {
+pub trait Chacha20Poly1305Params:
+    private::Sealed + Send + Sync + 'static + Clone + Default
+{
     /// The unique name of the signature algorithm (e.g., "ChaCha20-Poly1305").
     ///
     /// 签名算法的唯一名称（例如，"ChaCha20-Poly1305"）。
     const NAME: &'static str;
+    /// The unique ID for the scheme.
+    ///
+    /// 方案的唯一ID。
+    const ID: u32;
     /// The underlying `chacha20poly1305` AEAD cipher type.
     ///
     /// 底层的 `chacha20poly1305` AEAD 密码类型。
@@ -50,11 +56,12 @@ pub trait Chacha20Poly1305Params: private::Sealed + Send + Sync + 'static {
 /// Marker struct for ChaCha20-Poly1305.
 ///
 /// ChaCha20-Poly1305 的标记结构体。
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct ChaCha20Poly1305Params;
 impl private::Sealed for ChaCha20Poly1305Params {}
 impl Chacha20Poly1305Params for ChaCha20Poly1305Params {
     const NAME: &'static str = "ChaCha20-Poly1305";
+    const ID: u32 = 0x02_02_01_01;
     type AeadCipher = ChaCha20Poly1305Core;
     const KEY_SIZE: usize = 32;
     const NONCE_SIZE: usize = 12;
@@ -64,11 +71,12 @@ impl Chacha20Poly1305Params for ChaCha20Poly1305Params {
 /// Marker struct for XChaCha20-Poly1305.
 ///
 /// XChaCha20-Poly1305 的标记结构体。
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct XChaCha20Poly1305Params;
 impl private::Sealed for XChaCha20Poly1305Params {}
 impl Chacha20Poly1305Params for XChaCha20Poly1305Params {
     const NAME: &'static str = "XChaCha20-Poly1305";
+    const ID: u32 = 0x02_02_02_01;
     type AeadCipher = XChaCha20Poly1305Core;
     const KEY_SIZE: usize = 32;
     const NONCE_SIZE: usize = 24;
@@ -81,13 +89,16 @@ impl Chacha20Poly1305Params for XChaCha20Poly1305Params {
 /// A generic struct representing the ChaCha20-Poly1305 cryptographic system.
 ///
 /// 一个通用结构体，表示 ChaCha20-Poly1305 密码系统。
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct Chacha20Poly1305Scheme<P: Chacha20Poly1305Params> {
     _params: PhantomData<P>,
 }
 
 impl<P: Chacha20Poly1305Params> Algorithm for Chacha20Poly1305Scheme<P> {
-    const NAME: &'static str = P::NAME;
+    fn name() -> String {
+        P::NAME.to_string()
+    }
+    const ID: u32 = P::ID;
 }
 
 impl<P: Chacha20Poly1305Params> SymmetricKeySet for Chacha20Poly1305Scheme<P> {

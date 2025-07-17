@@ -22,11 +22,15 @@ mod private {
 /// A sealed trait that defines the parameters for an AES-GCM scheme.
 ///
 /// 一个密封的 trait，用于定义 AES-GCM 方案的参数。
-pub trait AesGcmParams: private::Sealed + Send + Sync + 'static {
+pub trait AesGcmParams: private::Sealed + Send + Sync + 'static + Clone + Default {
     /// The unique name of the signature algorithm (e.g., "AES-128-GCM").
     ///
     /// 签名算法的唯一名称（例如，"AES-128-GCM"）。
     const NAME: &'static str;
+    /// The unique ID for the scheme.
+    ///
+    /// 方案的唯一ID。
+    const ID: u32;
     /// The underlying `aes_gcm` AEAD cipher type.
     ///
     /// 底层的 `aes_gcm` AEAD 密码类型。
@@ -48,11 +52,12 @@ pub trait AesGcmParams: private::Sealed + Send + Sync + 'static {
 /// Marker struct for AES-128-GCM.
 ///
 /// AES-128-GCM 的标记结构体。
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct Aes128GcmParams;
 impl private::Sealed for Aes128GcmParams {}
 impl AesGcmParams for Aes128GcmParams {
     const NAME: &'static str = "AES-128-GCM";
+    const ID: u32 = 0x02_01_01_01;
     type AeadCipher = Aes128GcmCore;
     const KEY_SIZE: usize = 16;
     const NONCE_SIZE: usize = 12;
@@ -62,11 +67,12 @@ impl AesGcmParams for Aes128GcmParams {
 /// Marker struct for AES-256-GCM.
 ///
 /// AES-256-GCM 的标记结构体。
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct Aes256GcmParams;
 impl private::Sealed for Aes256GcmParams {}
 impl AesGcmParams for Aes256GcmParams {
     const NAME: &'static str = "AES-256-GCM";
+    const ID: u32 = 0x02_01_01_02;
     type AeadCipher = Aes256GcmCore;
     const KEY_SIZE: usize = 32;
     const NONCE_SIZE: usize = 12;
@@ -79,13 +85,16 @@ impl AesGcmParams for Aes256GcmParams {
 /// A generic struct representing the AES-GCM cryptographic system for a given parameter set.
 ///
 /// 一个通用结构体，表示给定参数集的 AES-GCM 密码系统。
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct AesGcmScheme<P: AesGcmParams> {
     _params: PhantomData<P>,
 }
 
 impl<P: AesGcmParams> Algorithm for AesGcmScheme<P> {
-    const NAME: &'static str = P::NAME;
+    fn name() -> String {
+        P::NAME.to_string()
+    }
+    const ID: u32 = P::ID;
 }
 
 impl<P: AesGcmParams> SymmetricKeySet for AesGcmScheme<P> {

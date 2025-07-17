@@ -18,7 +18,7 @@ use std::marker::PhantomData;
 /// A generic struct representing the HKDF cryptographic system for a given hash function.
 ///
 /// 一个通用的 HKDF 系统结构体，它在哈希函数上是通用的。
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct HkdfScheme<H: Hasher> {
     _hasher: PhantomData<H>,
 }
@@ -34,7 +34,10 @@ impl<H: Hasher> Default for HkdfScheme<H> {
 impl<H: Hasher> Derivation for HkdfScheme<H> {}
 
 impl<H: Hasher> Algorithm for HkdfScheme<H> {
-    const NAME: &'static str = "HKDF";
+    fn name() -> String {
+        format!("HKDF-{}", H::NAME)
+    }
+    const ID: u32 = 0x03_02_00_00 + H::ID_OFFSET;
 }
 
 // 实现针对具体哈希算法的HKDF方案，而不是通用的方案

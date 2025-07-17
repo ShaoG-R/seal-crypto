@@ -7,7 +7,7 @@ use crate::traits::{
     Algorithm, AsymmetricKeySet, EncapsulatedKey, Kem, KemError, Key, KeyError, KeyGenerator,
     PrivateKey, PublicKey, SharedSecret,
 };
-use pqcrypto_kyber::{kyber1024, kyber512, kyber768};
+use pqcrypto_kyber::{kyber512, kyber768, kyber1024};
 use pqcrypto_traits::kem::{
     Ciphertext as PqCiphertext, PublicKey as PqPublicKey, SecretKey as PqSecretKey,
     SharedSecret as PqSharedSecret,
@@ -28,7 +28,9 @@ mod private {
 ///
 /// 一个定义特定 Kyber 安全级别参数的 trait。
 /// 这是一个密封的 trait，意味着只有此 crate 中的类型才能实现它。
-pub trait KyberParams: private::Sealed + Send + Sync + 'static {
+pub trait KyberParams: private::Sealed + Send + Sync + 'static + Clone + Default {
+    const NAME: &'static str;
+    const ID: u32;
     type PqPublicKey: PqPublicKey + Clone;
     type PqSecretKey: PqSecretKey + Clone;
     type PqCiphertext: PqCiphertext + Copy;
@@ -50,6 +52,8 @@ pub trait KyberParams: private::Sealed + Send + Sync + 'static {
 pub struct Kyber512Params;
 impl private::Sealed for Kyber512Params {}
 impl KyberParams for Kyber512Params {
+    const NAME: &'static str = "Kyber512";
+    const ID: u32 = 0x01_02_02_01;
     type PqPublicKey = kyber512::PublicKey;
     type PqSecretKey = kyber512::SecretKey;
     type PqCiphertext = kyber512::Ciphertext;
@@ -77,6 +81,8 @@ impl KyberParams for Kyber512Params {
 pub struct Kyber768Params;
 impl private::Sealed for Kyber768Params {}
 impl KyberParams for Kyber768Params {
+    const NAME: &'static str = "Kyber768";
+    const ID: u32 = 0x01_02_02_02;
     type PqPublicKey = kyber768::PublicKey;
     type PqSecretKey = kyber768::SecretKey;
     type PqCiphertext = kyber768::Ciphertext;
@@ -104,6 +110,8 @@ impl KyberParams for Kyber768Params {
 pub struct Kyber1024Params;
 impl private::Sealed for Kyber1024Params {}
 impl KyberParams for Kyber1024Params {
+    const NAME: &'static str = "Kyber1024";
+    const ID: u32 = 0x01_02_02_03;
     type PqPublicKey = kyber1024::PublicKey;
     type PqSecretKey = kyber1024::SecretKey;
     type PqCiphertext = kyber1024::Ciphertext;
@@ -127,7 +135,11 @@ impl KyberParams for Kyber1024Params {
 // ------------------- Newtype Wrappers for Kyber Keys -------------------
 // ------------------- Kyber 密钥的 Newtype 包装器 -------------------
 
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
+
 #[derive(Debug)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct KyberPublicKey<P: KyberParams> {
     bytes: Vec<u8>,
     _params: PhantomData<P>,
@@ -192,6 +204,7 @@ impl<P: KyberParams> PublicKey for KyberPublicKey<P> {}
 
 #[derive(Debug, Zeroize, Clone, Eq, PartialEq)]
 #[zeroize(drop)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct KyberSecretKey<P: KyberParams> {
     bytes: Zeroizing<Vec<u8>>,
     _params: PhantomData<P>,
@@ -237,7 +250,7 @@ impl<P: KyberParams + Clone> PrivateKey<KyberPublicKey<P>> for KyberSecretKey<P>
 /// A generic struct representing the Kyber cryptographic system for a given parameter set.
 ///
 /// 一个通用结构体，表示给定参数集的 Kyber 密码系统。
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct KyberScheme<P: KyberParams> {
     _params: PhantomData<P>,
 }
@@ -248,7 +261,10 @@ impl<P: KyberParams + Clone> AsymmetricKeySet for KyberScheme<P> {
 }
 
 impl<P: KyberParams + Clone> Algorithm for KyberScheme<P> {
-    const NAME: &'static str = "KYBER-KEM";
+    fn name() -> String {
+        format!("KYBER-KEM-{}", P::NAME)
+    }
+    const ID: u32 = P::ID;
 }
 
 impl<P: KyberParams + Clone> KeyGenerator for KyberScheme<P> {

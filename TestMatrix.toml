@@ -1,3 +1,5 @@
+fast_fail = true
+
 [[cases]]
 name = "std-default"
 features = ""
@@ -31,6 +33,12 @@ allow_failure = []
 [[cases]]
 name = "std-full"
 features = "full"
+no_default_features = false
+allow_failure = []
+
+[[cases]]
+name = "std-full-no-serde"
+features = "classic,pqc,kdf,xof"
 no_default_features = false
 allow_failure = []
 
@@ -101,12 +109,6 @@ no_default_features = false
 allow_failure = []
 
 [[cases]]
-name = "std-argon2"
-features = "argon2"
-no_default_features = false
-allow_failure = []
-
-[[cases]]
 name = "std-classic-asm"
 features = "classic,ecc-asm,sha2-asm"
 no_default_features = false
@@ -135,7 +137,7 @@ allow_failure = []
 
 [[cases]]
 name = "no_std-classic"
-features = "no-std-classic,no-std-ecdh"
+features = "no-std-classic"
 no_default_features = true
 allow_failure = []
 
@@ -147,7 +149,7 @@ allow_failure = []
 
 [[cases]]
 name = "no_std-kdf"
-features = "no-std-kdf,sha2"
+features = "no-std-kdf"
 no_default_features = true
 allow_failure = []
 
@@ -160,6 +162,12 @@ allow_failure = []
 [[cases]]
 name = "no_std-full"
 features = "no-std-full"
+no_default_features = true
+allow_failure = []
+
+[[cases]]
+name = "no_std-full-no-serde"
+features = "no-std-classic,no-std-pqc,no-std-kdf,no-std-xof"
 no_default_features = true
 allow_failure = []
 
@@ -249,12 +257,6 @@ allow_failure = []
 [[cases]]
 name = "no_std-shake"
 features = "no-std-shake"
-no_default_features = true
-allow_failure = []
-
-[[cases]]
-name = "no_std-argon2"
-features = "no-std-argon2"
 no_default_features = true
 allow_failure = []
 

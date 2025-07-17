@@ -1,10 +1,11 @@
 #![cfg(feature = "pbkdf2")]
 
-use criterion::{criterion_group, Criterion};
+use criterion::{Criterion, criterion_group};
 use seal_crypto::{
     prelude::*,
     schemes::kdf::pbkdf2::{Pbkdf2Sha256, Pbkdf2Sha512},
 };
+use secrecy::SecretBox;
 use std::hint::black_box;
 
 // Use a low iteration count for benchmarks to ensure they run quickly.
@@ -14,7 +15,7 @@ const BENCH_ITERATIONS: u32 = 1000;
 pub fn bench_pbkdf2(c: &mut Criterion) {
     let mut group = c.benchmark_group("KDF-PBKDF2");
 
-    let password = b"password-for-benchmarking";
+    let password = SecretBox::new(Box::from(b"password-for-benchmarking".as_slice()));
     let salt = b"salt-for-benchmarking";
     let output_len = 32;
 
@@ -24,7 +25,7 @@ pub fn bench_pbkdf2(c: &mut Criterion) {
         format!("PBKDF2-SHA256 ({} iterations)", BENCH_ITERATIONS),
         |b| {
             b.iter(|| {
-                scheme_sha256.derive(black_box(password), black_box(salt), black_box(output_len))
+                scheme_sha256.derive(black_box(&password), black_box(salt), black_box(output_len))
             })
         },
     );
@@ -35,7 +36,7 @@ pub fn bench_pbkdf2(c: &mut Criterion) {
         format!("PBKDF2-SHA512 ({} iterations)", BENCH_ITERATIONS),
         |b| {
             b.iter(|| {
-                scheme_sha512.derive(black_box(password), black_box(salt), black_box(output_len))
+                scheme_sha512.derive(black_box(&password), black_box(salt), black_box(output_len))
             })
         },
     );
