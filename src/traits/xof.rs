@@ -80,6 +80,3 @@ pub trait XofDerivation: Derivation {
         info: Option<&'a [u8]>,
     ) -> Result<XofReader<'a>, Error>;
 }
-
-
-

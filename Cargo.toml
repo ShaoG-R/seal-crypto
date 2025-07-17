@@ -1,7 +1,6 @@
 [workspace]
 members = [
     ".",
-    "test-runner",
 ]
 resolver = "2"
 
@@ -19,7 +18,7 @@ version = "0.1.2"
 edition = "2024"
 # 项目作者列表。
 # A list of the project's authors.
-authors = ["GlorYouth <admin@gloryouth.com>"]
+authors = ["ShaoG-R <admin@GlorYouth.com>"]
 # 项目的简短描述。
 # a short description of the project.
 description = "A crate providing pure cryptographic capability abstractions (traits) and implementations for the seal-kit ecosystem."
@@ -31,10 +30,10 @@ license = "MPL-2.0"
 readme = "README.md"
 # 项目的代码仓库 URL。
 # The URL of the project's code repository.
-repository = "https://github.com/GlorYouth/seal-crypto"
+repository = "https://github.com/ShaoG-R/seal-crypto"
 # 项目的主页 URL。
 # The URL of the project's homepage.
-homepage = "https://github.com/GlorYouth/seal-crypto"
+homepage = "https://github.com/ShaoG-R/seal-crypto"
 # 项目的文档 URL。
 # The URL of the project's documentation.
 documentation = "https://docs.rs/seal-crypto"
@@ -87,7 +86,7 @@ rand_core_elliptic_curve = { package = "rand_core", version = "0.6.4", optional 
 zeroize = { version = "1.8.1", features = ["derive", "alloc"], default-features = false } # 用于从内存中安全地擦除敏感数据（如密钥）。/ For securely wiping sensitive data (like keys) from memory.
 secrecy = { version = "0.10.3", optional = true, default-feature = false }
 getrandom = { version = "0.3.3", optional = true, default-feature = false }
-serde = { version = "1.0.215", optional = true, default-features = false }
+serde = { version = "1.0.219", optional = true, default-features = false }
 
 # [features] 区域允许您定义条件编译的标志。
 # 这对于提供可选功能、支持不同环境（如 `std` vs `no_std`）或配置依赖项非常有用。
@@ -185,28 +184,30 @@ no-std-ecdh = [
     "ecdh-default",
     "elliptic-curve/alloc",
 ]
+getrandom = ["dep:getrandom"]
 
-hkdf-default = ["dep:hkdf", "sha2", "dep:hmac"]
+hkdf-default = ["dep:hkdf", "sha2", "dep:hmac", "getrandom"]
 hkdf = ["hkdf/std", "hmac/std", "hkdf-default", "std"]
 no-std-hkdf = ["hkdf-default"]
 
 secrecy = ["dep:secrecy"]
 
-getrandom = ["dep:getrandom"]
 kdf-base = ["getrandom"]
 kdf-std-base = ["getrandom/std"]
 
-pbkdf2-default = ["dep:pbkdf2", "sha2", "pbkdf2/hmac", "secrecy", "kdf-base"]
+pbkdf2-default = ["dep:pbkdf2", "sha2", "pbkdf2/hmac", "secrecy", "kdf-base", "getrandom"]
 pbkdf2 = ["pbkdf2/std", "pbkdf2-default", "std", "kdf-std-base"]
 no-std-pbkdf2 = ["pbkdf2-default"]
 
-argon2-default = ["dep:argon2", "dep:base64", "secrecy", "kdf-base"]
+argon2-default = ["dep:argon2", "dep:base64", "secrecy", "kdf-base", "getrandom"]
 argon2 = ["argon2/std", "argon2-default", "std", "kdf-std-base"]
 
-digest = ["dep:digest"]
+digest = ["dep:digest", "digest/alloc"]
+digest-std = ["digest/std", "digest"]
+
 shake-default = ["dep:sha3", "digest"]
-shake = ["shake-default", "sha3/std", "digest/std", "std", "kdf-base"]
-no-std-shake = ["shake-default", "digest/alloc", "kdf-std-base"]
+shake = ["shake-default", "sha3/std", "digest-std", "std", "kdf-base"]
+no-std-shake = ["shake-default", "digest", "kdf-std-base"]
 
 # --- 算法集特性 ---
 # 第二级：为常用算法组合提供的便捷特性。

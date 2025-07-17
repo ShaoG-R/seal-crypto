@@ -106,7 +106,7 @@ pub trait KeyBasedDerivation: Derivation {
 ///
 /// 用于从低熵密码派生密钥的基于密码的密钥派生函数 (PBKDF) 的 trait。
 /// 这些函数通常是计算密集型的，以防止暴力破解攻击。
-#[cfg(feature = "secrecy")]
+#[cfg(all(feature = "secrecy", feature = "getrandom"))]
 pub trait PasswordBasedDerivation: Derivation {
     /// The recommended length for the salt, in bytes.
     ///
