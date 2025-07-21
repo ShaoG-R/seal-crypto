@@ -1,6 +1,109 @@
 //! Provides an implementation of the Dilithium post-quantum signature scheme.
 //!
+//! Dilithium is a digital signature scheme that is designed to be secure against attacks
+//! by both classical and quantum computers. It is based on the hardness of lattice problems,
+//! specifically the Module Learning With Errors (Module-LWE) and Module Short Integer
+//! Solution (Module-SIS) problems. Dilithium was selected by NIST for standardization
+//! in the post-quantum cryptography competition.
+//!
+//! # Algorithm Variants
+//! - **Dilithium2**: Provides security equivalent to AES-128, smallest signatures
+//! - **Dilithium3**: Provides security equivalent to AES-192, balanced security/performance
+//! - **Dilithium5**: Provides security equivalent to AES-256, highest security
+//!
+//! # Security Properties
+//! - Resistant to quantum computer attacks using Shor's and Grover's algorithms
+//! - Based on well-studied lattice problems (Module-LWE, Module-SIS)
+//! - Provides strong unforgeability under chosen message attacks (SUF-CMA)
+//! - Deterministic signatures for the same message and key
+//! - Constant-time implementation resistant to side-channel attacks
+//!
+//! # Performance Characteristics
+//! - Fast signature generation and verification
+//! - Moderate signature sizes compared to other post-quantum schemes
+//! - Efficient implementation suitable for both software and hardware
+//! - Good performance scaling across different security levels
+//!
+//! # Signature Sizes (approximate)
+//! - **Dilithium2**: ~2,420 bytes
+//! - **Dilithium3**: ~3,293 bytes
+//! - **Dilithium5**: ~4,595 bytes
+//!
+//! # Key Sizes (approximate)
+//! - **Dilithium2**: Public key ~1,312 bytes, Private key ~2,528 bytes
+//! - **Dilithium3**: Public key ~1,952 bytes, Private key ~4,000 bytes
+//! - **Dilithium5**: Public key ~2,592 bytes, Private key ~4,864 bytes
+//!
+//! # Use Cases
+//! - Long-term digital signatures requiring quantum resistance
+//! - Certificate authorities transitioning to post-quantum cryptography
+//! - Government and military applications with high security requirements
+//! - Hybrid classical/post-quantum systems during transition period
+//! - Applications requiring future-proof digital signatures
+//!
+//! # Security Considerations
+//! - Choose appropriate security level based on threat model
+//! - Consider signature size constraints in bandwidth-limited applications
+//! - Use secure random number generation for key generation
+//! - Protect private keys with appropriate access controls
+//! - Consider hybrid schemes during transition period
+//!
+//! # Standardization Status
+//! Dilithium is being standardized by NIST as part of the post-quantum cryptography
+//! standardization process. It is recommended for new applications requiring
+//! quantum-resistant digital signatures.
+//!
 //! 提供了 Dilithium 后量子签名方案的实现。
+//!
+//! Dilithium 是一种数字签名方案，设计为能够抵抗经典和量子计算机的攻击。
+//! 它基于格问题的困难性，特别是模块学习与错误 (Module-LWE) 和模块短整数解
+//! (Module-SIS) 问题。Dilithium 被 NIST 选择在后量子密码学竞赛中进行标准化。
+//!
+//! # 算法变体
+//! - **Dilithium2**: 提供相当于 AES-128 的安全性，最小的签名
+//! - **Dilithium3**: 提供相当于 AES-192 的安全性，平衡安全性/性能
+//! - **Dilithium5**: 提供相当于 AES-256 的安全性，最高安全性
+//!
+//! # 安全属性
+//! - 抵抗使用 Shor 和 Grover 算法的量子计算机攻击
+//! - 基于经过充分研究的格问题 (Module-LWE, Module-SIS)
+//! - 在选择消息攻击下提供强不可伪造性 (SUF-CMA)
+//! - 对相同消息和密钥的确定性签名
+//! - 恒定时间实现，抵抗侧信道攻击
+//!
+//! # 性能特征
+//! - 快速的签名生成和验证
+//! - 与其他后量子方案相比，签名大小适中
+//! - 适用于软件和硬件的高效实现
+//! - 在不同安全级别上良好的性能扩展
+//!
+//! # 签名大小（近似）
+//! - **Dilithium2**: ~2,420 字节
+//! - **Dilithium3**: ~3,293 字节
+//! - **Dilithium5**: ~4,595 字节
+//!
+//! # 密钥大小（近似）
+//! - **Dilithium2**: 公钥 ~1,312 字节，私钥 ~2,528 字节
+//! - **Dilithium3**: 公钥 ~1,952 字节，私钥 ~4,000 字节
+//! - **Dilithium5**: 公钥 ~2,592 字节，私钥 ~4,864 字节
+//!
+//! # 使用场景
+//! - 需要抗量子性的长期数字签名
+//! - 过渡到后量子密码学的证书颁发机构
+//! - 具有高安全要求的政府和军事应用
+//! - 过渡期间的混合经典/后量子系统
+//! - 需要面向未来的数字签名的应用程序
+//!
+//! # 安全考虑
+//! - 根据威胁模型选择适当的安全级别
+//! - 在带宽受限的应用中考虑签名大小约束
+//! - 为密钥生成使用安全的随机数生成
+//! - 使用适当的访问控制保护私钥
+//! - 在过渡期间考虑混合方案
+//!
+//! # 标准化状态
+//! Dilithium 正在被 NIST 作为后量子密码学标准化过程的一部分进行标准化。
+//! 推荐用于需要抗量子数字签名的新应用程序。
 
 use crate::errors::Error;
 use crate::prelude::*;
@@ -41,9 +144,16 @@ pub trait DilithiumParams: private::Sealed + SchemeParams {
     ) -> Result<(), Error>;
 }
 
-/// Marker struct for Dilithium2.
+/// Marker struct for Dilithium2 parameters.
 ///
-/// Dilithium2 的标记结构体。
+/// Dilithium2 provides the smallest signature size and fastest performance
+/// while maintaining security equivalent to AES-128. It is suitable for
+/// applications where signature size and speed are critical.
+///
+/// Dilithium2 参数的标记结构体。
+///
+/// Dilithium2 提供最小的签名大小和最快的性能，
+/// 同时保持相当于 AES-128 的安全性。它适用于签名大小和速度至关重要的应用程序。
 #[derive(Debug, Default, Clone)]
 pub struct Dilithium2Params;
 impl private::Sealed for Dilithium2Params {}
@@ -79,9 +189,16 @@ impl DilithiumParams for Dilithium2Params {
     }
 }
 
-/// Marker struct for Dilithium3.
+/// Marker struct for Dilithium3 parameters.
 ///
-/// Dilithium3 的标记结构体。
+/// Dilithium3 provides a balanced trade-off between security, signature size,
+/// and performance. It offers security equivalent to AES-192 and is recommended
+/// for most applications requiring post-quantum digital signatures.
+///
+/// Dilithium3 参数的标记结构体。
+///
+/// Dilithium3 在安全性、签名大小和性能之间提供平衡的权衡。
+/// 它提供相当于 AES-192 的安全性，推荐用于大多数需要后量子数字签名的应用程序。
 #[derive(Debug, Default, Clone)]
 pub struct Dilithium3Params;
 impl private::Sealed for Dilithium3Params {}
@@ -117,9 +234,17 @@ impl DilithiumParams for Dilithium3Params {
     }
 }
 
-/// Marker struct for Dilithium5.
+/// Marker struct for Dilithium5 parameters.
 ///
-/// Dilithium5 的标记结构体。
+/// Dilithium5 provides the highest security level equivalent to AES-256,
+/// suitable for applications with the most stringent security requirements.
+/// It has larger signature sizes and slower performance compared to other variants.
+///
+/// Dilithium5 参数的标记结构体。
+///
+/// Dilithium5 提供相当于 AES-256 的最高安全级别，
+/// 适用于具有最严格安全要求的应用程序。
+/// 与其他变体相比，它具有更大的签名大小和更慢的性能。
 #[derive(Debug, Default, Clone)]
 pub struct Dilithium5Params;
 impl private::Sealed for Dilithium5Params {}
@@ -249,7 +374,34 @@ impl<P: DilithiumParams + Clone> PrivateKey<DilithiumPublicKey<P>> for Dilithium
 
 /// A generic struct representing the Dilithium cryptographic system.
 ///
+/// This struct implements the complete Dilithium post-quantum signature scheme,
+/// providing key generation, signing, and verification capabilities. It is
+/// parameterized over different Dilithium security levels to allow compile-time
+/// selection of the desired security/performance trade-off.
+///
+/// # Type Parameters
+/// * `P` - The parameter set defining the security level (Dilithium2, 3, or 5)
+///
+/// # Security Guarantees
+/// - Provides post-quantum security against both classical and quantum attacks
+/// - Strong unforgeability under chosen message attacks (SUF-CMA)
+/// - Constant-time implementation resistant to side-channel attacks
+/// - Deterministic signatures for reproducible results
+///
 /// 一个通用结构体，表示 Dilithium 密码系统。
+///
+/// 此结构体实现了完整的 Dilithium 后量子签名方案，
+/// 提供密钥生成、签名和验证功能。它在不同的 Dilithium 安全级别上参数化，
+/// 以允许编译时选择所需的安全性/性能权衡。
+///
+/// # 类型参数
+/// * `P` - 定义安全级别的参数集（Dilithium2、3 或 5）
+///
+/// # 安全保证
+/// - 提供针对经典和量子攻击的后量子安全性
+/// - 在选择消息攻击下的强不可伪造性 (SUF-CMA)
+/// - 恒定时间实现，抵抗侧信道攻击
+/// - 确定性签名以获得可重现的结果
 #[derive(Clone, Debug, Default)]
 pub struct DilithiumScheme<P: DilithiumParams> {
     _params: PhantomData<P>,

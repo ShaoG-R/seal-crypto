@@ -1,6 +1,66 @@
 //! Provides an implementation of symmetric AEAD encryption using ChaCha20-Poly1305.
 //!
+//! This module implements the ChaCha20-Poly1305 authenticated encryption with associated data
+//! (AEAD) scheme. ChaCha20-Poly1305 combines the ChaCha20 stream cipher with the Poly1305
+//! message authentication code to provide both confidentiality and authenticity.
+//!
+//! # Algorithm Components
+//! - **ChaCha20**: A stream cipher designed by Daniel J. Bernstein
+//! - **Poly1305**: A message authentication code also designed by Bernstein
+//!
+//! # Variants
+//! - **ChaCha20-Poly1305**: Standard variant with 96-bit nonces
+//! - **XChaCha20-Poly1305**: Extended variant with 192-bit nonces for better nonce misuse resistance
+//!
+//! # Security Features
+//! - Authenticated encryption: provides both confidentiality and authenticity
+//! - Constant-time implementation resistant to timing attacks
+//! - No known cryptanalytic attacks against the full algorithm
+//! - Designed to be secure even with nonce reuse (though not recommended)
+//!
+//! # Performance Characteristics
+//! - Excellent software performance, especially on platforms without AES acceleration
+//! - Constant-time implementation prevents side-channel attacks
+//! - Suitable for high-performance applications and embedded systems
+//! - No patent restrictions
+//!
+//! # Use Cases
+//! - Applications requiring high-performance software encryption
+//! - Systems without hardware AES acceleration
+//! - Protocols requiring constant-time cryptographic operations
+//! - Embedded systems with limited computational resources
+//!
 //! 提供了使用 ChaCha20-Poly1305 的对称 AEAD 加密实现。
+//!
+//! 此模块实现了 ChaCha20-Poly1305 带关联数据的认证加密 (AEAD) 方案。
+//! ChaCha20-Poly1305 结合了 ChaCha20 流密码和 Poly1305 消息认证码，
+//! 同时提供机密性和真实性。
+//!
+//! # 算法组件
+//! - **ChaCha20**: 由 Daniel J. Bernstein 设计的流密码
+//! - **Poly1305**: 同样由 Bernstein 设计的消息认证码
+//!
+//! # 变体
+//! - **ChaCha20-Poly1305**: 具有 96 位 nonce 的标准变体
+//! - **XChaCha20-Poly1305**: 具有 192 位 nonce 的扩展变体，具有更好的 nonce 误用抵抗性
+//!
+//! # 安全特性
+//! - 认证加密：同时提供机密性和真实性
+//! - 恒定时间实现，抵抗时序攻击
+//! - 对完整算法没有已知的密码分析攻击
+//! - 设计为即使在 nonce 重用时也是安全的（尽管不推荐）
+//!
+//! # 性能特征
+//! - 出色的软件性能，特别是在没有 AES 加速的平台上
+//! - 恒定时间实现防止侧信道攻击
+//! - 适用于高性能应用程序和嵌入式系统
+//! - 无专利限制
+//!
+//! # 使用场景
+//! - 需要高性能软件加密的应用程序
+//! - 没有硬件 AES 加速的系统
+//! - 需要恒定时间加密操作的协议
+//! - 计算资源有限的嵌入式系统
 
 use crate::errors::Error;
 use crate::prelude::*;

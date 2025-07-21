@@ -1,16 +1,50 @@
 //! Provides an implementation of KEM and Signatures using RSA.
 //!
-//! This module uses:
-//! - RSA-OAEP for the KEM functionality.
-//! - RSA-PSS for the signature functionality.
-//! Keys are expected to be in PKCS#8 DER format.
+//! This module implements RSA-based cryptographic operations including key encapsulation
+//! mechanism (KEM) and digital signatures. RSA is a widely-used public-key cryptosystem
+//! that provides security based on the difficulty of factoring large integers.
+//!
+//! # Implemented Schemes
+//! - **RSA-OAEP**: Optimal Asymmetric Encryption Padding for KEM functionality
+//! - **RSA-PSS**: Probabilistic Signature Scheme for digital signatures
+//!
+//! # Key Formats
+//! Keys are expected to be in PKCS#8 DER format, which is a standard format
+//! for storing and transmitting cryptographic keys.
+//!
+//! # Supported Key Sizes
+//! - **RSA-2048**: 2048-bit keys, minimum recommended size for new applications
+//! - **RSA-3072**: 3072-bit keys, provides higher security margin
+//! - **RSA-4096**: 4096-bit keys, maximum security but slower performance
+//!
+//! # Security Considerations
+//! - RSA security depends on the difficulty of factoring large integers
+//! - Vulnerable to quantum computers using Shor's algorithm
+//! - Use appropriate padding schemes (OAEP, PSS) to prevent attacks
+//! - Key sizes below 2048 bits are considered insecure
 //!
 //! 提供了使用 RSA 的 KEM 和签名实现。
 //!
-//! 本模块使用：
-//! - RSA-OAEP 用于 KEM 功能。
-//! - RSA-PSS 用于签名功能。
-//! 密钥应为 PKCS#8 DER 格式。
+//! 此模块实现了基于 RSA 的加密操作，包括密钥封装机制 (KEM) 和数字签名。
+//! RSA 是一种广泛使用的公钥密码系统，其安全性基于大整数分解的困难性。
+//!
+//! # 实现的方案
+//! - **RSA-OAEP**: 用于 KEM 功能的最优非对称加密填充
+//! - **RSA-PSS**: 用于数字签名的概率签名方案
+//!
+//! # 密钥格式
+//! 密钥应为 PKCS#8 DER 格式，这是存储和传输加密密钥的标准格式。
+//!
+//! # 支持的密钥大小
+//! - **RSA-2048**: 2048 位密钥，新应用程序的最小推荐大小
+//! - **RSA-3072**: 3072 位密钥，提供更高的安全边际
+//! - **RSA-4096**: 4096 位密钥，最大安全性但性能较慢
+//!
+//! # 安全考虑
+//! - RSA 安全性取决于大整数分解的困难性
+//! - 容易受到使用 Shor 算法的量子计算机攻击
+//! - 使用适当的填充方案（OAEP、PSS）来防止攻击
+//! - 低于 2048 位的密钥大小被认为是不安全的
 
 use crate::errors::Error;
 use crate::prelude::*;
