@@ -186,8 +186,12 @@ no-std-ecdh = [
 ]
 getrandom = ["dep:getrandom"]
 
-hkdf-default = ["dep:hkdf", "sha2", "dep:hmac", "getrandom"]
-hkdf = ["hkdf/std", "hmac/std", "hkdf-default", "std"]
+hmac-default = ["dep:hmac"]
+hmac = ["hmac/std", "hmac-default", "std"]
+no-std-hmac = ["hmac-default"]
+
+hkdf-default = ["dep:hkdf", "sha2", "hmac-default", "getrandom"]
+hkdf = ["hkdf/std", "hmac/std", "hkdf-default", "hmac", "std"]
 no-std-hkdf = ["hkdf-default"]
 
 secrecy = ["dep:secrecy"]
@@ -288,3 +292,7 @@ hex = "0.4.3"
 [[bench]]
 name = "crypto_benches"
 harness = false 
+
+[lints.clippy]
+unwrap_used = "deny"
+expect_used = "deny"

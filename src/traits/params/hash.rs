@@ -4,21 +4,28 @@ pub use sha2::{Sha256 as Sha256_, Sha384 as Sha384_, Sha512 as Sha512_};
 use crate::{
     errors::Error,
     prelude::PrimitiveParams,
-    systems::asymmetric::traditional::rsa::{RsaPrivateKey, RsaPublicKey},
     traits::{
         asymmetric::{KemError, SignatureError},
         kdf::KdfError,
     },
 };
+#[cfg(feature = "hkdf-default")]
 use hkdf::Hkdf;
-use rsa::{
-    pkcs8::DecodePrivateKey,
-    pss::{SigningKey, VerifyingKey},
-    Oaep,
+#[cfg(feature = "rsa-default")]
+use {
+    rsa::{
+        pkcs8::DecodePrivateKey,
+        pss::{SigningKey, VerifyingKey},
+        Oaep,
+        signature::SignatureEncoding,
+    },
+    crate::systems::asymmetric::traditional::rsa::{RsaPrivateKey, RsaPublicKey},
 };
-use std::convert::TryFrom;
 use digest::Digest;
-use rsa::signature::SignatureEncoding;
+use std::convert::TryFrom;
+
+#[cfg(feature = "hmac-default")]
+use crate::prelude::KeyError;
 
 mod private {
     pub trait Sealed {}
@@ -38,12 +45,15 @@ pub trait Hasher: private::Sealed + PrimitiveParams {
     /// Computes the HMAC of a message using the given key.
     ///
     /// 使用给定的密钥计算消息的 HMAC。
-    fn hmac(key: &[u8], msg: &[u8]) -> Vec<u8>;
+    #[cfg(feature = "hmac-default")]
+    fn hmac(key: &[u8], msg: &[u8]) -> Result<Vec<u8>, Error>;
 
     /// Derives a key using PBKDF2-HMAC with the hasher.
+    #[cfg(feature = "pbkdf2-default")]
     fn pbkdf2_hmac(password: &[u8], salt: &[u8], rounds: u32, okm: &mut [u8]);
 
     /// Expands a key using HKDF with the hasher.
+    #[cfg(feature = "hkdf-default")]
     fn hkdf_expand(
         salt: Option<&[u8]>,
         ikm: &[u8],
@@ -52,15 +62,19 @@ pub trait Hasher: private::Sealed + PrimitiveParams {
     ) -> Result<(), KdfError>;
 
     /// Encrypts data using RSA-OAEP with the hasher.
+    #[cfg(feature = "rsa-default")]
     fn rsa_oaep_encrypt(key: &RsaPublicKey, msg: &[u8]) -> Result<Vec<u8>, Error>;
 
     /// Decrypts data using RSA-OAEP with the hasher.
+    #[cfg(feature = "rsa-default")]
     fn rsa_oaep_decrypt(key: &RsaPrivateKey, ciphertext: &[u8]) -> Result<Vec<u8>, Error>;
 
     /// Signs a message using RSA-PSS with the hasher.
+    #[cfg(feature = "rsa-default")]
     fn rsa_pss_sign(key: &RsaPrivateKey, msg: &[u8]) -> Result<Vec<u8>, Error>;
 
     /// Verifies a signature using RSA-PSS with the hasher.
+    #[cfg(feature = "rsa-default")]
     fn rsa_pss_verify(key: &RsaPublicKey, msg: &[u8], sig: &[u8]) -> Result<(), Error>;
 }
 
@@ -79,17 +93,21 @@ impl Hasher for Sha256 {
         Sha256_::digest(data).to_vec()
     }
 
-    fn hmac(key: &[u8], msg: &[u8]) -> Vec<u8> {
+    #[cfg(feature = "hmac-default")]
+    fn hmac(key: &[u8], msg: &[u8]) -> Result<Vec<u8>, Error> {
         use hmac::{Hmac, Mac};
-        let mut mac = Hmac::<Sha256_>::new_from_slice(key).expect("HMAC can take key of any size");
+
+        let mut mac = Hmac::<Sha256_>::new_from_slice(key).map_err(|_| KeyError::InvalidLength)?;
         mac.update(msg);
-        mac.finalize().into_bytes().to_vec()
+        Ok(mac.finalize().into_bytes().to_vec())
     }
 
+    #[cfg(feature = "pbkdf2-default")]
     fn pbkdf2_hmac(password: &[u8], salt: &[u8], rounds: u32, okm: &mut [u8]) {
         pbkdf2::pbkdf2_hmac::<Sha256_>(password, salt, rounds, okm);
     }
 
+    #[cfg(feature = "hkdf-default")]
     fn hkdf_expand(
         salt: Option<&[u8]>,
         ikm: &[u8],
@@ -101,6 +119,7 @@ impl Hasher for Sha256 {
             .map_err(|_| KdfError::InvalidOutputLength)
     }
 
+    #[cfg(feature = "rsa-default")]
     fn rsa_oaep_encrypt(key: &RsaPublicKey, msg: &[u8]) -> Result<Vec<u8>, Error> {
         let padding = Oaep::new::<Sha256_>();
         key.inner()
@@ -108,6 +127,7 @@ impl Hasher for Sha256 {
             .map_err(|_| KemError::Encapsulation.into())
     }
 
+    #[cfg(feature = "rsa-default")]
     fn rsa_oaep_decrypt(key: &RsaPrivateKey, ciphertext: &[u8]) -> Result<Vec<u8>, Error> {
         let rsa_private_key = rsa::RsaPrivateKey::from_pkcs8_der(key.inner())
             .map_err(|_| KemError::InvalidPrivateKey)?;
@@ -117,6 +137,7 @@ impl Hasher for Sha256 {
             .map_err(|_| KemError::Decapsulation.into())
     }
 
+    #[cfg(feature = "rsa-default")]
     fn rsa_pss_sign(key: &RsaPrivateKey, msg: &[u8]) -> Result<Vec<u8>, Error> {
         use rsa::signature::RandomizedSigner;
         let rsa_private_key = rsa::RsaPrivateKey::from_pkcs8_der(key.inner())
@@ -127,6 +148,7 @@ impl Hasher for Sha256 {
         Ok(signature.to_vec())
     }
 
+    #[cfg(feature = "rsa-default")]
     fn rsa_pss_verify(key: &RsaPublicKey, msg: &[u8], sig: &[u8]) -> Result<(), Error> {
         use rsa::signature::Verifier;
         let verifying_key = VerifyingKey::<Sha256_>::new(key.inner().clone());
@@ -153,17 +175,20 @@ impl Hasher for Sha384 {
         Sha384_::digest(data).to_vec()
     }
 
-    fn hmac(key: &[u8], msg: &[u8]) -> Vec<u8> {
+    #[cfg(feature = "hmac-default")]
+    fn hmac(key: &[u8], msg: &[u8]) -> Result<Vec<u8>, Error> {
         use hmac::{Hmac, Mac};
-        let mut mac = Hmac::<Sha384_>::new_from_slice(key).expect("HMAC can take key of any size");
+        let mut mac = Hmac::<Sha384_>::new_from_slice(key).map_err(|_| KeyError::InvalidLength)?;
         mac.update(msg);
-        mac.finalize().into_bytes().to_vec()
+        Ok(mac.finalize().into_bytes().to_vec())
     }
 
+    #[cfg(feature = "pbkdf2-default")]
     fn pbkdf2_hmac(password: &[u8], salt: &[u8], rounds: u32, okm: &mut [u8]) {
         pbkdf2::pbkdf2_hmac::<Sha384_>(password, salt, rounds, okm);
     }
 
+    #[cfg(feature = "hkdf-default")]
     fn hkdf_expand(
         salt: Option<&[u8]>,
         ikm: &[u8],
@@ -175,6 +200,7 @@ impl Hasher for Sha384 {
             .map_err(|_| KdfError::InvalidOutputLength)
     }
 
+    #[cfg(feature = "rsa-default")]
     fn rsa_oaep_encrypt(key: &RsaPublicKey, msg: &[u8]) -> Result<Vec<u8>, Error> {
         let padding = Oaep::new::<Sha384_>();
         key.inner()
@@ -182,6 +208,7 @@ impl Hasher for Sha384 {
             .map_err(|_| KemError::Encapsulation.into())
     }
 
+    #[cfg(feature = "rsa-default")]
     fn rsa_oaep_decrypt(key: &RsaPrivateKey, ciphertext: &[u8]) -> Result<Vec<u8>, Error> {
         let rsa_private_key = rsa::RsaPrivateKey::from_pkcs8_der(key.inner())
             .map_err(|_| KemError::InvalidPrivateKey)?;
@@ -191,6 +218,7 @@ impl Hasher for Sha384 {
             .map_err(|_| KemError::Decapsulation.into())
     }
 
+    #[cfg(feature = "rsa-default")]
     fn rsa_pss_sign(key: &RsaPrivateKey, msg: &[u8]) -> Result<Vec<u8>, Error> {
         use rsa::signature::RandomizedSigner;
         let rsa_private_key = rsa::RsaPrivateKey::from_pkcs8_der(key.inner())
@@ -201,6 +229,7 @@ impl Hasher for Sha384 {
         Ok(signature.to_vec())
     }
 
+    #[cfg(feature = "rsa-default")]
     fn rsa_pss_verify(key: &RsaPublicKey, msg: &[u8], sig: &[u8]) -> Result<(), Error> {
         use rsa::signature::Verifier;
         let verifying_key = VerifyingKey::<Sha384_>::new(key.inner().clone());
@@ -227,17 +256,20 @@ impl Hasher for Sha512 {
         Sha512_::digest(data).to_vec()
     }
 
-    fn hmac(key: &[u8], msg: &[u8]) -> Vec<u8> {
+    #[cfg(feature = "hmac-default")]
+    fn hmac(key: &[u8], msg: &[u8]) -> Result<Vec<u8>, Error> {
         use hmac::{Hmac, Mac};
-        let mut mac = Hmac::<Sha512_>::new_from_slice(key).expect("HMAC can take key of any size");
+        let mut mac = Hmac::<Sha512_>::new_from_slice(key).map_err(|_| KeyError::InvalidLength)?;
         mac.update(msg);
-        mac.finalize().into_bytes().to_vec()
+        Ok(mac.finalize().into_bytes().to_vec())
     }
 
+    #[cfg(feature = "pbkdf2-default")]
     fn pbkdf2_hmac(password: &[u8], salt: &[u8], rounds: u32, okm: &mut [u8]) {
         pbkdf2::pbkdf2_hmac::<Sha512_>(password, salt, rounds, okm);
     }
 
+    #[cfg(feature = "hkdf-default")]
     fn hkdf_expand(
         salt: Option<&[u8]>,
         ikm: &[u8],
@@ -249,6 +281,7 @@ impl Hasher for Sha512 {
             .map_err(|_| KdfError::InvalidOutputLength)
     }
 
+    #[cfg(feature = "rsa-default")]
     fn rsa_oaep_encrypt(key: &RsaPublicKey, msg: &[u8]) -> Result<Vec<u8>, Error> {
         let padding = Oaep::new::<Sha512_>();
         key.inner()
@@ -256,6 +289,7 @@ impl Hasher for Sha512 {
             .map_err(|_| KemError::Encapsulation.into())
     }
 
+    #[cfg(feature = "rsa-default")]
     fn rsa_oaep_decrypt(key: &RsaPrivateKey, ciphertext: &[u8]) -> Result<Vec<u8>, Error> {
         let rsa_private_key = rsa::RsaPrivateKey::from_pkcs8_der(key.inner())
             .map_err(|_| KemError::InvalidPrivateKey)?;
@@ -265,6 +299,7 @@ impl Hasher for Sha512 {
             .map_err(|_| KemError::Decapsulation.into())
     }
 
+    #[cfg(feature = "rsa-default")]
     fn rsa_pss_sign(key: &RsaPrivateKey, msg: &[u8]) -> Result<Vec<u8>, Error> {
         use rsa::signature::RandomizedSigner;
         let rsa_private_key = rsa::RsaPrivateKey::from_pkcs8_der(key.inner())
@@ -275,6 +310,7 @@ impl Hasher for Sha512 {
         Ok(signature.to_vec())
     }
 
+    #[cfg(feature = "rsa-default")]
     fn rsa_pss_verify(key: &RsaPublicKey, msg: &[u8], sig: &[u8]) -> Result<(), Error> {
         use rsa::signature::Verifier;
         let verifying_key = VerifyingKey::<Sha512_>::new(key.inner().clone());

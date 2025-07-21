@@ -214,8 +214,8 @@ impl<P: DilithiumParams> Key for DilithiumPublicKey<P> {
             _params: PhantomData,
         })
     }
-    fn to_bytes(&self) -> Vec<u8> {
-        self.bytes.clone()
+    fn to_bytes(&self) -> Result<Vec<u8>, Error> {
+        Ok(self.bytes.clone())
     }
 }
 impl<P: DilithiumParams> PublicKey for DilithiumPublicKey<P> {}
@@ -230,8 +230,8 @@ impl<P: DilithiumParams + Clone> Key for DilithiumSecretKey<P> {
             _params: PhantomData,
         })
     }
-    fn to_bytes(&self) -> Vec<u8> {
-        self.bytes.to_vec()
+    fn to_bytes(&self) -> Result<Vec<u8>, Error> {
+        Ok(self.bytes.to_vec())
     }
 }
 
@@ -335,13 +335,13 @@ mod tests {
         // Test key generation
         // 测试密钥生成
         let (pk, sk) = DilithiumScheme::<P>::generate_keypair().unwrap();
-        assert_eq!(pk.to_bytes().len(), P::public_key_bytes());
-        assert_eq!(sk.to_bytes().len(), P::secret_key_bytes());
+        assert_eq!(pk.to_bytes().unwrap().len(), P::public_key_bytes());
+        assert_eq!(sk.to_bytes().unwrap().len(), P::secret_key_bytes());
 
         // Test key serialization
         // 测试密钥序列化
-        let pk_bytes = pk.to_bytes();
-        let sk_bytes = sk.to_bytes();
+        let pk_bytes = pk.to_bytes().unwrap();
+        let sk_bytes = sk.to_bytes().unwrap();
         let pk2 = DilithiumPublicKey::<P>::from_bytes(&pk_bytes).unwrap();
         let sk2 = DilithiumSecretKey::<P>::from_bytes(&sk_bytes).unwrap();
         assert_eq!(pk, pk2);

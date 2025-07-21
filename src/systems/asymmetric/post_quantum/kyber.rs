@@ -196,8 +196,8 @@ impl<P: KyberParams> Key for KyberPublicKey<P> {
         })
     }
 
-    fn to_bytes(&self) -> Vec<u8> {
-        self.bytes.clone()
+    fn to_bytes(&self) -> Result<Vec<u8>, Error> {
+        Ok(self.bytes.clone())
     }
 }
 
@@ -231,8 +231,8 @@ impl<P: KyberParams> Key for KyberSecretKey<P> {
         })
     }
 
-    fn to_bytes(&self) -> Vec<u8> {
-        self.bytes.to_vec()
+    fn to_bytes(&self) -> Result<Vec<u8>, Error> {
+        Ok(self.bytes.to_vec())
     }
 }
 
@@ -341,13 +341,13 @@ mod tests {
         P: Clone,
     {
         let (pk, sk) = KyberScheme::<P>::generate_keypair().unwrap();
-        assert_eq!(pk.to_bytes().len(), P::PUBLIC_KEY_BYTES);
-        assert_eq!(sk.to_bytes().len(), P::SECRET_KEY_BYTES);
+        assert_eq!(pk.to_bytes().unwrap().len(), P::PUBLIC_KEY_BYTES);
+        assert_eq!(sk.to_bytes().unwrap().len(), P::SECRET_KEY_BYTES);
 
         // Test key serialization
         // 测试密钥序列化
-        let pk_bytes = pk.to_bytes();
-        let sk_bytes = sk.to_bytes();
+        let pk_bytes = pk.to_bytes().unwrap();
+        let sk_bytes = sk.to_bytes().unwrap();
         let pk2 = KyberPublicKey::<P>::from_bytes(&pk_bytes).unwrap();
         let sk2 = KyberSecretKey::<P>::from_bytes(&sk_bytes).unwrap();
         assert_eq!(pk, pk2);

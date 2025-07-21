@@ -24,6 +24,11 @@ pub enum KeyError {
     /// 提供的密钥编码无效。
     #[cfg_attr(feature = "std", error("Invalid key encoding"))]
     InvalidEncoding,
+    /// The provided data is not a valid key encoding.
+    ///
+    /// 提供的密钥编码无效。
+    #[cfg_attr(feature = "std", error("Invalid key encoding"))]
+    InvalidLength,
 }
 
 #[cfg(feature = "serde")]
@@ -54,7 +59,7 @@ pub trait Key: Sized + Send + Sync + 'static + Clone + ConditionallySerde {
     /// Serializes the key into its byte representation.
     ///
     /// 将密钥序列化为字节表示。
-    fn to_bytes(&self) -> Vec<u8>;
+    fn to_bytes(&self) -> Result<Vec<u8>, Error>;
 }
 
 /// A marker trait for public keys.

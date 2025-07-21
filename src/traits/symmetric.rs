@@ -18,8 +18,8 @@ impl Key for SymmetricKey {
         Ok(Zeroizing::new(bytes.to_vec()))
     }
 
-    fn to_bytes(&self) -> Vec<u8> {
-        self.to_vec()
+    fn to_bytes(&self) -> Result<Vec<u8>, Error> {
+        Ok(self.to_vec())
     }
 }
 

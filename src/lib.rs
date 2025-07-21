@@ -1,3 +1,5 @@
+#![forbid(unsafe_code)]
+
 //! The `seal-crypto` library provides a set of pure, trait-based cryptographic
 //! capability abstractions and implementations.
 //!

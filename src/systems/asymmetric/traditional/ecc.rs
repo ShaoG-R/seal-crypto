@@ -226,8 +226,8 @@ impl<P: EccParams> Key for EccPublicKey<P> {
         })
     }
 
-    fn to_bytes(&self) -> Vec<u8> {
-        self.bytes.clone()
+    fn to_bytes(&self) -> Result<Vec<u8>, Error> {
+        Ok(self.bytes.clone())
     }
 }
 
@@ -250,8 +250,8 @@ impl<P: EccParams> Key for EccPrivateKey<P> {
         })
     }
 
-    fn to_bytes(&self) -> Vec<u8> {
-        self.bytes.to_vec()
+    fn to_bytes(&self) -> Result<Vec<u8>, Error> {
+        Ok(self.bytes.to_vec())
     }
 }
 
@@ -348,8 +348,8 @@ mod tests {
         let (pk, sk) = EccScheme::<P>::generate_keypair().unwrap();
 
         // Test key serialization/deserialization
-        let pk_bytes = pk.to_bytes();
-        let sk_bytes = sk.to_bytes();
+        let pk_bytes = pk.to_bytes().unwrap();
+        let sk_bytes = sk.to_bytes().unwrap();
 
         let pk2 = EccPublicKey::<P>::from_bytes(&pk_bytes).unwrap();
         let sk2 = EccPrivateKey::<P>::from_bytes(&sk_bytes).unwrap();

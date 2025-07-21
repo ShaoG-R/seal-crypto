@@ -114,8 +114,8 @@ impl<P: EcdhParams> Key for EcdhPublicKey<P> {
         })
     }
 
-    fn to_bytes(&self) -> Vec<u8> {
-        self.bytes.clone()
+    fn to_bytes(&self) -> Result<Vec<u8>, Error> {
+        Ok(self.bytes.clone())
     }
 }
 
@@ -138,8 +138,8 @@ impl<P: EcdhParams> Key for EcdhPrivateKey<P> {
         })
     }
 
-    fn to_bytes(&self) -> Vec<u8> {
-        self.bytes.to_vec()
+    fn to_bytes(&self) -> Result<Vec<u8>, Error> {
+        Ok(self.bytes.to_vec())
     }
 }
 
@@ -248,8 +248,8 @@ mod tests {
         assert_eq!(alice_shared, bob_shared);
 
         // Test key serialization/deserialization
-        let alice_pk_bytes = alice_pk.to_bytes();
-        let alice_sk_bytes = alice_sk.to_bytes();
+        let alice_pk_bytes = alice_pk.to_bytes().unwrap();
+        let alice_sk_bytes = alice_sk.to_bytes().unwrap();
 
         let _ = EcdhPublicKey::<EcdhP256Params>::from_bytes(&alice_pk_bytes).unwrap();
         let alice_sk2 = EcdhPrivateKey::<EcdhP256Params>::from_bytes(&alice_sk_bytes).unwrap();

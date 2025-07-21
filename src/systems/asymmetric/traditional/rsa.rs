@@ -108,12 +108,12 @@ impl Key for RsaPublicKey {
             .map_err(|_| KeyError::InvalidEncoding.into())
     }
 
-    fn to_bytes(&self) -> Vec<u8> {
-        self.0
+    fn to_bytes(&self) -> Result<Vec<u8>, Error> {
+        Ok(self.0
             .to_public_key_der()
-            .expect("DER encoding of a valid key should not fail")
+            .map_err(|_| KeyError::InvalidEncoding)?
             .as_bytes()
-            .to_vec()
+            .to_vec())
     }
 }
 impl PublicKey for RsaPublicKey {}
@@ -138,8 +138,8 @@ impl Key for RsaPrivateKey {
         Ok(RsaPrivateKey(Zeroizing::new(bytes.to_vec())))
     }
 
-    fn to_bytes(&self) -> Vec<u8> {
-        self.0.to_vec()
+    fn to_bytes(&self) -> Result<Vec<u8>, Error> {
+        Ok(self.0.to_vec())
     }
 }
 
@@ -279,8 +279,8 @@ mod tests {
 
         // Test key serialization/deserialization
         // 测试密钥序列化/反序列化
-        let pk_bytes = pk.to_bytes();
-        let sk_bytes = sk.to_bytes();
+        let pk_bytes = pk.to_bytes().unwrap();
+        let sk_bytes = sk.to_bytes().unwrap();
         let pk2 = RsaPublicKey::from_bytes(&pk_bytes).unwrap();
         let sk2 = RsaPrivateKey::from_bytes(&sk_bytes).unwrap();
         assert_eq!(pk.to_bytes(), pk2.to_bytes());
