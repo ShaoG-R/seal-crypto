@@ -1,12 +1,13 @@
 #![cfg(feature = "rsa")]
 
-use criterion::{Criterion, criterion_group};
+use criterion::{criterion_group, Criterion};
 use seal_crypto::{
     prelude::*,
-    schemes::asymmetric::traditional::rsa::*,
-    schemes::hash::{Sha256, Sha512},
+    schemes::asymmetric::traditional::rsa::*
+    ,
 };
 use std::hint::black_box;
+use seal_crypto::prelude::hash::{Sha256, Sha512};
 
 pub fn bench_rsa(c: &mut Criterion) {
     let mut group = c.benchmark_group("RSA");

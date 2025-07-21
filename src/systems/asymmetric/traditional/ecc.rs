@@ -15,10 +15,7 @@
 //! 密钥应为 PKCS#8 DER 格式。
 
 use crate::errors::Error;
-use crate::traits::{
-    Algorithm, AsymmetricKeySet, Key, KeyError, KeyGenerator, PrivateKey, PublicKey, Signature,
-    SignatureError, Signer, Verifier,
-};
+use crate::prelude::*;
 use ecdsa::{Signature as EcdsaSignature, SigningKey, VerifyingKey, signature::RandomizedSigner};
 use ed25519_dalek::{
     Signature as Ed25519Signature, Signer as Ed25519DalekSigner, SigningKey as Ed25519SigningKey,
@@ -43,10 +40,7 @@ mod private {
 ///
 /// 一个定义特定 ECC 方案参数的 trait。
 /// 这是一个密封的 trait，意味着只有此 crate 中的类型才能实现它。
-pub trait EccParams: private::Sealed + Send + Sync + 'static + Clone + Default {
-    const NAME: &'static str;
-    const ID: u32;
-
+pub trait EccParams: private::Sealed + SchemeParams {
     fn generate_keypair() -> Result<(Vec<u8>, Zeroizing<Vec<u8>>), Error>;
     fn sign(private_key_der: &[u8], message: &[u8]) -> Result<Signature, Error>;
     fn verify(public_key_der: &[u8], message: &[u8], signature: &Signature) -> Result<(), Error>;
@@ -60,10 +54,11 @@ pub trait EccParams: private::Sealed + Send + Sync + 'static + Clone + Default {
 #[derive(Debug, Default, Clone)]
 pub struct EcdsaP256Params;
 impl private::Sealed for EcdsaP256Params {}
-impl EccParams for EcdsaP256Params {
+impl SchemeParams for EcdsaP256Params {
     const NAME: &'static str = "ECDSA-P256-SHA256";
     const ID: u32 = 0x01_01_02_01;
-
+}
+impl EccParams for EcdsaP256Params {
     fn generate_keypair() -> Result<(Vec<u8>, Zeroizing<Vec<u8>>), Error> {
         let private_key = SecretKey::random(&mut OsRng);
         let public_key = private_key.public_key();
@@ -121,10 +116,11 @@ impl EccParams for EcdsaP256Params {
 #[derive(Debug, Default, Clone)]
 pub struct Ed25519Params;
 impl private::Sealed for Ed25519Params {}
-impl EccParams for Ed25519Params {
+impl SchemeParams for Ed25519Params {
     const NAME: &'static str = "Ed25519";
     const ID: u32 = 0x01_01_02_02;
-
+}
+impl EccParams for Ed25519Params {
     fn generate_keypair() -> Result<(Vec<u8>, Zeroizing<Vec<u8>>), Error> {
         let mut secret_bytes = [0u8; 32];
         OsRng

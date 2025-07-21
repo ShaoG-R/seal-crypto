@@ -9,6 +9,7 @@ use crate::{
         kdf::{Derivation, DerivedKey, KdfError, PasswordBasedDerivation},
     },
 };
+use crate::traits::params::{Parameterized, ParamValue};
 #[cfg(feature = "std")]
 use argon2::Argon2 as Argon2_p;
 use secrecy::SecretBox;
@@ -82,6 +83,20 @@ impl Algorithm for Argon2Scheme {
         "Argon2id".to_string()
     }
     const ID: u32 = 0x03_01_01_01;
+}
+
+impl Parameterized for Argon2Scheme {
+    fn get_type_params() -> Vec<(&'static str, ParamValue)> {
+        vec![]
+    }
+
+    fn get_instance_params(&self) -> Vec<(&'static str, ParamValue)> {
+        vec![
+            ("m_cost", ParamValue::U32(self.m_cost)),
+            ("t_cost", ParamValue::U32(self.t_cost)),
+            ("p_cost", ParamValue::U32(self.p_cost)),
+        ]
+    }
 }
 
 impl PasswordBasedDerivation for Argon2Scheme {

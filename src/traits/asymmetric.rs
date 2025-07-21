@@ -3,7 +3,7 @@
 //! 定义了非对称加密操作的 trait。
 
 use crate::errors::Error;
-use crate::traits::Key;
+use crate::traits::key::Key;
 use crate::traits::key::AsymmetricKeySet;
 #[cfg(feature = "std")]
 use thiserror::Error;

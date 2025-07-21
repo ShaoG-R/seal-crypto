@@ -140,6 +140,29 @@ Here's a breakdown of the layers:
 
 This layered approach ensures that every trait has a clear purpose. The detailed key inheritance model is shown in the next diagram.
 
+### Parameterization Design
+
+`seal-crypto` employs a flexible parameterization strategy to accommodate the needs of different types of cryptographic algorithms. At the core of this strategy is a set of `Params` traits defined in `src/traits/params.rs`.
+
+-   **`SchemeParams`**: Provides a base trait for cryptographic schemes that use the "marker dispatch" pattern (e.g., AES-GCM, Kyber). Specific parameter sets (like `Aes128GcmParams`) inherit from this trait and are passed as generic arguments to the schemes themselves (e.g., `AesGcmScheme<P: AesGcmParams>`).
+-   **`PrimitiveParams`**: Offers a unified interface for underlying cryptographic primitives like hash functions and XOFs, defining `NAME` and `ID_OFFSET`. Traits like `Hasher` and `Xof` inherit from it.
+-   **`Parameterized`**: Provides an introspection interface for schemes whose parameters are configured at runtime (like `Argon2`) or composed from multiple generics (like `RSA`). Through the `get_type_params()` and `get_instance_params()` methods, one can query the full parameter configuration of a scheme at runtime.
+
+The relationship between these parameter traits can be summarized as follows:
+
+```mermaid
+graph TD
+    subgraph "Parameter Traits"
+        SchemeParams -- "Inherited by" --> SpecificParams["AesGcmParams, KyberParams, etc."]
+        PrimitiveParams -- "Inherited by" --> Primitives["Hasher, Xof"]
+        
+        SpecificParams -- "As generic constraint for" --> Schemes1["AesGcmScheme, KyberScheme, etc."]
+        Primitives -- "As generic constraint for" --> Schemes2["HkdfScheme, ShakeScheme, etc."]
+        
+        Parameterized -- "Implemented by" --> Schemes3["Argon2Scheme, Pbkdf2Scheme, RsaScheme, etc."]
+    end
+```
+
 ### Key Inheritance Detail
 
 To keep the main diagram clean, the relationship between scheme sets, their associated key types, and the base `Key` trait is detailed below. This illustrates how the specific keys used by a scheme are defined and how they build upon the fundamental `Key` primitive.
