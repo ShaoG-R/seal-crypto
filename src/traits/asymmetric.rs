@@ -30,20 +30,8 @@ pub trait KeyGenerator: AsymmetricKeySet {
 /// Represents a digital signature, wrapping a byte vector for type safety.
 ///
 /// 代表一个数字签名，为增强类型安全而包装了一个字节向量。
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Signature(pub Vec<u8>);
+pub type Signature = Vec<u8>;
 
-impl Signature {
-    pub fn len(&self) -> usize {
-        self.0.len()
-    }
-}
-
-impl AsRef<[u8]> for Signature {
-    fn as_ref(&self) -> &[u8] {
-        &self.0
-    }
-}
 
 /// Defines the errors that can occur during signing and verification.
 ///
@@ -134,8 +122,8 @@ impl Key for EncapsulatedKey {
         Ok(bytes.to_vec())
     }
 
-    fn to_bytes(&self) -> Vec<u8> {
-        self.to_vec()
+    fn to_bytes(&self) -> Result<Vec<u8>, Error> {
+        Ok(self.to_vec())
     }
 }
 

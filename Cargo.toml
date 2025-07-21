@@ -1,9 +1,3 @@
-[workspace]
-members = [
-    ".",
-]
-resolver = "2"
-
 # [package] 区域定义了您的 crate（也就是您的 Rust 项目/库）的基本信息。
 # The [package] section defines basic information about your crate (your Rust project/library).
 [package]
@@ -12,7 +6,7 @@ resolver = "2"
 name = "seal-crypto"
 # crate 的版本号，遵循语义化版本（Semantic Versioning）规范。
 # The version number of the crate, following Semantic Versioning.
-version = "0.1.3"
+version = "0.1.4"
 # 指定项目使用的 Rust edition。
 # Specifies the Rust edition used by the project.
 edition = "2024"
@@ -186,8 +180,12 @@ no-std-ecdh = [
 ]
 getrandom = ["dep:getrandom"]
 
-hkdf-default = ["dep:hkdf", "sha2", "dep:hmac", "getrandom"]
-hkdf = ["hkdf/std", "hmac/std", "hkdf-default", "std"]
+hmac-default = ["dep:hmac"]
+hmac = ["hmac/std", "hmac-default", "std"]
+no-std-hmac = ["hmac-default"]
+
+hkdf-default = ["dep:hkdf", "sha2", "hmac-default", "getrandom"]
+hkdf = ["hkdf/std", "hmac/std", "hkdf-default", "hmac", "std"]
 no-std-hkdf = ["hkdf-default"]
 
 secrecy = ["dep:secrecy"]
@@ -288,3 +286,7 @@ hex = "0.4.3"
 [[bench]]
 name = "crypto_benches"
 harness = false 
+
+[lints.clippy]
+unwrap_used = "deny"
+expect_used = "deny"

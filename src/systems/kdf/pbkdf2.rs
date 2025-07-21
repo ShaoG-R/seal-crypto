@@ -1,13 +1,87 @@
 //! Provides an implementation of the Password-Based Key Derivation Function 2 (PBKDF2).
 //!
+//! PBKDF2 is a key derivation function designed for deriving cryptographic keys from
+//! low-entropy passwords. It is defined in RFC 2898 and PKCS #5, and is widely used
+//! for password-based cryptography.
+//!
+//! # Algorithm Overview
+//! PBKDF2 applies a pseudorandom function (typically HMAC) iteratively to the password
+//! and salt, making brute-force attacks computationally expensive. The iteration count
+//! can be adjusted to increase the computational cost as hardware improves.
+//!
+//! # Security Properties
+//! - Resistant to dictionary and brute-force attacks through iteration count
+//! - Salt prevents rainbow table attacks
+//! - Widely studied and standardized
+//! - Suitable for password-based key derivation
+//!
+//! # Parameters
+//! - **Password**: The user's password (low-entropy input)
+//! - **Salt**: Random salt value (must be unique per password)
+//! - **Iterations**: Number of iterations (higher = more secure but slower)
+//! - **Length**: Desired length of derived key
+//!
+//! # Iteration Count Guidelines
+//! - Minimum 100,000 iterations for new applications (as of 2023)
+//! - OWASP recommends 600,000 iterations for PBKDF2-HMAC-SHA256
+//! - Adjust based on acceptable delay and security requirements
+//! - Consider using Argon2 for new applications requiring higher security
+//!
+//! # Security Considerations
+//! - Use cryptographically random salts
+//! - Salt should be at least 128 bits (16 bytes)
+//! - Iteration count should be as high as acceptable for your use case
+//! - Consider memory-hard functions like Argon2 for higher security
+//! - Protect derived keys with the same care as the original password
+//!
+//! # Performance vs Security Trade-off
+//! Higher iteration counts provide better security but increase computation time.
+//! The default iteration count is set to provide reasonable security while
+//! maintaining acceptable performance for most applications.
+//!
 //! 提供了基于密码的密钥派生函数 2 (PBKDF2) 的实现。
+//!
+//! PBKDF2 是一种密钥派生函数，设计用于从低熵密码派生加密密钥。
+//! 它在 RFC 2898 和 PKCS #5 中定义，广泛用于基于密码的密码学。
+//!
+//! # 算法概述
+//! PBKDF2 对密码和盐迭代应用伪随机函数（通常是 HMAC），使暴力破解攻击在计算上变得昂贵。
+//! 迭代次数可以调整以随着硬件改进而增加计算成本。
+//!
+//! # 安全属性
+//! - 通过迭代次数抵抗字典和暴力破解攻击
+//! - 盐防止彩虹表攻击
+//! - 经过广泛研究和标准化
+//! - 适用于基于密码的密钥派生
+//!
+//! # 参数
+//! - **Password**: 用户的密码（低熵输入）
+//! - **Salt**: 随机盐值（每个密码必须唯一）
+//! - **Iterations**: 迭代次数（更高 = 更安全但更慢）
+//! - **Length**: 派生密钥的期望长度
+//!
+//! # 迭代次数指南
+//! - 新应用程序最少 100,000 次迭代（截至 2023 年）
+//! - OWASP 推荐 PBKDF2-HMAC-SHA256 使用 600,000 次迭代
+//! - 根据可接受的延迟和安全要求进行调整
+//! - 对于需要更高安全性的新应用程序，考虑使用 Argon2
+//!
+//! # 安全考虑
+//! - 使用加密随机盐
+//! - 盐应至少为 128 位（16 字节）
+//! - 迭代次数应尽可能高，以适应您的使用场景
+//! - 对于更高的安全性，考虑使用像 Argon2 这样的内存困难函数
+//! - 保护派生密钥时应与保护原始密码一样小心
+//!
+//! # 性能与安全性权衡
+//! 更高的迭代次数提供更好的安全性，但会增加计算时间。
+//! 默认迭代次数设置为在为大多数应用程序保持可接受性能的同时提供合理的安全性。
 
 use crate::{
     errors::Error,
     prelude::*
 };
 use crate::traits::params::{ParamValue, Parameterized};
-use pbkdf2::pbkdf2_hmac;
 use secrecy::{ExposeSecret, SecretBox};
 use std::marker::PhantomData;
 
@@ -66,8 +140,7 @@ impl<H: Hasher> Parameterized for Pbkdf2Scheme<H> {
     }
 }
 
-#[cfg(feature = "sha2")]
-impl PasswordBasedDerivation for Pbkdf2Scheme<Sha256> {
+impl<H: Hasher> PasswordBasedDerivation for Pbkdf2Scheme<H> {
     fn derive(
         &self,
         password: &SecretBox<[u8]>,
@@ -76,39 +149,7 @@ impl PasswordBasedDerivation for Pbkdf2Scheme<Sha256> {
     ) -> Result<DerivedKey, Error> {
         let mut okm = vec![0u8; output_len];
 
-        pbkdf2_hmac::<sha2::Sha256>(password.expose_secret(), salt, self.iterations, &mut okm);
-
-        Ok(DerivedKey::new(okm))
-    }
-}
-
-#[cfg(feature = "sha2")]
-impl PasswordBasedDerivation for Pbkdf2Scheme<Sha384> {
-    fn derive(
-        &self,
-        password: &SecretBox<[u8]>,
-        salt: &[u8],
-        output_len: usize,
-    ) -> Result<DerivedKey, Error> {
-        let mut okm = vec![0u8; output_len];
-
-        pbkdf2_hmac::<sha2::Sha384>(password.expose_secret(), salt, self.iterations, &mut okm);
-
-        Ok(DerivedKey::new(okm))
-    }
-}
-
-#[cfg(feature = "sha2")]
-impl PasswordBasedDerivation for Pbkdf2Scheme<Sha512> {
-    fn derive(
-        &self,
-        password: &SecretBox<[u8]>,
-        salt: &[u8],
-        output_len: usize,
-    ) -> Result<DerivedKey, Error> {
-        let mut okm = vec![0u8; output_len];
-
-        pbkdf2_hmac::<sha2::Sha512>(password.expose_secret(), salt, self.iterations, &mut okm);
+        H::pbkdf2_hmac(password.expose_secret(), salt, self.iterations, &mut okm);
 
         Ok(DerivedKey::new(okm))
     }

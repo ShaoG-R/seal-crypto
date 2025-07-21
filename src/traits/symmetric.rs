@@ -11,7 +11,6 @@ use zeroize::Zeroizing;
 /// A key for a symmetric cipher.
 ///
 /// 对称密码的密钥。
-#[allow(dead_code)]
 pub type SymmetricKey = Zeroizing<Vec<u8>>;
 
 impl Key for SymmetricKey {
@@ -19,8 +18,8 @@ impl Key for SymmetricKey {
         Ok(Zeroizing::new(bytes.to_vec()))
     }
 
-    fn to_bytes(&self) -> Vec<u8> {
-        self.to_vec()
+    fn to_bytes(&self) -> Result<Vec<u8>, Error> {
+        Ok(self.to_vec())
     }
 }
 

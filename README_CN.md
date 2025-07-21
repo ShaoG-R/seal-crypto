@@ -8,6 +8,12 @@
 
 [English Version](README.md)
 
+> **⚠️ 重要使用说明**
+>
+> 尽管 `seal-crypto` 提供了一个强大而灵活的、基于 Trait 的加密引擎，但它是一个底层库。对于大多数应用场景，我们强烈建议您使用我们为其开发的高级封装库：[`seal-crypto-wrapper`](https://github.com/ShaoG-R/seal-crypto-wrapper)。
+>
+> 该封装库通过将算法信息与密钥本身紧密绑定，提供了更安全、更易于使用的 API，有效防止了诸如“将密钥用于错误算法”之类的常见加密误用。它旨在为您带来更便捷、更安全的开发体验。
+
 ## 设计理念
 
 `seal-crypto` 的设计清晰、现代化，并遵循了 Rust API 设计的最佳实践。其核心理念可以概括为以下几点：

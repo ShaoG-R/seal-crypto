@@ -8,6 +8,12 @@
 
 [中文文档 (Chinese Version)](README_CN.md)
 
+> **⚠️ Important Note on Usage**
+>
+> While `seal-crypto` provides a powerful and flexible trait-based cryptographic engine, it is a low-level library. For most applications, we strongly recommend using the high-level wrapper, [`seal-crypto-wrapper`](https://github.com/ShaoG-R/seal-crypto-wrapper).
+>
+> The wrapper library offers a safer and more user-friendly API by tightly binding algorithm information with keys, which helps prevent common cryptographic misuses (e.g., using a key with the wrong algorithm). It is designed for ease of use without sacrificing security.
+
 ## Core Philosophy
 
 `seal-crypto` is designed to be clear, modern, and aligned with Rust API best practices. Its core principles are:
