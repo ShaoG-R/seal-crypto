@@ -255,7 +255,7 @@ pub type Rsa2048<Sha = Sha256> = RsaScheme<Rsa2048Params, Sha>;
 /// A type alias for the RSA-4096 scheme with SHA-512.
 ///
 /// 使用 SHA-512 的 RSA-4096 方案的类型别名。
-#[cfg(all(feature = "sha2"))]
+#[cfg(feature = "sha2")]
 pub type Rsa4096<Sha = Sha256> = RsaScheme<Rsa4096Params, Sha>;
 
 #[cfg(test)]
@@ -305,13 +305,13 @@ mod tests {
     }
 
     #[test]
-    #[cfg(all(feature = "sha2"))]
+    #[cfg(feature = "sha2")]
     fn test_rsa_2048_sha256() {
         run_rsa_tests::<Rsa2048Params, Sha256>();
     }
 
     #[test]
-    #[cfg(all(feature = "sha2"))]
+    #[cfg(feature = "sha2")]
     fn test_rsa_4096_sha512() {
         run_rsa_tests::<Rsa4096Params, Sha512>();
     }
