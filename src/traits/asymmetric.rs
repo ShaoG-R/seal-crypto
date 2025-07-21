@@ -7,6 +7,7 @@ use crate::traits::key::Key;
 use crate::traits::key::AsymmetricKeySet;
 #[cfg(feature = "std")]
 use thiserror::Error;
+use std::ops::{Deref, DerefMut};
 use zeroize::Zeroizing;
 
 // --- Key Generator ---
@@ -42,6 +43,26 @@ impl Signature {
 impl AsRef<[u8]> for Signature {
     fn as_ref(&self) -> &[u8] {
         &self.0
+    }
+}
+
+impl AsMut<[u8]> for Signature {
+    fn as_mut(&mut self) -> &mut [u8] {
+        &mut self.0
+    }
+}
+
+impl Deref for Signature {
+    type Target = Vec<u8>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for Signature {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }
 

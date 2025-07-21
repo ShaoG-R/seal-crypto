@@ -9,6 +9,7 @@ use crate::traits::algorithm::Algorithm;
 use secrecy::SecretBox;
 #[cfg(feature = "std")]
 use thiserror::Error;
+use std::ops::{Deref, DerefMut};
 use zeroize::Zeroizing;
 
 /// A key derived from a KDF, wrapped in `Zeroizing` for security.
@@ -24,6 +25,31 @@ impl DerivedKey {
 
     pub fn as_bytes(&self) -> &[u8] {
         self.0.as_ref()
+    }
+}
+
+impl AsRef<[u8]> for DerivedKey {
+    fn as_ref(&self) -> &[u8] {
+        self.0.as_ref()
+    }
+}
+
+impl AsMut<[u8]> for DerivedKey {
+    fn as_mut(&mut self) -> &mut [u8] {
+        self.0.as_mut()
+    }
+}
+
+impl Deref for DerivedKey {
+    type Target = Vec<u8>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+impl DerefMut for DerivedKey {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }
 

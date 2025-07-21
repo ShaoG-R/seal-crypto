@@ -81,11 +81,3 @@ pub trait AsymmetricKeySet: Algorithm {
 pub trait SymmetricKeySet: Algorithm {
     type Key: Key;
 }
-
-/// A trait that associates a private key with its corresponding public key.
-///
-/// 将私钥与其对应公钥关联的 trait。
-pub trait KeyPair<P: PublicKey>: PrivateKey<P> {
-    /// Returns a reference to the public key.
-    fn public_key(&self) -> P;
-}
