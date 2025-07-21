@@ -17,7 +17,8 @@ use rsa::{
     Oaep,
 };
 use std::convert::TryFrom;
-use ecdsa::SignatureEncoding;
+use digest::Digest;
+use rsa::signature::SignatureEncoding;
 
 mod private {
     pub trait Sealed {}
@@ -29,6 +30,16 @@ mod private {
 /// 一个代表哈希函数的密封 trait。
 /// 它提供与哈希相关的功能。
 pub trait Hasher: private::Sealed + PrimitiveParams {
+    /// Hashes the given data.
+    ///
+    /// 哈希给定的数据。
+    fn hash(data: &[u8]) -> Vec<u8>;
+
+    /// Computes the HMAC of a message using the given key.
+    ///
+    /// 使用给定的密钥计算消息的 HMAC。
+    fn hmac(key: &[u8], msg: &[u8]) -> Vec<u8>;
+
     /// Derives a key using PBKDF2-HMAC with the hasher.
     fn pbkdf2_hmac(password: &[u8], salt: &[u8], rounds: u32, okm: &mut [u8]);
 
@@ -64,6 +75,17 @@ impl PrimitiveParams for Sha256 {
 }
 
 impl Hasher for Sha256 {
+    fn hash(data: &[u8]) -> Vec<u8> {
+        Sha256_::digest(data).to_vec()
+    }
+
+    fn hmac(key: &[u8], msg: &[u8]) -> Vec<u8> {
+        use hmac::{Hmac, Mac};
+        let mut mac = Hmac::<Sha256_>::new_from_slice(key).expect("HMAC can take key of any size");
+        mac.update(msg);
+        mac.finalize().into_bytes().to_vec()
+    }
+
     fn pbkdf2_hmac(password: &[u8], salt: &[u8], rounds: u32, okm: &mut [u8]) {
         pbkdf2::pbkdf2_hmac::<Sha256_>(password, salt, rounds, okm);
     }
@@ -127,6 +149,17 @@ impl PrimitiveParams for Sha384 {
 }
 
 impl Hasher for Sha384 {
+    fn hash(data: &[u8]) -> Vec<u8> {
+        Sha384_::digest(data).to_vec()
+    }
+
+    fn hmac(key: &[u8], msg: &[u8]) -> Vec<u8> {
+        use hmac::{Hmac, Mac};
+        let mut mac = Hmac::<Sha384_>::new_from_slice(key).expect("HMAC can take key of any size");
+        mac.update(msg);
+        mac.finalize().into_bytes().to_vec()
+    }
+
     fn pbkdf2_hmac(password: &[u8], salt: &[u8], rounds: u32, okm: &mut [u8]) {
         pbkdf2::pbkdf2_hmac::<Sha384_>(password, salt, rounds, okm);
     }
@@ -190,6 +223,17 @@ impl PrimitiveParams for Sha512 {
 }
 
 impl Hasher for Sha512 {
+    fn hash(data: &[u8]) -> Vec<u8> {
+        Sha512_::digest(data).to_vec()
+    }
+
+    fn hmac(key: &[u8], msg: &[u8]) -> Vec<u8> {
+        use hmac::{Hmac, Mac};
+        let mut mac = Hmac::<Sha512_>::new_from_slice(key).expect("HMAC can take key of any size");
+        mac.update(msg);
+        mac.finalize().into_bytes().to_vec()
+    }
+
     fn pbkdf2_hmac(password: &[u8], salt: &[u8], rounds: u32, okm: &mut [u8]) {
         pbkdf2::pbkdf2_hmac::<Sha512_>(password, salt, rounds, okm);
     }
