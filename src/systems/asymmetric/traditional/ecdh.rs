@@ -1,12 +1,75 @@
 //! Provides implementations for Elliptic Curve Diffie-Hellman (ECDH).
 //!
-//! This module supports key agreement using NIST P-256.
-//! Keys are expected to be in PKCS#8 DER format.
+//! This module implements the Elliptic Curve Diffie-Hellman key agreement protocol,
+//! which allows two parties to establish a shared secret over an insecure channel.
+//! ECDH provides the same security as traditional Diffie-Hellman but with smaller
+//! key sizes and better performance.
+//!
+//! # Supported Curves
+//! - **NIST P-256**: Also known as secp256r1, provides ~128 bits of security
+//!
+//! # Key Agreement Process
+//! 1. Each party generates a key pair (private key, public key)
+//! 2. Parties exchange public keys over an insecure channel
+//! 3. Each party computes the shared secret using their private key and the other's public key
+//! 4. Both parties arrive at the same shared secret
+//!
+//! # Security Properties
+//! - Forward secrecy when ephemeral keys are used
+//! - Security based on the Elliptic Curve Discrete Logarithm Problem (ECDLP)
+//! - Resistant to passive eavesdropping attacks
+//! - Vulnerable to man-in-the-middle attacks without authentication
+//!
+//! # Key Formats
+//! Keys are expected to be in PKCS#8 DER format for interoperability with other systems.
+//!
+//! # Performance Characteristics
+//! - Much faster than RSA for equivalent security levels
+//! - Smaller key sizes compared to traditional Diffie-Hellman
+//! - Efficient implementations available with hardware acceleration
+//!
+//! # Security Considerations
+//! - Use ephemeral keys for forward secrecy
+//! - Authenticate the key exchange to prevent man-in-the-middle attacks
+//! - Validate public keys to prevent invalid curve attacks
+//! - Use the shared secret with a key derivation function (e.g., HKDF)
+//! - Consider post-quantum alternatives for long-term security
 //!
 //! 提供了椭圆曲线迪菲-赫尔曼 (ECDH) 的实现。
 //!
-//! 本模块支持使用 NIST P-256 进行密钥协商。
-//! 密钥应为 PKCS#8 DER 格式。
+//! 此模块实现了椭圆曲线迪菲-赫尔曼密钥协商协议，
+//! 它允许两方在不安全的信道上建立共享密钥。
+//! ECDH 提供与传统迪菲-赫尔曼相同的安全性，但密钥大小更小，性能更好。
+//!
+//! # 支持的曲线
+//! - **NIST P-256**: 也称为 secp256r1，提供约 128 位的安全性
+//!
+//! # 密钥协商过程
+//! 1. 每一方生成一个密钥对（私钥、公钥）
+//! 2. 各方通过不安全信道交换公钥
+//! 3. 每一方使用自己的私钥和对方的公钥计算共享密钥
+//! 4. 双方得到相同的共享密钥
+//!
+//! # 安全属性
+//! - 使用临时密钥时提供前向保密性
+//! - 安全性基于椭圆曲线离散对数问题 (ECDLP)
+//! - 抵抗被动窃听攻击
+//! - 在没有认证的情况下容易受到中间人攻击
+//!
+//! # 密钥格式
+//! 密钥应为 PKCS#8 DER 格式，以便与其他系统互操作。
+//!
+//! # 性能特征
+//! - 在相同安全级别下比 RSA 快得多
+//! - 与传统迪菲-赫尔曼相比密钥大小更小
+//! - 可用硬件加速的高效实现
+//!
+//! # 安全考虑
+//! - 使用临时密钥以获得前向保密性
+//! - 认证密钥交换以防止中间人攻击
+//! - 验证公钥以防止无效曲线攻击
+//! - 将共享密钥与密钥派生函数（例如 HKDF）一起使用
+//! - 考虑后量子替代方案以获得长期安全性
 
 use crate::errors::Error;
 use crate::prelude::*;
@@ -114,8 +177,8 @@ impl<P: EcdhParams> Key for EcdhPublicKey<P> {
         })
     }
 
-    fn to_bytes(&self) -> Vec<u8> {
-        self.bytes.clone()
+    fn to_bytes(&self) -> Result<Vec<u8>, Error> {
+        Ok(self.bytes.clone())
     }
 }
 
@@ -138,8 +201,8 @@ impl<P: EcdhParams> Key for EcdhPrivateKey<P> {
         })
     }
 
-    fn to_bytes(&self) -> Vec<u8> {
-        self.bytes.to_vec()
+    fn to_bytes(&self) -> Result<Vec<u8>, Error> {
+        Ok(self.bytes.to_vec())
     }
 }
 
@@ -248,8 +311,8 @@ mod tests {
         assert_eq!(alice_shared, bob_shared);
 
         // Test key serialization/deserialization
-        let alice_pk_bytes = alice_pk.to_bytes();
-        let alice_sk_bytes = alice_sk.to_bytes();
+        let alice_pk_bytes = alice_pk.to_bytes().unwrap();
+        let alice_sk_bytes = alice_sk.to_bytes().unwrap();
 
         let _ = EcdhPublicKey::<EcdhP256Params>::from_bytes(&alice_pk_bytes).unwrap();
         let alice_sk2 = EcdhPrivateKey::<EcdhP256Params>::from_bytes(&alice_sk_bytes).unwrap();

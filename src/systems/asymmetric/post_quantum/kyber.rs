@@ -1,6 +1,57 @@
 //! Provides an implementation of the Kyber post-quantum KEM.
 //!
+//! Kyber is a key encapsulation mechanism (KEM) that is designed to be secure against
+//! attacks by both classical and quantum computers. It is based on the Module Learning
+//! With Errors (Module-LWE) problem and is one of the algorithms selected by NIST for
+//! standardization in the post-quantum cryptography competition.
+//!
+//! # Algorithm Variants
+//! - **Kyber-512**: Provides security equivalent to AES-128, fastest performance
+//! - **Kyber-768**: Provides security equivalent to AES-192, balanced security/performance
+//! - **Kyber-1024**: Provides security equivalent to AES-256, highest security
+//!
+//! # Security Properties
+//! - Resistant to quantum computer attacks using Shor's and Grover's algorithms
+//! - Based on well-studied lattice problems (Module-LWE)
+//! - Provides IND-CCA2 security in the random oracle model
+//! - Constant-time implementation resistant to side-channel attacks
+//!
+//! # Performance Characteristics
+//! - Fast key generation, encapsulation, and decapsulation
+//! - Relatively small key and ciphertext sizes compared to other post-quantum schemes
+//! - Suitable for both software and hardware implementations
+//!
+//! # Use Cases
+//! - Hybrid classical/post-quantum systems during transition period
+//! - Long-term security against future quantum threats
+//! - Applications requiring quantum-resistant key establishment
+//!
 //! 提供了 Kyber 后量子 KEM 的实现。
+//!
+//! Kyber 是一种密钥封装机制 (KEM)，设计为能够抵抗经典和量子计算机的攻击。
+//! 它基于模块学习与错误 (Module-LWE) 问题，是 NIST 在后量子密码学竞赛中
+//! 选择进行标准化的算法之一。
+//!
+//! # 算法变体
+//! - **Kyber-512**: 提供相当于 AES-128 的安全性，性能最快
+//! - **Kyber-768**: 提供相当于 AES-192 的安全性，平衡安全性/性能
+//! - **Kyber-1024**: 提供相当于 AES-256 的安全性，最高安全性
+//!
+//! # 安全属性
+//! - 抵抗使用 Shor 和 Grover 算法的量子计算机攻击
+//! - 基于经过充分研究的格问题 (Module-LWE)
+//! - 在随机预言机模型中提供 IND-CCA2 安全性
+//! - 恒定时间实现，抵抗侧信道攻击
+//!
+//! # 性能特征
+//! - 快速的密钥生成、封装和解封装
+//! - 与其他后量子方案相比，密钥和密文大小相对较小
+//! - 适用于软件和硬件实现
+//!
+//! # 使用场景
+//! - 过渡期间的混合经典/后量子系统
+//! - 针对未来量子威胁的长期安全性
+//! - 需要抗量子密钥建立的应用程序
 
 use crate::errors::Error;
 use crate::prelude::*;
@@ -196,8 +247,8 @@ impl<P: KyberParams> Key for KyberPublicKey<P> {
         })
     }
 
-    fn to_bytes(&self) -> Vec<u8> {
-        self.bytes.clone()
+    fn to_bytes(&self) -> Result<Vec<u8>, Error> {
+        Ok(self.bytes.clone())
     }
 }
 
@@ -231,8 +282,8 @@ impl<P: KyberParams> Key for KyberSecretKey<P> {
         })
     }
 
-    fn to_bytes(&self) -> Vec<u8> {
-        self.bytes.to_vec()
+    fn to_bytes(&self) -> Result<Vec<u8>, Error> {
+        Ok(self.bytes.to_vec())
     }
 }
 
@@ -336,18 +387,18 @@ pub type Kyber1024 = KyberScheme<Kyber1024Params>;
 mod tests {
     use super::*;
 
-    fn run_kyber_tests<P: KyberParams + Default + std::fmt::Debug>()
+    fn run_kyber_tests<P: KyberParams>()
     where
         P: Clone,
     {
         let (pk, sk) = KyberScheme::<P>::generate_keypair().unwrap();
-        assert_eq!(pk.to_bytes().len(), P::PUBLIC_KEY_BYTES);
-        assert_eq!(sk.to_bytes().len(), P::SECRET_KEY_BYTES);
+        assert_eq!(pk.to_bytes().unwrap().len(), P::PUBLIC_KEY_BYTES);
+        assert_eq!(sk.to_bytes().unwrap().len(), P::SECRET_KEY_BYTES);
 
         // Test key serialization
         // 测试密钥序列化
-        let pk_bytes = pk.to_bytes();
-        let sk_bytes = sk.to_bytes();
+        let pk_bytes = pk.to_bytes().unwrap();
+        let sk_bytes = sk.to_bytes().unwrap();
         let pk2 = KyberPublicKey::<P>::from_bytes(&pk_bytes).unwrap();
         let sk2 = KyberSecretKey::<P>::from_bytes(&sk_bytes).unwrap();
         assert_eq!(pk, pk2);

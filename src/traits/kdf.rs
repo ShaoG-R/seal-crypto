@@ -2,19 +2,23 @@
 //!
 //! 定义了密钥和密码派生函数的 trait。
 
-use crate::errors::Error;
+use crate::{errors::Error, prelude::Key};
 use crate::traits::algorithm::Algorithm;
 
 #[cfg(feature = "secrecy")]
 use secrecy::SecretBox;
 #[cfg(feature = "std")]
 use thiserror::Error;
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
+use std::ops::{Deref, DerefMut};
 use zeroize::Zeroizing;
 
 /// A key derived from a KDF, wrapped in `Zeroizing` for security.
 ///
 /// 从 KDF 派生出的密钥，使用 `Zeroizing` 确保安全。
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct DerivedKey(pub Zeroizing<Vec<u8>>);
 
 impl DerivedKey {
@@ -24,6 +28,41 @@ impl DerivedKey {
 
     pub fn as_bytes(&self) -> &[u8] {
         self.0.as_ref()
+    }
+}
+
+impl AsRef<[u8]> for DerivedKey {
+    fn as_ref(&self) -> &[u8] {
+        self.0.as_ref()
+    }
+}
+
+impl AsMut<[u8]> for DerivedKey {
+    fn as_mut(&mut self) -> &mut [u8] {
+        self.0.as_mut()
+    }
+}
+
+impl Deref for DerivedKey {
+    type Target = Vec<u8>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+impl DerefMut for DerivedKey {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl Key for DerivedKey {
+    fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
+        Ok(Self(Zeroizing::new(bytes.to_vec())))
+    }
+
+    fn to_bytes(&self) -> Result<Vec<u8>, Error> {
+        Ok(self.0.to_vec())
     }
 }
 

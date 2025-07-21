@@ -1,6 +1,42 @@
 //! Provides an implementation of symmetric AEAD encryption using AES-GCM.
 //!
+//! This module implements the Advanced Encryption Standard (AES) in Galois/Counter Mode (GCM),
+//! which provides authenticated encryption with associated data (AEAD). AES-GCM is widely
+//! used and standardized, offering excellent performance on hardware with AES acceleration.
+//!
+//! # Supported Key Sizes
+//! - **AES-128-GCM**: 128-bit keys, suitable for most applications
+//! - **AES-256-GCM**: 256-bit keys, provides higher security margin
+//!
+//! # Security Features
+//! - Authenticated encryption: provides both confidentiality and authenticity
+//! - Associated data authentication: can authenticate additional data without encrypting it
+//! - Nonce-based: requires unique nonces for each encryption operation
+//!
+//! # Performance Considerations
+//! - Hardware acceleration available on most modern processors
+//! - Constant-time implementation resistant to timing attacks
+//! - Efficient for both small and large data sizes
+//!
 //! 提供了使用 AES-GCM 的对称 AEAD 加密实现。
+//!
+//! 此模块实现了伽罗瓦/计数器模式 (GCM) 的高级加密标准 (AES)，
+//! 它提供带关联数据的认证加密 (AEAD)。AES-GCM 被广泛使用和标准化，
+//! 在具有 AES 加速的硬件上提供出色的性能。
+//!
+//! # 支持的密钥大小
+//! - **AES-128-GCM**: 128 位密钥，适用于大多数应用
+//! - **AES-256-GCM**: 256 位密钥，提供更高的安全边际
+//!
+//! # 安全特性
+//! - 认证加密：同时提供机密性和真实性
+//! - 关联数据认证：可以在不加密的情况下认证额外数据
+//! - 基于 nonce：每次加密操作都需要唯一的 nonce
+//!
+//! # 性能考虑
+//! - 在大多数现代处理器上可用硬件加速
+//! - 恒定时间实现，抵抗时序攻击
+//! - 对小型和大型数据都高效
 
 use crate::errors::Error;
 use crate::prelude::*;
@@ -38,9 +74,15 @@ pub trait AesGcmParams: private::Sealed + SchemeParams {
     const TAG_SIZE: usize;
 }
 
-/// Marker struct for AES-128-GCM.
+/// Marker struct for AES-128-GCM parameters.
 ///
-/// AES-128-GCM 的标记结构体。
+/// This struct defines the parameters for AES-128-GCM, which uses 128-bit keys
+/// and provides a good balance between security and performance for most applications.
+///
+/// AES-128-GCM 参数的标记结构体。
+///
+/// 此结构体定义了 AES-128-GCM 的参数，它使用 128 位密钥，
+/// 为大多数应用程序在安全性和性能之间提供了良好的平衡。
 #[derive(Clone, Debug, Default)]
 pub struct Aes128GcmParams;
 impl private::Sealed for Aes128GcmParams {}
@@ -55,9 +97,16 @@ impl AesGcmParams for Aes128GcmParams {
     const TAG_SIZE: usize = 16;
 }
 
-/// Marker struct for AES-256-GCM.
+/// Marker struct for AES-256-GCM parameters.
 ///
-/// AES-256-GCM 的标记结构体。
+/// This struct defines the parameters for AES-256-GCM, which uses 256-bit keys
+/// and provides a higher security margin suitable for long-term protection
+/// and high-security applications.
+///
+/// AES-256-GCM 参数的标记结构体。
+///
+/// 此结构体定义了 AES-256-GCM 的参数，它使用 256 位密钥，
+/// 提供更高的安全边际，适用于长期保护和高安全性应用。
 #[derive(Clone, Debug, Default)]
 pub struct Aes256GcmParams;
 impl private::Sealed for Aes256GcmParams {}
@@ -77,7 +126,32 @@ impl AesGcmParams for Aes256GcmParams {
 
 /// A generic struct representing the AES-GCM cryptographic system for a given parameter set.
 ///
+/// This struct implements the complete AES-GCM AEAD scheme, providing key generation,
+/// encryption, and decryption capabilities. It is parameterized over different AES-GCM
+/// configurations (e.g., AES-128-GCM, AES-256-GCM) to allow compile-time selection
+/// of the desired security level and performance characteristics.
+///
+/// # Type Parameters
+/// * `P` - The parameter set defining key size, nonce size, and tag size
+///
+/// # Security Guarantees
+/// - Provides authenticated encryption with associated data (AEAD)
+/// - Resistant to chosen-plaintext and chosen-ciphertext attacks
+/// - Constant-time implementation prevents timing attacks
+///
 /// 一个通用结构体，表示给定参数集的 AES-GCM 密码系统。
+///
+/// 此结构体实现了完整的 AES-GCM AEAD 方案，提供密钥生成、加密和解密功能。
+/// 它在不同的 AES-GCM 配置（例如 AES-128-GCM、AES-256-GCM）上参数化，
+/// 以允许编译时选择所需的安全级别和性能特征。
+///
+/// # 类型参数
+/// * `P` - 定义密钥大小、nonce 大小和标签大小的参数集
+///
+/// # 安全保证
+/// - 提供带关联数据的认证加密 (AEAD)
+/// - 抵抗选择明文和选择密文攻击
+/// - 恒定时间实现防止时序攻击
 #[derive(Clone, Debug, Default)]
 pub struct AesGcmScheme<P: AesGcmParams> {
     _params: PhantomData<P>,

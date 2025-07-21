@@ -24,6 +24,11 @@ pub enum KeyError {
     /// 提供的密钥编码无效。
     #[cfg_attr(feature = "std", error("Invalid key encoding"))]
     InvalidEncoding,
+    /// The provided data is not a valid key encoding.
+    ///
+    /// 提供的密钥编码无效。
+    #[cfg_attr(feature = "std", error("Invalid key encoding"))]
+    InvalidLength,
 }
 
 #[cfg(feature = "serde")]
@@ -54,7 +59,7 @@ pub trait Key: Sized + Send + Sync + 'static + Clone + ConditionallySerde {
     /// Serializes the key into its byte representation.
     ///
     /// 将密钥序列化为字节表示。
-    fn to_bytes(&self) -> Vec<u8>;
+    fn to_bytes(&self) -> Result<Vec<u8>, Error>;
 }
 
 /// A marker trait for public keys.
@@ -80,12 +85,4 @@ pub trait AsymmetricKeySet: Algorithm {
 /// 定义对称加密方案中使用的密钥。
 pub trait SymmetricKeySet: Algorithm {
     type Key: Key;
-}
-
-/// A trait that associates a private key with its corresponding public key.
-///
-/// 将私钥与其对应公钥关联的 trait。
-pub trait KeyPair<P: PublicKey>: PrivateKey<P> {
-    /// Returns a reference to the public key.
-    fn public_key(&self) -> P;
 }

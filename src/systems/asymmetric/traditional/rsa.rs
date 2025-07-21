@@ -1,24 +1,55 @@
 //! Provides an implementation of KEM and Signatures using RSA.
 //!
-//! This module uses:
-//! - RSA-OAEP for the KEM functionality.
-//! - RSA-PSS for the signature functionality.
-//! Keys are expected to be in PKCS#8 DER format.
+//! This module implements RSA-based cryptographic operations including key encapsulation
+//! mechanism (KEM) and digital signatures. RSA is a widely-used public-key cryptosystem
+//! that provides security based on the difficulty of factoring large integers.
+//!
+//! # Implemented Schemes
+//! - **RSA-OAEP**: Optimal Asymmetric Encryption Padding for KEM functionality
+//! - **RSA-PSS**: Probabilistic Signature Scheme for digital signatures
+//!
+//! # Key Formats
+//! Keys are expected to be in PKCS#8 DER format, which is a standard format
+//! for storing and transmitting cryptographic keys.
+//!
+//! # Supported Key Sizes
+//! - **RSA-2048**: 2048-bit keys, minimum recommended size for new applications
+//! - **RSA-3072**: 3072-bit keys, provides higher security margin
+//! - **RSA-4096**: 4096-bit keys, maximum security but slower performance
+//!
+//! # Security Considerations
+//! - RSA security depends on the difficulty of factoring large integers
+//! - Vulnerable to quantum computers using Shor's algorithm
+//! - Use appropriate padding schemes (OAEP, PSS) to prevent attacks
+//! - Key sizes below 2048 bits are considered insecure
 //!
 //! 提供了使用 RSA 的 KEM 和签名实现。
 //!
-//! 本模块使用：
-//! - RSA-OAEP 用于 KEM 功能。
-//! - RSA-PSS 用于签名功能。
-//! 密钥应为 PKCS#8 DER 格式。
+//! 此模块实现了基于 RSA 的加密操作，包括密钥封装机制 (KEM) 和数字签名。
+//! RSA 是一种广泛使用的公钥密码系统，其安全性基于大整数分解的困难性。
+//!
+//! # 实现的方案
+//! - **RSA-OAEP**: 用于 KEM 功能的最优非对称加密填充
+//! - **RSA-PSS**: 用于数字签名的概率签名方案
+//!
+//! # 密钥格式
+//! 密钥应为 PKCS#8 DER 格式，这是存储和传输加密密钥的标准格式。
+//!
+//! # 支持的密钥大小
+//! - **RSA-2048**: 2048 位密钥，新应用程序的最小推荐大小
+//! - **RSA-3072**: 3072 位密钥，提供更高的安全边际
+//! - **RSA-4096**: 4096 位密钥，最大安全性但性能较慢
+//!
+//! # 安全考虑
+//! - RSA 安全性取决于大整数分解的困难性
+//! - 容易受到使用 Shor 算法的量子计算机攻击
+//! - 使用适当的填充方案（OAEP、PSS）来防止攻击
+//! - 低于 2048 位的密钥大小被认为是不安全的
 
 use crate::errors::Error;
 use crate::prelude::*;
-use rsa::signature::{RandomizedSigner, SignatureEncoding};
 use rsa::{
-    Oaep,
     pkcs8::{DecodePrivateKey, DecodePublicKey, EncodePrivateKey, EncodePublicKey},
-    pss::{SigningKey, VerifyingKey},
     rand_core::{OsRng, RngCore},
 };
 use std::convert::TryFrom;
@@ -87,10 +118,22 @@ use serde::{Deserialize, Serialize};
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct RsaPublicKey(rsa::RsaPublicKey);
 
+impl RsaPublicKey {
+    pub fn inner(&self) -> &rsa::RsaPublicKey {
+        &self.0
+    }
+}
+
 #[derive(Debug, Zeroize, Clone, Eq, PartialEq)]
 #[zeroize(drop)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct RsaPrivateKey(Zeroizing<Vec<u8>>);
+
+impl RsaPrivateKey {
+    pub fn inner(&self) -> &[u8] {
+        &self.0
+    }
+}
 
 impl Key for RsaPublicKey {
     fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
@@ -99,12 +142,12 @@ impl Key for RsaPublicKey {
             .map_err(|_| KeyError::InvalidEncoding.into())
     }
 
-    fn to_bytes(&self) -> Vec<u8> {
-        self.0
+    fn to_bytes(&self) -> Result<Vec<u8>, Error> {
+        Ok(self.0
             .to_public_key_der()
-            .expect("DER encoding of a valid key should not fail")
+            .map_err(|_| KeyError::InvalidEncoding)?
             .as_bytes()
-            .to_vec()
+            .to_vec())
     }
 }
 impl PublicKey for RsaPublicKey {}
@@ -129,8 +172,8 @@ impl Key for RsaPrivateKey {
         Ok(RsaPrivateKey(Zeroizing::new(bytes.to_vec())))
     }
 
-    fn to_bytes(&self) -> Vec<u8> {
-        self.0.to_vec()
+    fn to_bytes(&self) -> Result<Vec<u8>, Error> {
+        Ok(self.0.to_vec())
     }
 }
 
@@ -204,16 +247,9 @@ impl<KP: RsaKeyParams, H: Hasher> Kem for RsaScheme<KP, H> {
 
     fn encapsulate(public_key: &RsaPublicKey) -> Result<(SharedSecret, EncapsulatedKey), Error> {
         let mut rng = OsRng;
-        let rsa_public_key = &public_key.0;
-
         let mut shared_secret_bytes = vec![0u8; SHARED_SECRET_SIZE];
         rng.fill_bytes(&mut shared_secret_bytes);
-
-        let padding = Oaep::new::<H::Digest>();
-        let encapsulated_key = rsa_public_key
-            .encrypt(&mut rng, padding, &shared_secret_bytes)
-            .map_err(|_| KemError::Encapsulation)?;
-
+        let encapsulated_key = H::rsa_oaep_encrypt(public_key, &shared_secret_bytes)?;
         Ok((Zeroizing::new(shared_secret_bytes), encapsulated_key))
     }
 
@@ -221,26 +257,14 @@ impl<KP: RsaKeyParams, H: Hasher> Kem for RsaScheme<KP, H> {
         private_key: &RsaPrivateKey,
         encapsulated_key: &EncapsulatedKey,
     ) -> Result<SharedSecret, Error> {
-        let rsa_private_key = rsa::RsaPrivateKey::from_pkcs8_der(&private_key.0)
-            .map_err(|_| KemError::InvalidPrivateKey)?;
-
-        let padding = Oaep::new::<H::Digest>();
-        let shared_secret_bytes = rsa_private_key
-            .decrypt(padding, encapsulated_key)
-            .map_err(|_| KemError::Decapsulation)?;
-
+        let shared_secret_bytes = H::rsa_oaep_decrypt(private_key, encapsulated_key)?;
         Ok(Zeroizing::new(shared_secret_bytes))
     }
 }
 
 impl<KP: RsaKeyParams, H: Hasher> Signer for RsaScheme<KP, H> {
     fn sign(private_key: &RsaPrivateKey, message: &[u8]) -> Result<Signature, Error> {
-        let rsa_private_key = rsa::RsaPrivateKey::from_pkcs8_der(&private_key.0)
-            .map_err(|_| Error::Signature(SignatureError::Signing))?;
-        let signing_key = SigningKey::<H::Digest>::new(rsa_private_key);
-        let mut rng = OsRng;
-        let signature = signing_key.sign_with_rng(&mut rng, message);
-        Ok(Signature(signature.to_vec()))
+        H::rsa_pss_sign(private_key, message)
     }
 }
 
@@ -250,13 +274,7 @@ impl<KP: RsaKeyParams, H: Hasher> Verifier for RsaScheme<KP, H> {
         message: &[u8],
         signature: &Signature,
     ) -> Result<(), Error> {
-        let verifying_key = VerifyingKey::<H::Digest>::new(public_key.0.clone());
-        let pss_signature = rsa::pss::Signature::try_from(signature.as_ref())
-            .map_err(|_| SignatureError::InvalidSignature)?;
-        use rsa::signature::Verifier;
-        Ok(verifying_key
-            .verify(message, &pss_signature)
-            .map_err(|_| SignatureError::Verification)?)
+        H::rsa_pss_verify(public_key, message, signature)
     }
 }
 
@@ -271,7 +289,7 @@ pub type Rsa2048<Sha = Sha256> = RsaScheme<Rsa2048Params, Sha>;
 /// A type alias for the RSA-4096 scheme with SHA-512.
 ///
 /// 使用 SHA-512 的 RSA-4096 方案的类型别名。
-#[cfg(all(feature = "sha2"))]
+#[cfg(feature = "sha2")]
 pub type Rsa4096<Sha = Sha256> = RsaScheme<Rsa4096Params, Sha>;
 
 #[cfg(test)]
@@ -295,8 +313,8 @@ mod tests {
 
         // Test key serialization/deserialization
         // 测试密钥序列化/反序列化
-        let pk_bytes = pk.to_bytes();
-        let sk_bytes = sk.to_bytes();
+        let pk_bytes = pk.to_bytes().unwrap();
+        let sk_bytes = sk.to_bytes().unwrap();
         let pk2 = RsaPublicKey::from_bytes(&pk_bytes).unwrap();
         let sk2 = RsaPrivateKey::from_bytes(&sk_bytes).unwrap();
         assert_eq!(pk.to_bytes(), pk2.to_bytes());
@@ -321,13 +339,13 @@ mod tests {
     }
 
     #[test]
-    #[cfg(all(feature = "sha2"))]
+    #[cfg(feature = "sha2")]
     fn test_rsa_2048_sha256() {
         run_rsa_tests::<Rsa2048Params, Sha256>();
     }
 
     #[test]
-    #[cfg(all(feature = "sha2"))]
+    #[cfg(feature = "sha2")]
     fn test_rsa_4096_sha512() {
         run_rsa_tests::<Rsa4096Params, Sha512>();
     }

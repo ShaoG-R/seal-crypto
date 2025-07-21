@@ -1,8 +1,8 @@
 //! Defines traits for extendable-output functions (XOFs).
 //!
 //! 定义了可扩展输出函数 (XOF) 的 trait。
-use super::kdf::Derivation;
-use crate::errors::Error;
+#[cfg(feature = "digest")]
+use crate::{errors::Error, prelude::Derivation};
 
 #[cfg(feature = "digest")]
 use digest::XofReader as DigestXofReader;
@@ -29,6 +29,13 @@ impl<'a> XofReader<'a> {
         Self {
             reader: Box::new(reader),
         }
+    }
+
+    /// Creates a new `XofReader` from an already boxed `digest::XofReader`.
+    ///
+    /// 从一个已经盒装的 `digest::XofReader` 创建一个新的 `XofReader`。
+    pub fn from_boxed(reader: Box<dyn DigestXofReader + 'a>) -> Self {
+        Self { reader }
     }
 }
 

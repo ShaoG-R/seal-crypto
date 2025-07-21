@@ -1,18 +1,108 @@
 //! Provides implementations for Elliptic Curve Cryptography (ECC).
 //!
-//! This module supports:
-//! - ECDSA (Elliptic Curve Digital Signature Algorithm)
-//! - EdDSA (Edwards-curve Digital Signature Algorithm)
+//! This module implements elliptic curve-based digital signature algorithms that provide
+//! strong security with smaller key sizes compared to RSA. ECC is widely used in modern
+//! cryptographic applications due to its efficiency and security properties.
 //!
-//! Keys are expected to be in PKCS#8 DER format.
+//! # Supported Algorithms
+//! - **ECDSA**: Elliptic Curve Digital Signature Algorithm using NIST P-256
+//! - **EdDSA**: Edwards-curve Digital Signature Algorithm using Ed25519
+//!
+//! # Algorithm Comparison
+//! ## ECDSA (P-256)
+//! - Based on NIST standardized curves
+//! - Widely supported and standardized
+//! - Requires careful implementation to avoid side-channel attacks
+//! - Signature verification requires point validation
+//!
+//! ## EdDSA (Ed25519)
+//! - Based on Edwards curves with built-in security features
+//! - Designed to be secure by default
+//! - Faster signature generation and verification
+//! - Built-in protection against many implementation pitfalls
+//! - Deterministic signatures (no random number generation during signing)
+//!
+//! # Security Properties
+//! - Security based on the Elliptic Curve Discrete Logarithm Problem (ECDLP)
+//! - Much smaller key sizes than RSA for equivalent security
+//! - Fast signature generation and verification
+//! - Suitable for resource-constrained environments
+//!
+//! # Key Formats
+//! Keys are expected to be in PKCS#8 DER format for interoperability.
+//!
+//! # Performance Characteristics
+//! - Significantly faster than RSA for equivalent security levels
+//! - Smaller signatures and keys reduce bandwidth requirements
+//! - Efficient implementations available with hardware acceleration
+//! - Ed25519 generally faster than ECDSA P-256
+//!
+//! # Security Considerations
+//! - Validate all public keys to prevent invalid curve attacks
+//! - Use secure random number generation for ECDSA
+//! - Consider timing attack mitigations in implementations
+//! - Ed25519 provides better security defaults than ECDSA
+//! - Consider post-quantum alternatives for long-term security
+//!
+//! # Use Cases
+//! - Digital signatures for authentication and non-repudiation
+//! - Certificate signing in PKI systems
+//! - Code signing and software integrity verification
+//! - Blockchain and cryptocurrency applications
+//! - IoT and embedded systems requiring efficient cryptography
 //!
 //! 提供了椭圆曲线密码学 (ECC) 的实现。
 //!
-//! 本模块支持：
-//! - ECDSA (椭圆曲线数字签名算法)
-//! - EdDSA (爱德华兹曲线数字签名算法)
+//! 此模块实现了基于椭圆曲线的数字签名算法，与 RSA 相比，
+//! 它们以更小的密钥大小提供强安全性。由于其效率和安全属性，
+//! ECC 在现代密码应用中被广泛使用。
 //!
-//! 密钥应为 PKCS#8 DER 格式。
+//! # 支持的算法
+//! - **ECDSA**: 使用 NIST P-256 的椭圆曲线数字签名算法
+//! - **EdDSA**: 使用 Ed25519 的爱德华兹曲线数字签名算法
+//!
+//! # 算法比较
+//! ## ECDSA (P-256)
+//! - 基于 NIST 标准化曲线
+//! - 广泛支持和标准化
+//! - 需要仔细实现以避免侧信道攻击
+//! - 签名验证需要点验证
+//!
+//! ## EdDSA (Ed25519)
+//! - 基于具有内置安全特性的爱德华兹曲线
+//! - 设计为默认安全
+//! - 更快的签名生成和验证
+//! - 内置保护，防止许多实现陷阱
+//! - 确定性签名（签名期间无需随机数生成）
+//!
+//! # 安全属性
+//! - 安全性基于椭圆曲线离散对数问题 (ECDLP)
+//! - 在相同安全级别下密钥大小比 RSA 小得多
+//! - 快速的签名生成和验证
+//! - 适用于资源受限的环境
+//!
+//! # 密钥格式
+//! 密钥应为 PKCS#8 DER 格式以实现互操作性。
+//!
+//! # 性能特征
+//! - 在相同安全级别下比 RSA 快得多
+//! - 更小的签名和密钥减少带宽需求
+//! - 可用硬件加速的高效实现
+//! - Ed25519 通常比 ECDSA P-256 更快
+//!
+//! # 安全考虑
+//! - 验证所有公钥以防止无效曲线攻击
+//! - 为 ECDSA 使用安全的随机数生成
+//! - 在实现中考虑时序攻击缓解
+//! - Ed25519 提供比 ECDSA 更好的安全默认值
+//! - 考虑后量子替代方案以获得长期安全性
+//!
+//! # 使用场景
+//! - 用于认证和不可否认性的数字签名
+//! - PKI 系统中的证书签名
+//! - 代码签名和软件完整性验证
+//! - 区块链和加密货币应用
+//! - 需要高效密码学的物联网和嵌入式系统
 
 use crate::errors::Error;
 use crate::prelude::*;
@@ -82,7 +172,7 @@ impl EccParams for EcdsaP256Params {
         let signing_key: SigningKey<NistP256> = SigningKey::from(&secret_key);
         let mut rng = OsRng;
         let signature: P256Signature = signing_key.sign_with_rng(&mut rng, message);
-        Ok(Signature(signature.to_vec()))
+        Ok(signature.to_vec())
     }
 
     fn verify(public_key_der: &[u8], message: &[u8], signature: &Signature) -> Result<(), Error> {
@@ -146,7 +236,7 @@ impl EccParams for Ed25519Params {
         let signing_key = Ed25519SigningKey::from_pkcs8_der(private_key_der)
             .map_err(|_| Error::Signature(SignatureError::Signing))?;
         let signature = signing_key.sign(message);
-        Ok(Signature(signature.to_bytes().to_vec()))
+        Ok(signature.to_bytes().to_vec())
     }
 
     fn verify(public_key_der: &[u8], message: &[u8], signature: &Signature) -> Result<(), Error> {
@@ -226,8 +316,8 @@ impl<P: EccParams> Key for EccPublicKey<P> {
         })
     }
 
-    fn to_bytes(&self) -> Vec<u8> {
-        self.bytes.clone()
+    fn to_bytes(&self) -> Result<Vec<u8>, Error> {
+        Ok(self.bytes.clone())
     }
 }
 
@@ -250,8 +340,8 @@ impl<P: EccParams> Key for EccPrivateKey<P> {
         })
     }
 
-    fn to_bytes(&self) -> Vec<u8> {
-        self.bytes.to_vec()
+    fn to_bytes(&self) -> Result<Vec<u8>, Error> {
+        Ok(self.bytes.to_vec())
     }
 }
 
@@ -348,8 +438,8 @@ mod tests {
         let (pk, sk) = EccScheme::<P>::generate_keypair().unwrap();
 
         // Test key serialization/deserialization
-        let pk_bytes = pk.to_bytes();
-        let sk_bytes = sk.to_bytes();
+        let pk_bytes = pk.to_bytes().unwrap();
+        let sk_bytes = sk.to_bytes().unwrap();
 
         let pk2 = EccPublicKey::<P>::from_bytes(&pk_bytes).unwrap();
         let sk2 = EccPrivateKey::<P>::from_bytes(&sk_bytes).unwrap();
