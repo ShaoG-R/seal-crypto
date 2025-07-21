@@ -82,7 +82,7 @@ impl EccParams for EcdsaP256Params {
         let signing_key: SigningKey<NistP256> = SigningKey::from(&secret_key);
         let mut rng = OsRng;
         let signature: P256Signature = signing_key.sign_with_rng(&mut rng, message);
-        Ok(Signature(signature.to_vec()))
+        Ok(signature.to_vec())
     }
 
     fn verify(public_key_der: &[u8], message: &[u8], signature: &Signature) -> Result<(), Error> {
@@ -146,7 +146,7 @@ impl EccParams for Ed25519Params {
         let signing_key = Ed25519SigningKey::from_pkcs8_der(private_key_der)
             .map_err(|_| Error::Signature(SignatureError::Signing))?;
         let signature = signing_key.sign(message);
-        Ok(Signature(signature.to_bytes().to_vec()))
+        Ok(signature.to_bytes().to_vec())
     }
 
     fn verify(public_key_der: &[u8], message: &[u8], signature: &Signature) -> Result<(), Error> {

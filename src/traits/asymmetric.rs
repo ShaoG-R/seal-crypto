@@ -7,7 +7,6 @@ use crate::traits::key::Key;
 use crate::traits::key::AsymmetricKeySet;
 #[cfg(feature = "std")]
 use thiserror::Error;
-use std::ops::{Deref, DerefMut};
 use zeroize::Zeroizing;
 
 // --- Key Generator ---
@@ -31,40 +30,8 @@ pub trait KeyGenerator: AsymmetricKeySet {
 /// Represents a digital signature, wrapping a byte vector for type safety.
 ///
 /// 代表一个数字签名，为增强类型安全而包装了一个字节向量。
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Signature(pub Vec<u8>);
+pub type Signature = Vec<u8>;
 
-impl Signature {
-    pub fn len(&self) -> usize {
-        self.0.len()
-    }
-}
-
-impl AsRef<[u8]> for Signature {
-    fn as_ref(&self) -> &[u8] {
-        &self.0
-    }
-}
-
-impl AsMut<[u8]> for Signature {
-    fn as_mut(&mut self) -> &mut [u8] {
-        &mut self.0
-    }
-}
-
-impl Deref for Signature {
-    type Target = Vec<u8>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl DerefMut for Signature {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
-    }
-}
 
 /// Defines the errors that can occur during signing and verification.
 ///

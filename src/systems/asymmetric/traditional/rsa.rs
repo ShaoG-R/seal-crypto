@@ -240,7 +240,7 @@ impl<KP: RsaKeyParams, H: Hasher> Signer for RsaScheme<KP, H> {
         let signing_key = SigningKey::<H::Digest>::new(rsa_private_key);
         let mut rng = OsRng;
         let signature = signing_key.sign_with_rng(&mut rng, message);
-        Ok(Signature(signature.to_vec()))
+        Ok(signature.to_vec())
     }
 }
 

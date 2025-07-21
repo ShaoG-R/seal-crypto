@@ -288,7 +288,7 @@ impl<P: DilithiumParams + Clone> Signer for DilithiumScheme<P> {
         let sk = PqSecretKey::from_bytes(&private_key.bytes)
             .map_err(|_| Error::Signature(SignatureError::Signing))?;
         let sig = P::sign(&sk, message);
-        Ok(Signature(sig.as_bytes().to_vec()))
+        Ok(sig.as_bytes().to_vec())
     }
 }
 

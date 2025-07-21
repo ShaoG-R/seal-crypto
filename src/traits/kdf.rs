@@ -2,13 +2,15 @@
 //!
 //! 定义了密钥和密码派生函数的 trait。
 
-use crate::errors::Error;
+use crate::{errors::Error, prelude::Key};
 use crate::traits::algorithm::Algorithm;
 
 #[cfg(feature = "secrecy")]
 use secrecy::SecretBox;
 #[cfg(feature = "std")]
 use thiserror::Error;
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 use std::ops::{Deref, DerefMut};
 use zeroize::Zeroizing;
 
@@ -16,6 +18,7 @@ use zeroize::Zeroizing;
 ///
 /// 从 KDF 派生出的密钥，使用 `Zeroizing` 确保安全。
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct DerivedKey(pub Zeroizing<Vec<u8>>);
 
 impl DerivedKey {
@@ -50,6 +53,16 @@ impl Deref for DerivedKey {
 impl DerefMut for DerivedKey {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
+    }
+}
+
+impl Key for DerivedKey {
+    fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
+        Ok(Self(Zeroizing::new(bytes.to_vec())))
+    }
+
+    fn to_bytes(&self) -> Vec<u8> {
+        self.0.to_vec()
     }
 }
 
