@@ -2,7 +2,7 @@
 //!
 //! 定义了对称认证加密的 trait。
 
-use crate::traits::Key;
+use crate::traits::key::Key;
 use crate::{errors::Error, traits::key::SymmetricKeySet};
 #[cfg(feature = "std")]
 use thiserror::Error;

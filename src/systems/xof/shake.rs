@@ -4,13 +4,9 @@
 
 use crate::{
     errors::Error,
-    traits::{
-        algorithm::Algorithm,
-        hash::Xof,
-        kdf::{Derivation, DerivedKey, KeyBasedDerivation},
-        xof::{XofDerivation, XofReader},
-    },
+    prelude::*
 };
+use crate::traits::params::{ParamValue, Parameterized};
 use digest::{ExtendableOutput, Update, XofReader as DigestXofReader};
 use std::marker::PhantomData;
 
@@ -29,6 +25,16 @@ impl<X: Xof> Algorithm for ShakeScheme<X> {
         X::NAME.to_string()
     }
     const ID: u32 = 0x05_01_00_00 + X::ID_OFFSET;
+}
+
+impl<X: Xof> Parameterized for ShakeScheme<X> {
+    fn get_type_params() -> Vec<(&'static str, ParamValue)> {
+        vec![("xof", ParamValue::String(X::NAME.to_string()))]
+    }
+
+    fn get_instance_params(&self) -> Vec<(&'static str, ParamValue)> {
+        vec![]
+    }
 }
 
 impl<X: Xof> KeyBasedDerivation for ShakeScheme<X> {
@@ -83,17 +89,16 @@ impl<X: Xof> XofDerivation for ShakeScheme<X> {
 /// A type alias for the SHAKE-128 scheme.
 ///
 /// SHAKE-128 方案的类型别名。
-pub type Shake128 = ShakeScheme<crate::traits::hash::Shake128>;
+pub type Shake128 = ShakeScheme<crate::traits::params::xof::Shake128>;
 
 /// A type alias for the SHAKE-256 scheme.
 ///
 /// SHAKE-256 方案的类型别名。
-pub type Shake256 = ShakeScheme<crate::traits::hash::Shake256>;
+pub type Shake256 = ShakeScheme<crate::traits::params::xof::Shake256>;
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::traits::hash::Xof;
 
     fn run_shake_test<X: Xof + Default>() {
         let ikm = b"initial-keying-material";
@@ -127,12 +132,12 @@ mod tests {
 
     #[test]
     fn test_shake128() {
-        run_shake_test::<crate::traits::hash::Shake128>();
+        run_shake_test::<crate::traits::params::xof::Shake128>();
     }
 
     #[test]
     fn test_shake256() {
-        run_shake_test::<crate::traits::hash::Shake256>();
+        run_shake_test::<crate::traits::params::xof::Shake256>();
     }
 
     #[test]

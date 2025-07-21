@@ -9,10 +9,7 @@
 //! 密钥应为 PKCS#8 DER 格式。
 
 use crate::errors::Error;
-use crate::traits::{
-    Algorithm, AsymmetricKeySet, Key, KeyAgreement, KeyAgreementError, KeyError, KeyGenerator,
-    PrivateKey, PublicKey, SharedSecret,
-};
+use crate::prelude::*;
 use elliptic_curve::pkcs8::{DecodePrivateKey, DecodePublicKey, EncodePrivateKey, EncodePublicKey};
 use p256::{NistP256, PublicKey as P256PublicKey, SecretKey, ecdh};
 use rand_core_elliptic_curve::OsRng;
@@ -32,9 +29,7 @@ mod private {
 ///
 /// 一个定义特定 ECDH 方案参数的 trait。
 /// 这是一个密封的 trait，意味着只有此 crate 中的类型才能实现它。
-pub trait EcdhParams: private::Sealed + Send + Sync + 'static + Clone + Default {
-    const NAME: &'static str;
-    const ID: u32;
+pub trait EcdhParams: private::Sealed + SchemeParams {
     type Curve: elliptic_curve::Curve + elliptic_curve::PrimeCurveArithmetic;
 
     fn validate_public_key(bytes: &[u8]) -> Result<(), Error>;
@@ -47,9 +42,11 @@ pub trait EcdhParams: private::Sealed + Send + Sync + 'static + Clone + Default 
 #[derive(Debug, Default, Clone)]
 pub struct EcdhP256Params;
 impl private::Sealed for EcdhP256Params {}
-impl EcdhParams for EcdhP256Params {
+impl SchemeParams for EcdhP256Params {
     const NAME: &'static str = "ECDH-P256";
     const ID: u32 = 0x01_01_03_01;
+}
+impl EcdhParams for EcdhP256Params {
     type Curve = NistP256;
 
     fn validate_public_key(bytes: &[u8]) -> Result<(), Error> {

@@ -4,12 +4,9 @@
 
 use crate::{
     errors::Error,
-    traits::{
-        algorithm::Algorithm,
-        hash::{Hasher, Sha256, Sha384, Sha512},
-        kdf::{Derivation, DerivedKey, PasswordBasedDerivation},
-    },
+    prelude::*
 };
+use crate::traits::params::{ParamValue, Parameterized};
 use pbkdf2::pbkdf2_hmac;
 use secrecy::{ExposeSecret, SecretBox};
 use std::marker::PhantomData;
@@ -57,6 +54,16 @@ impl<H: Hasher> Algorithm for Pbkdf2Scheme<H> {
         format!("PBKDF2-HMAC-{}", H::NAME)
     }
     const ID: u32 = 0x03_03_00_00 + H::ID_OFFSET;
+}
+
+impl<H: Hasher> Parameterized for Pbkdf2Scheme<H> {
+    fn get_type_params() -> Vec<(&'static str, ParamValue)> {
+        vec![("hash", ParamValue::String(H::NAME.to_string()))]
+    }
+
+    fn get_instance_params(&self) -> Vec<(&'static str, ParamValue)> {
+        vec![("iterations", ParamValue::U32(self.iterations))]
+    }
 }
 
 #[cfg(feature = "sha2")]
@@ -133,7 +140,6 @@ pub type Pbkdf2Sha512 = Pbkdf2Scheme<Sha512>;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::traits::{hash::Hasher, kdf::PasswordBasedDerivation};
 
     fn run_pbkdf2_test<H: Hasher>()
     where

@@ -3,10 +3,7 @@
 //! 提供了 Dilithium 后量子签名方案的实现。
 
 use crate::errors::Error;
-use crate::traits::{
-    Algorithm, AsymmetricKeySet, Key, KeyError, KeyGenerator, PrivateKey, PublicKey, Signature,
-    SignatureError, Signer, Verifier,
-};
+use crate::prelude::*;
 use pqcrypto_dilithium::{dilithium2, dilithium3, dilithium5};
 use pqcrypto_traits::sign::{
     DetachedSignature as PqDetachedSignature, PublicKey as PqPublicKey, SecretKey as PqSecretKey,
@@ -27,9 +24,7 @@ mod private {
 ///
 /// 一个定义特定 Dilithium 安全级别参数的 trait。
 /// 这是一个密封的 trait，意味着只有此 crate 中的类型才能实现它。
-pub trait DilithiumParams: private::Sealed + Send + Sync + 'static + Clone + Default {
-    const NAME: &'static str;
-    const ID: u32;
+pub trait DilithiumParams: private::Sealed + SchemeParams {
     type PqPublicKey: PqPublicKey + Clone;
     type PqSecretKey: PqSecretKey + Clone;
     type PqDetachedSignature: PqDetachedSignature;
@@ -52,9 +47,11 @@ pub trait DilithiumParams: private::Sealed + Send + Sync + 'static + Clone + Def
 #[derive(Debug, Default, Clone)]
 pub struct Dilithium2Params;
 impl private::Sealed for Dilithium2Params {}
-impl DilithiumParams for Dilithium2Params {
+impl SchemeParams for Dilithium2Params {
     const NAME: &'static str = "Dilithium2";
     const ID: u32 = 0x01_02_01_02;
+}
+impl DilithiumParams for Dilithium2Params {
     type PqPublicKey = dilithium2::PublicKey;
     type PqSecretKey = dilithium2::SecretKey;
     type PqDetachedSignature = dilithium2::DetachedSignature;
@@ -88,9 +85,11 @@ impl DilithiumParams for Dilithium2Params {
 #[derive(Debug, Default, Clone)]
 pub struct Dilithium3Params;
 impl private::Sealed for Dilithium3Params {}
-impl DilithiumParams for Dilithium3Params {
+impl SchemeParams for Dilithium3Params {
     const NAME: &'static str = "Dilithium3";
     const ID: u32 = 0x01_02_01_03;
+}
+impl DilithiumParams for Dilithium3Params {
     type PqPublicKey = dilithium3::PublicKey;
     type PqSecretKey = dilithium3::SecretKey;
     type PqDetachedSignature = dilithium3::DetachedSignature;
@@ -124,9 +123,11 @@ impl DilithiumParams for Dilithium3Params {
 #[derive(Debug, Default, Clone)]
 pub struct Dilithium5Params;
 impl private::Sealed for Dilithium5Params {}
-impl DilithiumParams for Dilithium5Params {
+impl SchemeParams for Dilithium5Params {
     const NAME: &'static str = "Dilithium5";
     const ID: u32 = 0x01_02_01_05;
+}
+impl DilithiumParams for Dilithium5Params {
     type PqPublicKey = dilithium5::PublicKey;
     type PqSecretKey = dilithium5::SecretKey;
     type PqDetachedSignature = dilithium5::DetachedSignature;
@@ -329,7 +330,6 @@ pub type Dilithium5 = DilithiumScheme<Dilithium5Params>;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::traits::Key;
 
     fn run_dilithium_tests<P: DilithiumParams + Default + Clone + std::fmt::Debug>() {
         // Test key generation

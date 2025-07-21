@@ -3,10 +3,7 @@
 //! 提供了使用 AES-GCM 的对称 AEAD 加密实现。
 
 use crate::errors::Error;
-use crate::traits::{
-    Algorithm, AssociatedData, KeyError, SymmetricCipher, SymmetricDecryptor, SymmetricEncryptor,
-    SymmetricError, SymmetricKey, SymmetricKeyGenerator, SymmetricKeySet,
-};
+use crate::prelude::*;
 use aes_gcm::aead::rand_core::RngCore;
 use aes_gcm::aead::{Aead, AeadInPlace, KeyInit, OsRng};
 use aes_gcm::{Aes128Gcm as Aes128GcmCore, Aes256Gcm as Aes256GcmCore, Nonce as NonceCore};
@@ -22,15 +19,7 @@ mod private {
 /// A sealed trait that defines the parameters for an AES-GCM scheme.
 ///
 /// 一个密封的 trait，用于定义 AES-GCM 方案的参数。
-pub trait AesGcmParams: private::Sealed + Send + Sync + 'static + Clone + Default {
-    /// The unique name of the signature algorithm (e.g., "AES-128-GCM").
-    ///
-    /// 签名算法的唯一名称（例如，"AES-128-GCM"）。
-    const NAME: &'static str;
-    /// The unique ID for the scheme.
-    ///
-    /// 方案的唯一ID。
-    const ID: u32;
+pub trait AesGcmParams: private::Sealed + SchemeParams {
     /// The underlying `aes_gcm` AEAD cipher type.
     ///
     /// 底层的 `aes_gcm` AEAD 密码类型。
@@ -55,9 +44,11 @@ pub trait AesGcmParams: private::Sealed + Send + Sync + 'static + Clone + Defaul
 #[derive(Clone, Debug, Default)]
 pub struct Aes128GcmParams;
 impl private::Sealed for Aes128GcmParams {}
-impl AesGcmParams for Aes128GcmParams {
+impl SchemeParams for Aes128GcmParams {
     const NAME: &'static str = "AES-128-GCM";
     const ID: u32 = 0x02_01_01_01;
+}
+impl AesGcmParams for Aes128GcmParams {
     type AeadCipher = Aes128GcmCore;
     const KEY_SIZE: usize = 16;
     const NONCE_SIZE: usize = 12;
@@ -70,9 +61,11 @@ impl AesGcmParams for Aes128GcmParams {
 #[derive(Clone, Debug, Default)]
 pub struct Aes256GcmParams;
 impl private::Sealed for Aes256GcmParams {}
-impl AesGcmParams for Aes256GcmParams {
+impl SchemeParams for Aes256GcmParams {
     const NAME: &'static str = "AES-256-GCM";
     const ID: u32 = 0x02_01_01_02;
+}
+impl AesGcmParams for Aes256GcmParams {
     type AeadCipher = Aes256GcmCore;
     const KEY_SIZE: usize = 32;
     const NONCE_SIZE: usize = 12;
