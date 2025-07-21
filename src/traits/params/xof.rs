@@ -13,10 +13,14 @@ mod private {
 /// 一个代表可扩展输出函数 (XOF) 的密封 trait。
 /// 它关联一个具体的 `digest::ExtendableOutput` 实现。
 pub trait Xof: private::Sealed + PrimitiveParams {
-    /// The actual XOF implementation from the `digest` crate.
+    /// Creates a new XOF reader with the given inputs.
     ///
-    /// 来自 `digest` crate 的实际 XOF 实现。
-    type Xof: ExtendableOutput + Send + Sync + 'static + Update + Default;
+    /// 使用给定的输入创建一个新的 XOF reader。
+    fn new_xof_reader<'a>(
+        ikm: &'a [u8],
+        salt: Option<&'a [u8]>,
+        info: Option<&'a [u8]>,
+    ) -> Box<dyn digest::XofReader + 'a>;
 }
 
 
@@ -31,7 +35,21 @@ impl PrimitiveParams for Shake128 {
 }
 
 impl Xof for Shake128 {
-    type Xof = Shake128_;
+    fn new_xof_reader<'a>(
+        ikm: &'a [u8],
+        salt: Option<&'a [u8]>,
+        info: Option<&'a [u8]>,
+    ) -> Box<dyn digest::XofReader + 'a> {
+        let mut xof = Shake128_::default();
+        if let Some(s) = salt {
+            xof.update(s);
+        }
+        xof.update(ikm);
+        if let Some(i) = info {
+            xof.update(i);
+        }
+        Box::new(xof.finalize_xof())
+    }
 }
 
 #[derive(Clone, Default, Debug)]
@@ -45,5 +63,19 @@ impl PrimitiveParams for Shake256 {
 }
 
 impl Xof for Shake256 {
-    type Xof = Shake256_;
+    fn new_xof_reader<'a>(
+        ikm: &'a [u8],
+        salt: Option<&'a [u8]>,
+        info: Option<&'a [u8]>,
+    ) -> Box<dyn digest::XofReader + 'a> {
+        let mut xof = Shake256_::default();
+        if let Some(s) = salt {
+            xof.update(s);
+        }
+        xof.update(ikm);
+        if let Some(i) = info {
+            xof.update(i);
+        }
+        Box::new(xof.finalize_xof())
+    }
 }

@@ -4,10 +4,8 @@
 
 use crate::{
     errors::Error,
-    prelude::*
+    prelude::*,
 };
-use crate::traits::params::{ParamValue, Parameterized};
-use digest::{ExtendableOutput, Update, XofReader as DigestXofReader};
 use std::marker::PhantomData;
 
 /// A generic struct representing the SHAKE cryptographic system for a given XOF.
@@ -45,18 +43,9 @@ impl<X: Xof> KeyBasedDerivation for ShakeScheme<X> {
         info: Option<&[u8]>,
         output_len: usize,
     ) -> Result<DerivedKey, Error> {
-        let mut xof = X::Xof::default();
-
-        if let Some(s) = salt {
-            xof.update(s);
-        }
-        xof.update(ikm);
-        if let Some(i) = info {
-            xof.update(i);
-        }
-
+        let mut reader = X::new_xof_reader(ikm, salt, info);
         let mut okm = vec![0u8; output_len];
-        xof.finalize_xof().read(&mut okm);
+        reader.read(&mut okm);
 
         Ok(DerivedKey::new(okm))
     }
@@ -69,17 +58,8 @@ impl<X: Xof> XofDerivation for ShakeScheme<X> {
         salt: Option<&'a [u8]>,
         info: Option<&'a [u8]>,
     ) -> Result<XofReader<'a>, Error> {
-        let mut xof = X::Xof::default();
-
-        if let Some(s) = salt {
-            xof.update(s);
-        }
-        xof.update(ikm);
-        if let Some(i) = info {
-            xof.update(i);
-        }
-
-        Ok(XofReader::new(xof.finalize_xof()))
+        let reader = X::new_xof_reader(ikm, salt, info);
+        Ok(XofReader::from_boxed(reader))
     }
 }
 

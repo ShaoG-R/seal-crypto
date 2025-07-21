@@ -11,8 +11,6 @@ pub use crate::traits::{
     algorithm::*,
     // KDF
     kdf::*,
-    // XOF
-    xof::*,
     // key
     key::*,
     // asymmetric
@@ -21,6 +19,8 @@ pub use crate::traits::{
     symmetric::*,
     // params
     params::*,
+    // xof
+    xof::*,
 };
 
 #[cfg(feature = "digest")]
