@@ -140,6 +140,29 @@ graph TD
 
 这种分层方法确保了每个 Trait 都有明确的用途。详细的密钥继承模型见下图。
 
+### 参数化设计
+
+`seal-crypto` 采用了灵活的参数化策略，以适应不同类型加密算法的需求。这套策略的核心是 `src/traits/params.rs` 中定义的一组 `Params` trait。
+
+-   **`SchemeParams`**: 为使用"标记分发"模式的加密方案（如 AES-GCM, Kyber）提供了一个基础 trait。具体的参数集（如 `Aes128GcmParams`）继承此 trait，并通过泛型参数传递给方案本身（如 `AesGcmScheme<P: AesGcmParams>`）。
+-   **`PrimitiveParams`**: 为底层的密码学原语（如哈希函数和 XOF）提供了一个统一的接口，定义了 `NAME` 和 `ID_OFFSET`。`Hasher` 和 `Xof` 等 trait 都继承自它。
+-   **`Parameterized`**: 为那些参数在运行时配置（如 `Argon2`）或由多个泛型组合（如 `RSA`）的方案提供了一个内省接口。通过 `get_type_params()` 和 `get_instance_params()` 方法，可以在运行时查询一个方案的完整参数配置。
+
+这些参数 trait 之间的关系可以总结如下：
+
+```mermaid
+graph TD
+    subgraph "参数 Traits (Parameter Traits)"
+        SchemeParams -- "被继承" --> SpecificParams["AesGcmParams, KyberParams, 等"]
+        PrimitiveParams -- "被继承" --> Primitives["Hasher, Xof"]
+        
+        SpecificParams -- "作为泛型约束" --> Schemes1["AesGcmScheme, KyberScheme, 等"]
+        Primitives -- "作为泛型约束" --> Schemes2["HkdfScheme, ShakeScheme, 等"]
+        
+        Parameterized -- "被实现" --> Schemes3["Argon2Scheme, Pbkdf2Scheme, RsaScheme, 等"]
+    end
+```
+
 ### 密钥继承详情
 
 为了保持主图的整洁，我们将方案集、其关联密钥类型以及基础 `Key` Trait 之间的关系在此详细说明。下图展示了方案使用的具体密钥是如何被定义，以及它们如何建立在 `Key` 这一基础原语之上。

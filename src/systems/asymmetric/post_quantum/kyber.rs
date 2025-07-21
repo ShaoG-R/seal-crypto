@@ -3,10 +3,7 @@
 //! 提供了 Kyber 后量子 KEM 的实现。
 
 use crate::errors::Error;
-use crate::traits::{
-    Algorithm, AsymmetricKeySet, EncapsulatedKey, Kem, KemError, Key, KeyError, KeyGenerator,
-    PrivateKey, PublicKey, SharedSecret,
-};
+use crate::prelude::*;
 use pqcrypto_kyber::{kyber512, kyber768, kyber1024};
 use pqcrypto_traits::kem::{
     Ciphertext as PqCiphertext, PublicKey as PqPublicKey, SecretKey as PqSecretKey,
@@ -28,9 +25,7 @@ mod private {
 ///
 /// 一个定义特定 Kyber 安全级别参数的 trait。
 /// 这是一个密封的 trait，意味着只有此 crate 中的类型才能实现它。
-pub trait KyberParams: private::Sealed + Send + Sync + 'static + Clone + Default {
-    const NAME: &'static str;
-    const ID: u32;
+pub trait KyberParams: private::Sealed + SchemeParams {
     type PqPublicKey: PqPublicKey + Clone;
     type PqSecretKey: PqSecretKey + Clone;
     type PqCiphertext: PqCiphertext + Copy;
@@ -51,9 +46,11 @@ pub trait KyberParams: private::Sealed + Send + Sync + 'static + Clone + Default
 #[derive(Debug, Default, Clone)]
 pub struct Kyber512Params;
 impl private::Sealed for Kyber512Params {}
-impl KyberParams for Kyber512Params {
+impl SchemeParams for Kyber512Params {
     const NAME: &'static str = "Kyber512";
     const ID: u32 = 0x01_02_02_01;
+}
+impl KyberParams for Kyber512Params {
     type PqPublicKey = kyber512::PublicKey;
     type PqSecretKey = kyber512::SecretKey;
     type PqCiphertext = kyber512::Ciphertext;
@@ -80,9 +77,11 @@ impl KyberParams for Kyber512Params {
 #[derive(Debug, Default, Clone)]
 pub struct Kyber768Params;
 impl private::Sealed for Kyber768Params {}
-impl KyberParams for Kyber768Params {
+impl SchemeParams for Kyber768Params {
     const NAME: &'static str = "Kyber768";
     const ID: u32 = 0x01_02_02_02;
+}
+impl KyberParams for Kyber768Params {
     type PqPublicKey = kyber768::PublicKey;
     type PqSecretKey = kyber768::SecretKey;
     type PqCiphertext = kyber768::Ciphertext;
@@ -109,9 +108,11 @@ impl KyberParams for Kyber768Params {
 #[derive(Debug, Default, Clone)]
 pub struct Kyber1024Params;
 impl private::Sealed for Kyber1024Params {}
-impl KyberParams for Kyber1024Params {
+impl SchemeParams for Kyber1024Params {
     const NAME: &'static str = "Kyber1024";
     const ID: u32 = 0x01_02_02_03;
+}
+impl KyberParams for Kyber1024Params {
     type PqPublicKey = kyber1024::PublicKey;
     type PqSecretKey = kyber1024::SecretKey;
     type PqCiphertext = kyber1024::Ciphertext;
@@ -334,7 +335,6 @@ pub type Kyber1024 = KyberScheme<Kyber1024Params>;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::traits::Key;
 
     fn run_kyber_tests<P: KyberParams + Default + std::fmt::Debug>()
     where

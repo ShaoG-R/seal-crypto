@@ -4,44 +4,24 @@
 //! `seal-crypto` crate 用户的 "prelude"。
 //! 这个 prelude 设计为通过 glob 导入，即 `use seal_crypto::prelude::*;`。
 pub use crate::errors::Error as CryptoError;
-#[cfg(all(feature = "secrecy", feature = "getrandom"))] 
-pub use crate::traits::PasswordBasedDerivation;
+#[cfg(all(feature = "secrecy", feature = "getrandom"))]
+pub use crate::traits::kdf::PasswordBasedDerivation;
 pub use crate::traits::{
-    AeadScheme,
     // core
-    Algorithm,
-    AsymmetricKeySet,
+    algorithm::*,
     // KDF
-    Derivation,
-    DerivedKey,
-    // hash
-    KdfError,
-    Kem,
-    KemError,
-    Key,
-    KeyAgreement,
-    KeyAgreementError,
-    KeyBasedDerivation,
-    KeyError,
+    kdf::*,
+    // XOF
+    xof::*,
+    // key
+    key::*,
     // asymmetric
-    KeyGenerator,
-    KeyPair,
-    PrivateKey,
-    PublicKey,
-    Signature,
-    SignatureError,
-    SignatureScheme,
-    Signer,
-    SymmetricCipher,
-    SymmetricDecryptor,
-    SymmetricEncryptor,
-    SymmetricError,
+    asymmetric::*,
     // symmetric
-    SymmetricKeyGenerator,
-    SymmetricKeySet,
-    Verifier,
+    symmetric::*,
+    // params
+    params::*,
 };
-#[cfg(feature = "digest")]
-pub use crate::traits::{Hasher, XofDerivation, XofReader};
+
 #[cfg(feature = "digest")]
 pub use digest::XofReader as DigestXofReader;

@@ -2,9 +2,12 @@
 //!
 //! 为 `seal-crypto` crate 定义了顶层错误类型。
 
-use crate::traits::{
-    KdfError, KemError, KeyAgreementError, KeyError, SignatureError, SymmetricError,
-};
+use crate::traits::kdf::KdfError;
+use crate::traits::asymmetric::KemError;
+use crate::traits::asymmetric::KeyAgreementError;
+use crate::traits::key::KeyError;
+use crate::traits::asymmetric::SignatureError;
+use crate::traits::symmetric::SymmetricError;
 
 #[cfg(feature = "std")]
 use thiserror::Error;

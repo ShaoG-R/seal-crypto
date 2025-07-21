@@ -13,11 +13,7 @@
 //! 密钥应为 PKCS#8 DER 格式。
 
 use crate::errors::Error;
-use crate::traits::{
-    Algorithm, AsymmetricKeySet, EncapsulatedKey, Hasher, Kem, KemError, Key, KeyError,
-    KeyGenerator, PrivateKey, PublicKey, Sha256, SharedSecret, Signature, SignatureError, Signer,
-    Verifier,
-};
+use crate::prelude::*;
 use rsa::signature::{RandomizedSigner, SignatureEncoding};
 use rsa::{
     Oaep,
@@ -40,7 +36,9 @@ mod private {
 ///
 /// 一个为 RSA 方案定义密钥大小的 trait。
 /// 这是一个密封的 trait，意味着只有此 crate 中的类型才能实现它。
-pub trait RsaKeyParams: private::Sealed + Send + Sync + 'static + Clone + Default {
+pub trait RsaKeyParams:
+    private::Sealed + Send + Sync + 'static + Clone + Default + std::fmt::Debug
+{
     /// The number of bits for the RSA key.
     ///
     /// RSA 密钥的位数。
@@ -172,6 +170,19 @@ impl<KP: RsaKeyParams, H: Hasher + 'static> Algorithm for RsaScheme<KP, H> {
     const ID: u32 = KP::ID_BASE + H::ID_OFFSET;
 }
 
+impl<KP: RsaKeyParams, H: Hasher> Parameterized for RsaScheme<KP, H> {
+    fn get_type_params() -> Vec<(&'static str, ParamValue)> {
+        vec![
+            ("key_params", ParamValue::String(KP::NAME.to_string())),
+            ("hash", ParamValue::String(H::NAME.to_string())),
+        ]
+    }
+
+    fn get_instance_params(&self) -> Vec<(&'static str, ParamValue)> {
+        vec![]
+    }
+}
+
 impl<KP: RsaKeyParams, H: Hasher> KeyGenerator for RsaScheme<KP, H> {
     fn generate_keypair() -> Result<(RsaPublicKey, RsaPrivateKey), Error> {
         let mut rng = OsRng;
@@ -266,8 +277,6 @@ pub type Rsa4096<Sha = Sha256> = RsaScheme<Rsa4096Params, Sha>;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::traits::Key;
-    use crate::traits::{Sha256, Sha512};
 
     fn run_rsa_tests<KP: RsaKeyParams, H: Hasher>()
     where

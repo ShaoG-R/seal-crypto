@@ -4,12 +4,9 @@
 
 use crate::{
     errors::Error,
-    traits::{
-        algorithm::Algorithm,
-        hash::{Hasher, Sha256, Sha384, Sha512},
-        kdf::{Derivation, DerivedKey, KdfError, KeyBasedDerivation},
-    },
+    prelude::*
 };
+use crate::traits::params::{ParamValue, Parameterized};
 use hkdf::Hkdf;
 use std::marker::PhantomData;
 // --- Generic HKDF Implementation ---
@@ -38,6 +35,16 @@ impl<H: Hasher> Algorithm for HkdfScheme<H> {
         format!("HKDF-{}", H::NAME)
     }
     const ID: u32 = 0x03_02_00_00 + H::ID_OFFSET;
+}
+
+impl<H: Hasher> Parameterized for HkdfScheme<H> {
+    fn get_type_params() -> Vec<(&'static str, ParamValue)> {
+        vec![("hash", ParamValue::String(H::NAME.to_string()))]
+    }
+
+    fn get_instance_params(&self) -> Vec<(&'static str, ParamValue)> {
+        vec![]
+    }
 }
 
 // 实现针对具体哈希算法的HKDF方案，而不是通用的方案
@@ -123,8 +130,8 @@ pub type HkdfSha512 = HkdfScheme<Sha512>;
 
 #[cfg(test)]
 mod tests {
+    use crate::prelude::*;
     use super::*;
-    use crate::traits::{hash::Hasher, kdf::KeyBasedDerivation};
 
     fn run_hkdf_test<H: Hasher>()
     where
