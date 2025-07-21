@@ -24,7 +24,7 @@ jobs:
         shard: [1, 2, 3, 4]
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Install NASM
       if: runner.os == 'Windows'
@@ -49,7 +49,24 @@ jobs:
           ${{ runner.os }}-cargo-tests-
 
     - name: Install matrix-runner
-      run: cargo install --git "https://github.com/ShaoG-R/matrix-runner" --force
+      shell: bash
+      run: |
+        if [[ "${{ runner.os }}" == "Linux" ]]; then
+          URL="https://github.com/ShaoG-R/matrix-runner/releases/latest/download/matrix-runner-linux-amd64"
+          FILENAME="matrix-runner"
+        elif [[ "${{ runner.os }}" == "Windows" ]]; then
+          URL="https://github.com/ShaoG-R/matrix-runner/releases/latest/download/matrix-runner-windows-amd64.exe"
+          FILENAME="matrix-runner.exe"
+        elif [[ "${{ runner.os }}" == "macOS" ]]; then
+          URL="https://github.com/ShaoG-R/matrix-runner/releases/latest/download/matrix-runner-macos-arm64"
+          FILENAME="matrix-runner"
+        fi
+        curl -sSL -o $FILENAME $URL
+        if [[ "${{ runner.os }}" != "Windows" ]]; then
+          chmod +x $FILENAME
+        fi
+        # The rust-toolchain action adds ~/.cargo/bin to the PATH
+        mv $FILENAME ~/.cargo/bin/
 
     - name: Run test matrix shard
       shell: bash
