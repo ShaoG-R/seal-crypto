@@ -14,11 +14,8 @@
 
 use crate::errors::Error;
 use crate::prelude::*;
-use rsa::signature::{RandomizedSigner, SignatureEncoding};
 use rsa::{
-    Oaep,
     pkcs8::{DecodePrivateKey, DecodePublicKey, EncodePrivateKey, EncodePublicKey},
-    pss::{SigningKey, VerifyingKey},
     rand_core::{OsRng, RngCore},
 };
 use std::convert::TryFrom;
@@ -87,10 +84,22 @@ use serde::{Deserialize, Serialize};
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct RsaPublicKey(rsa::RsaPublicKey);
 
+impl RsaPublicKey {
+    pub fn inner(&self) -> &rsa::RsaPublicKey {
+        &self.0
+    }
+}
+
 #[derive(Debug, Zeroize, Clone, Eq, PartialEq)]
 #[zeroize(drop)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct RsaPrivateKey(Zeroizing<Vec<u8>>);
+
+impl RsaPrivateKey {
+    pub fn inner(&self) -> &[u8] {
+        &self.0
+    }
+}
 
 impl Key for RsaPublicKey {
     fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
@@ -204,16 +213,9 @@ impl<KP: RsaKeyParams, H: Hasher> Kem for RsaScheme<KP, H> {
 
     fn encapsulate(public_key: &RsaPublicKey) -> Result<(SharedSecret, EncapsulatedKey), Error> {
         let mut rng = OsRng;
-        let rsa_public_key = &public_key.0;
-
         let mut shared_secret_bytes = vec![0u8; SHARED_SECRET_SIZE];
         rng.fill_bytes(&mut shared_secret_bytes);
-
-        let padding = Oaep::new::<H::Digest>();
-        let encapsulated_key = rsa_public_key
-            .encrypt(&mut rng, padding, &shared_secret_bytes)
-            .map_err(|_| KemError::Encapsulation)?;
-
+        let encapsulated_key = H::rsa_oaep_encrypt(public_key, &shared_secret_bytes)?;
         Ok((Zeroizing::new(shared_secret_bytes), encapsulated_key))
     }
 
@@ -221,26 +223,14 @@ impl<KP: RsaKeyParams, H: Hasher> Kem for RsaScheme<KP, H> {
         private_key: &RsaPrivateKey,
         encapsulated_key: &EncapsulatedKey,
     ) -> Result<SharedSecret, Error> {
-        let rsa_private_key = rsa::RsaPrivateKey::from_pkcs8_der(&private_key.0)
-            .map_err(|_| KemError::InvalidPrivateKey)?;
-
-        let padding = Oaep::new::<H::Digest>();
-        let shared_secret_bytes = rsa_private_key
-            .decrypt(padding, encapsulated_key)
-            .map_err(|_| KemError::Decapsulation)?;
-
+        let shared_secret_bytes = H::rsa_oaep_decrypt(private_key, encapsulated_key)?;
         Ok(Zeroizing::new(shared_secret_bytes))
     }
 }
 
 impl<KP: RsaKeyParams, H: Hasher> Signer for RsaScheme<KP, H> {
     fn sign(private_key: &RsaPrivateKey, message: &[u8]) -> Result<Signature, Error> {
-        let rsa_private_key = rsa::RsaPrivateKey::from_pkcs8_der(&private_key.0)
-            .map_err(|_| Error::Signature(SignatureError::Signing))?;
-        let signing_key = SigningKey::<H::Digest>::new(rsa_private_key);
-        let mut rng = OsRng;
-        let signature = signing_key.sign_with_rng(&mut rng, message);
-        Ok(signature.to_vec())
+        H::rsa_pss_sign(private_key, message)
     }
 }
 
@@ -250,13 +240,7 @@ impl<KP: RsaKeyParams, H: Hasher> Verifier for RsaScheme<KP, H> {
         message: &[u8],
         signature: &Signature,
     ) -> Result<(), Error> {
-        let verifying_key = VerifyingKey::<H::Digest>::new(public_key.0.clone());
-        let pss_signature = rsa::pss::Signature::try_from(signature.as_ref())
-            .map_err(|_| SignatureError::InvalidSignature)?;
-        use rsa::signature::Verifier;
-        Ok(verifying_key
-            .verify(message, &pss_signature)
-            .map_err(|_| SignatureError::Verification)?)
+        H::rsa_pss_verify(public_key, message, signature)
     }
 }
 

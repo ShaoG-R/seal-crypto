@@ -7,7 +7,6 @@ use crate::{
     prelude::*
 };
 use crate::traits::params::{ParamValue, Parameterized};
-use pbkdf2::pbkdf2_hmac;
 use secrecy::{ExposeSecret, SecretBox};
 use std::marker::PhantomData;
 
@@ -66,8 +65,7 @@ impl<H: Hasher> Parameterized for Pbkdf2Scheme<H> {
     }
 }
 
-#[cfg(feature = "sha2")]
-impl PasswordBasedDerivation for Pbkdf2Scheme<Sha256> {
+impl<H: Hasher> PasswordBasedDerivation for Pbkdf2Scheme<H> {
     fn derive(
         &self,
         password: &SecretBox<[u8]>,
@@ -76,39 +74,7 @@ impl PasswordBasedDerivation for Pbkdf2Scheme<Sha256> {
     ) -> Result<DerivedKey, Error> {
         let mut okm = vec![0u8; output_len];
 
-        pbkdf2_hmac::<sha2::Sha256>(password.expose_secret(), salt, self.iterations, &mut okm);
-
-        Ok(DerivedKey::new(okm))
-    }
-}
-
-#[cfg(feature = "sha2")]
-impl PasswordBasedDerivation for Pbkdf2Scheme<Sha384> {
-    fn derive(
-        &self,
-        password: &SecretBox<[u8]>,
-        salt: &[u8],
-        output_len: usize,
-    ) -> Result<DerivedKey, Error> {
-        let mut okm = vec![0u8; output_len];
-
-        pbkdf2_hmac::<sha2::Sha384>(password.expose_secret(), salt, self.iterations, &mut okm);
-
-        Ok(DerivedKey::new(okm))
-    }
-}
-
-#[cfg(feature = "sha2")]
-impl PasswordBasedDerivation for Pbkdf2Scheme<Sha512> {
-    fn derive(
-        &self,
-        password: &SecretBox<[u8]>,
-        salt: &[u8],
-        output_len: usize,
-    ) -> Result<DerivedKey, Error> {
-        let mut okm = vec![0u8; output_len];
-
-        pbkdf2_hmac::<sha2::Sha512>(password.expose_secret(), salt, self.iterations, &mut okm);
+        H::pbkdf2_hmac(password.expose_secret(), salt, self.iterations, &mut okm);
 
         Ok(DerivedKey::new(okm))
     }

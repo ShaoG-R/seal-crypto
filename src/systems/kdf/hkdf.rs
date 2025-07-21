@@ -7,7 +7,6 @@ use crate::{
     prelude::*
 };
 use crate::traits::params::{ParamValue, Parameterized};
-use hkdf::Hkdf;
 use std::marker::PhantomData;
 // --- Generic HKDF Implementation ---
 // --- 通用 HKDF 实现 ---
@@ -47,11 +46,7 @@ impl<H: Hasher> Parameterized for HkdfScheme<H> {
     }
 }
 
-// 实现针对具体哈希算法的HKDF方案，而不是通用的方案
-// Implementation for specific hash algorithms instead of generic
-
-#[cfg(feature = "sha2")]
-impl KeyBasedDerivation for HkdfScheme<Sha256> {
+impl<H: Hasher> KeyBasedDerivation for HkdfScheme<H> {
     fn derive(
         &self,
         ikm: &[u8],
@@ -59,50 +54,8 @@ impl KeyBasedDerivation for HkdfScheme<Sha256> {
         info: Option<&[u8]>,
         output_len: usize,
     ) -> Result<DerivedKey, Error> {
-        let hk = Hkdf::<sha2::Sha256>::new(salt, ikm);
         let mut okm = vec![0u8; output_len];
-
-        hk.expand(info.unwrap_or_default(), &mut okm)
-            .map_err(|_| Error::Kdf(KdfError::InvalidOutputLength))?;
-
-        Ok(DerivedKey::new(okm))
-    }
-}
-
-#[cfg(feature = "sha2")]
-impl KeyBasedDerivation for HkdfScheme<Sha384> {
-    fn derive(
-        &self,
-        ikm: &[u8],
-        salt: Option<&[u8]>,
-        info: Option<&[u8]>,
-        output_len: usize,
-    ) -> Result<DerivedKey, Error> {
-        let hk = Hkdf::<sha2::Sha384>::new(salt, ikm);
-        let mut okm = vec![0u8; output_len];
-
-        hk.expand(info.unwrap_or_default(), &mut okm)
-            .map_err(|_| Error::Kdf(KdfError::InvalidOutputLength))?;
-
-        Ok(DerivedKey::new(okm))
-    }
-}
-
-#[cfg(feature = "sha2")]
-impl KeyBasedDerivation for HkdfScheme<Sha512> {
-    fn derive(
-        &self,
-        ikm: &[u8],
-        salt: Option<&[u8]>,
-        info: Option<&[u8]>,
-        output_len: usize,
-    ) -> Result<DerivedKey, Error> {
-        let hk = Hkdf::<sha2::Sha512>::new(salt, ikm);
-        let mut okm = vec![0u8; output_len];
-
-        hk.expand(info.unwrap_or_default(), &mut okm)
-            .map_err(|_| Error::Kdf(KdfError::InvalidOutputLength))?;
-
+        H::hkdf_expand(salt, ikm, info, &mut okm).map_err(Error::Kdf)?;
         Ok(DerivedKey::new(okm))
     }
 }

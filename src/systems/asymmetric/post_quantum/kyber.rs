@@ -336,7 +336,7 @@ pub type Kyber1024 = KyberScheme<Kyber1024Params>;
 mod tests {
     use super::*;
 
-    fn run_kyber_tests<P: KyberParams + Default + std::fmt::Debug>()
+    fn run_kyber_tests<P: KyberParams>()
     where
         P: Clone,
     {
