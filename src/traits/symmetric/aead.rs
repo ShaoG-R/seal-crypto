@@ -1,6 +1,6 @@
-//! Defines traits for symmetric authenticated encryption.
+//! Defines traits for symmetric authenticated encryption (AEAD) cryptographic operations.
 //!
-//! 定义了对称认证加密的 trait。
+//! 定义了对称认证加密（AEAD）操作的 trait。
 
 
 use crate::{errors::Error, traits::{key::SymmetricKeySet, symmetric::SymmetricKeyGenerator, symmetric::SymmetricError}};

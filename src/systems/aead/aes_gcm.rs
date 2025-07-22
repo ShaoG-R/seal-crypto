@@ -1,4 +1,4 @@
-//! Provides an implementation of symmetric AEAD encryption using AES-GCM.
+//! Provides an implementation of symmetric authenticated encryption (AEAD) using AES-GCM.
 //!
 //! This module implements the Advanced Encryption Standard (AES) in Galois/Counter Mode (GCM),
 //! which provides authenticated encryption with associated data (AEAD). AES-GCM is widely
@@ -18,7 +18,7 @@
 //! - Constant-time implementation resistant to timing attacks
 //! - Efficient for both small and large data sizes
 //!
-//! 提供了使用 AES-GCM 的对称 AEAD 加密实现。
+//! 提供了使用 AES-GCM 的对称认证加密（AEAD）实现。
 //!
 //! 此模块实现了伽罗瓦/计数器模式 (GCM) 的高级加密标准 (AES)，
 //! 它提供带关联数据的认证加密 (AEAD)。AES-GCM 被广泛使用和标准化，

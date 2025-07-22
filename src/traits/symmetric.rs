@@ -1,6 +1,6 @@
-//! Defines traits for symmetric cryptographic operations.
+//! Defines traits for symmetric authenticated encryption (AEAD) cryptographic operations.
 //!
-//! 定义了对称加密操作的 trait。
+//! 定义了对称认证加密（AEAD）操作的 trait。
 pub mod aead;
 
 pub use aead::*;

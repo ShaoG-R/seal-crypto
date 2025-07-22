@@ -1,4 +1,4 @@
-//! Provides an implementation of symmetric AEAD encryption using ChaCha20-Poly1305.
+//! Provides an implementation of symmetric authenticated encryption (AEAD) using ChaCha20-Poly1305.
 //!
 //! This module implements the ChaCha20-Poly1305 authenticated encryption with associated data
 //! (AEAD) scheme. ChaCha20-Poly1305 combines the ChaCha20 stream cipher with the Poly1305
@@ -30,7 +30,7 @@
 //! - Protocols requiring constant-time cryptographic operations
 //! - Embedded systems with limited computational resources
 //!
-//! 提供了使用 ChaCha20-Poly1305 的对称 AEAD 加密实现。
+//! 提供了使用 ChaCha20-Poly1305 的对称认证加密（AEAD）实现。
 //!
 //! 此模块实现了 ChaCha20-Poly1305 带关联数据的认证加密 (AEAD) 方案。
 //! ChaCha20-Poly1305 结合了 ChaCha20 流密码和 Poly1305 消息认证码，

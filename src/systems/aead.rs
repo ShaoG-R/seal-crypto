@@ -1,4 +1,4 @@
-//! Entry point for symmetric algorithm implementations.
+//! Entry point for symmetric authenticated encryption (AEAD) algorithm implementations.
 //!
 //! This module provides implementations of symmetric authenticated encryption algorithms.
 //! These algorithms provide both confidentiality and authenticity in a single operation,
@@ -12,9 +12,9 @@
 //! All implementations provide authenticated encryption with associated data (AEAD),
 //! ensuring both confidentiality and integrity of the encrypted data.
 //!
-//! 对称算法实现的入口点。
+//! 对称认证加密（AEAD）算法实现的入口点。
 //!
-//! 此模块提供对称认证加密算法的实现。
+//! 此模块提供对称认证加密（AEAD）算法的实现。
 //! 这些算法在单个操作中同时提供机密性和真实性，使其适用于大多数加密需求。
 //!
 //! # 可用实现
