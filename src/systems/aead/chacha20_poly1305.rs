@@ -157,7 +157,7 @@ impl<P: Chacha20Poly1305Params> SymmetricKeySet for Chacha20Poly1305Scheme<P> {
     type Key = SymmetricKey;
 }
 
-impl<P: Chacha20Poly1305Params> SymmetricCipher for Chacha20Poly1305Scheme<P> {
+impl<P: Chacha20Poly1305Params> AeadCipher for Chacha20Poly1305Scheme<P> {
     const KEY_SIZE: usize = P::KEY_SIZE;
     const NONCE_SIZE: usize = P::NONCE_SIZE;
     const TAG_SIZE: usize = P::TAG_SIZE;
@@ -175,7 +175,7 @@ impl<P: Chacha20Poly1305Params> SymmetricKeyGenerator for Chacha20Poly1305Scheme
     }
 }
 
-impl<P: Chacha20Poly1305Params> SymmetricEncryptor for Chacha20Poly1305Scheme<P> {
+impl<P: Chacha20Poly1305Params> AeadEncryptor for Chacha20Poly1305Scheme<P> {
     fn encrypt_to_buffer(
         key: &Self::Key,
         nonce: &[u8],
@@ -212,7 +212,7 @@ impl<P: Chacha20Poly1305Params> SymmetricEncryptor for Chacha20Poly1305Scheme<P>
     }
 }
 
-impl<P: Chacha20Poly1305Params> SymmetricDecryptor for Chacha20Poly1305Scheme<P> {
+impl<P: Chacha20Poly1305Params> AeadDecryptor for Chacha20Poly1305Scheme<P> {
     fn decrypt_to_buffer(
         key: &Self::Key,
         nonce: &[u8],
@@ -281,9 +281,9 @@ mod tests {
 
     fn test_roundtrip<S>()
     where
-        S: SymmetricEncryptor<Key = SymmetricKey>
-            + SymmetricDecryptor<Key = SymmetricKey>
-            + SymmetricKeyGenerator<Key = Zeroizing<Vec<u8>>>,
+        S: AeadEncryptor<Key = SymmetricKey>
+            + AeadDecryptor<Key = SymmetricKey>
+            + SymmetricKeyGenerator<Key = SymmetricKey>,
     {
         let key = S::generate_key().unwrap();
         let plaintext = b"this is a secret message".to_vec();
@@ -382,8 +382,8 @@ mod tests {
 
     fn test_invalid_inputs<S>()
     where
-        S: SymmetricEncryptor<Key = SymmetricKey>
-            + SymmetricDecryptor<Key = SymmetricKey>
+        S: AeadEncryptor<Key = SymmetricKey>
+            + AeadDecryptor<Key = SymmetricKey>
             + SymmetricKeyGenerator<Key = SymmetricKey>,
     {
         let key = S::generate_key().unwrap();

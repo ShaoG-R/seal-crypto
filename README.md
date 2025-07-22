@@ -102,7 +102,7 @@ graph TD
             M["KeyAgreement<br/><i>'agree'</i>"]
             
             I["SymmetricKeyGenerator<br/><i>'generate_key'</i>"]
-            J["SymmetricEncryptor / Decryptor<br/><i>'encrypt'/'decrypt'</i>"]
+            J["AeadEncryptor / Decryptor<br/><i>'encrypt'/'decrypt'</i>"]
         end
         
         subgraph "Derivation Schemes"

@@ -6,7 +6,7 @@
 use seal_crypto::prelude::*;
 use seal_crypto::schemes::{
     asymmetric::post_quantum::kyber::{Kyber1024Params, KyberScheme},
-    symmetric::aes_gcm::Aes256Gcm,
+    aead::aes_gcm::Aes256Gcm,
 };
 
 fn main() -> Result<(), CryptoError> {
@@ -64,7 +64,7 @@ fn main() -> Result<(), CryptoError> {
     // A nonce must be unique for each encryption with the same key.
     // 发送方使用共享密钥通过 AES-256-GCM 加密消息。
     // 对于使用相同密钥的每次加密，nonce 都必须是唯一的。
-    let nonce = vec![0u8; <MyAEAD as SymmetricCipher>::NONCE_SIZE];
+    let nonce = vec![0u8; <MyAEAD as AeadCipher>::NONCE_SIZE];
     // In a real application, you would use a secure random number generator
     // to create a unique nonce for each encryption.
     // e.g., use rand::{RngCore, OsRng}; OsRng.fill_bytes(&mut nonce);
