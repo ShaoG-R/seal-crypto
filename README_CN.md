@@ -102,7 +102,7 @@ graph TD
             M["KeyAgreement<br/><i>'agree'</i>"]
             
             I["SymmetricKeyGenerator<br/><i>'generate_key'</i>"]
-            J["SymmetricEncryptor / Decryptor<br/><i>'encrypt'/'decrypt'</i>"]
+            J["AeadEncryptor / Decryptor<br/><i>'encrypt'/'decrypt'</i>"]
         end
         
         subgraph "派生方案"
@@ -201,7 +201,7 @@ graph TD
 API 主要由以下几个核心 `trait` 组成，它们位于 `seal_crypto::traits` 模块下：
 
 -   `KeyGenerator`: 为非对称加密算法生成密钥对。
--   `SymmetricEncryptor` / `SymmetricDecryptor`: 提供对称认证加密（AEAD）功能。
+-   `AeadEncryptor` / `AeadDecryptor`: 提供对称认证加密（AEAD）功能。
 -   `Kem` (Key Encapsulation Mechanism): 用于安全地交换密钥。
 -   `KeyAgreement`: 用于密钥协商以生成共享密钥。
 -   `Signer` / `Verifier`: 创建和验证数字签名。

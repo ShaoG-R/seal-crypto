@@ -18,5 +18,5 @@
 pub mod asymmetric;
 pub mod hash;
 pub mod kdf;
-pub mod symmetric;
+pub mod aead;
 pub mod xof;

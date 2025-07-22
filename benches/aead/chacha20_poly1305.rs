@@ -3,7 +3,7 @@
 use criterion::{Criterion, criterion_group};
 use seal_crypto::{
     prelude::*,
-    schemes::symmetric::chacha20_poly1305::{ChaCha20Poly1305, XChaCha20Poly1305},
+    schemes::aead::chacha20_poly1305::{ChaCha20Poly1305, XChaCha20Poly1305},
 };
 use std::hint::black_box;
 

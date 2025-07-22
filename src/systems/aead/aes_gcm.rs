@@ -1,4 +1,4 @@
-//! Provides an implementation of symmetric AEAD encryption using AES-GCM.
+//! Provides an implementation of symmetric authenticated encryption (AEAD) using AES-GCM.
 //!
 //! This module implements the Advanced Encryption Standard (AES) in Galois/Counter Mode (GCM),
 //! which provides authenticated encryption with associated data (AEAD). AES-GCM is widely
@@ -18,7 +18,7 @@
 //! - Constant-time implementation resistant to timing attacks
 //! - Efficient for both small and large data sizes
 //!
-//! 提供了使用 AES-GCM 的对称 AEAD 加密实现。
+//! 提供了使用 AES-GCM 的对称认证加密（AEAD）实现。
 //!
 //! 此模块实现了伽罗瓦/计数器模式 (GCM) 的高级加密标准 (AES)，
 //! 它提供带关联数据的认证加密 (AEAD)。AES-GCM 被广泛使用和标准化，
@@ -168,7 +168,7 @@ impl<P: AesGcmParams> SymmetricKeySet for AesGcmScheme<P> {
     type Key = SymmetricKey;
 }
 
-impl<P: AesGcmParams> SymmetricCipher for AesGcmScheme<P> {
+impl<P: AesGcmParams> AeadCipher for AesGcmScheme<P> {
     const KEY_SIZE: usize = P::KEY_SIZE;
     const NONCE_SIZE: usize = P::NONCE_SIZE;
     const TAG_SIZE: usize = P::TAG_SIZE;
@@ -186,7 +186,7 @@ impl<P: AesGcmParams> SymmetricKeyGenerator for AesGcmScheme<P> {
     }
 }
 
-impl<P: AesGcmParams> SymmetricEncryptor for AesGcmScheme<P> {
+impl<P: AesGcmParams> AeadEncryptor for AesGcmScheme<P> {
     fn encrypt_to_buffer(
         key: &Self::Key,
         nonce: &[u8],
@@ -223,7 +223,7 @@ impl<P: AesGcmParams> SymmetricEncryptor for AesGcmScheme<P> {
     }
 }
 
-impl<P: AesGcmParams> SymmetricDecryptor for AesGcmScheme<P> {
+impl<P: AesGcmParams> AeadDecryptor for AesGcmScheme<P> {
     fn decrypt_to_buffer(
         key: &Self::Key,
         nonce: &[u8],
@@ -297,8 +297,8 @@ mod tests {
 
     fn test_roundtrip<S>()
     where
-        S: SymmetricEncryptor<Key = SymmetricKey>
-            + SymmetricDecryptor<Key = SymmetricKey>
+        S: AeadEncryptor<Key = SymmetricKey>
+            + AeadDecryptor<Key = SymmetricKey>
             + SymmetricKeyGenerator<Key = Zeroizing<Vec<u8>>>,
     {
         let key = S::generate_key().unwrap();
@@ -423,15 +423,15 @@ mod tests {
 
     fn test_invalid_inputs<S>()
     where
-        S: SymmetricEncryptor<Key = SymmetricKey>
-            + SymmetricDecryptor<Key = SymmetricKey>
+        S: AeadEncryptor<Key = SymmetricKey>
+            + AeadDecryptor<Key = SymmetricKey>
             + SymmetricKeyGenerator<Key = SymmetricKey>,
     {
         let key = S::generate_key().unwrap();
         let mut wrong_key = key.clone();
         wrong_key[0] ^= 1;
 
-        let mut nonce = vec![0u8; <S as SymmetricCipher>::NONCE_SIZE];
+        let mut nonce = vec![0u8; <S as AeadCipher>::NONCE_SIZE];
         OsRng.fill_bytes(&mut nonce);
         let mut wrong_nonce = nonce.clone();
         wrong_nonce[0] ^= 1;
@@ -459,7 +459,7 @@ mod tests {
 
         // Wrong size key
         // 错误大小的密钥
-        let wrong_size_key = Zeroizing::new(vec![0; <S as SymmetricCipher>::KEY_SIZE - 1]);
+        let wrong_size_key = Zeroizing::new(vec![0; <S as AeadCipher>::KEY_SIZE - 1]);
         let res = S::encrypt(&wrong_size_key, &nonce, plaintext, Some(aad));
         assert!(matches!(
             res.unwrap_err(),
@@ -468,7 +468,7 @@ mod tests {
 
         // Wrong size nonce
         // 错误大小的 Nonce
-        let wrong_size_nonce = vec![0; <S as SymmetricCipher>::NONCE_SIZE - 1];
+        let wrong_size_nonce = vec![0; <S as AeadCipher>::NONCE_SIZE - 1];
         let res = S::encrypt(&key, &wrong_size_nonce, plaintext, Some(aad));
         assert!(matches!(
             res.unwrap_err(),

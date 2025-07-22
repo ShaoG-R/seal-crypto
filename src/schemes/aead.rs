@@ -39,7 +39,7 @@
 /// 同时提供机密性和真实性。它是标准化的，推荐用于大多数需要对称加密的应用程序。
 pub mod aes_gcm {
     #[cfg(feature = "aes-gcm-default")]
-    pub use crate::systems::symmetric::aes_gcm::*;
+    pub use crate::systems::aead::aes_gcm::*;
 }
 
 /// ChaCha20-Poly1305 authenticated encryption.
@@ -55,6 +55,6 @@ pub mod aes_gcm {
 /// Poly1305 消息认证码。它在软件实现上提供出色的性能，并且能够抵抗时序攻击。
 #[cfg(feature = "chacha20-poly1305-default")]
 pub mod chacha20_poly1305 {
-    pub use crate::systems::symmetric::chacha20_poly1305::*;
+    pub use crate::systems::aead::chacha20_poly1305::*;
     pub use chacha20poly1305::aead::Nonce;
 }

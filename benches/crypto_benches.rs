@@ -1,15 +1,15 @@
 mod asymmetric;
 mod kdf;
-mod symmetric;
+mod aead;
 mod xof;
 
 use criterion::{Criterion, criterion_group, criterion_main};
 
 fn all_benches(c: &mut Criterion) {
     #[cfg(feature = "aes-gcm")]
-    symmetric::aes_gcm::bench_aes_gcm(c);
+    aead::aes_gcm::bench_aes_gcm(c);
     #[cfg(feature = "chacha20-poly1305")]
-    symmetric::chacha20_poly1305::bench_chacha20_poly1305(c);
+    aead::chacha20_poly1305::bench_chacha20_poly1305(c);
     #[cfg(feature = "ecc")]
     asymmetric::traditional::ecc::bench_ecc(c);
     #[cfg(feature = "ecdh")]

@@ -44,7 +44,7 @@ pub enum Error {
     /// An error occurred during a symmetric encryption or decryption operation.
     ///
     /// 在对称加密或解密操作期间发生错误。
-    #[cfg_attr(feature = "std", error("Symmetric encryption/decryption error"))]
+    #[cfg_attr(feature = "std", error("Aead encryption/decryption error"))]
     Symmetric(#[cfg_attr(feature = "std", from)] SymmetricError),
 
     /// An error occurred during a key agreement operation.

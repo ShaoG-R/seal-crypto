@@ -6,6 +6,6 @@ pub mod algorithm;
 pub mod asymmetric;
 pub mod kdf;
 pub mod key;
+pub mod params;
 pub mod symmetric;
 pub mod xof;
-pub mod params;

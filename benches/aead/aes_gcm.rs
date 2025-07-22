@@ -3,7 +3,7 @@
 use criterion::{Criterion, criterion_group};
 use seal_crypto::{
     prelude::*,
-    schemes::symmetric::aes_gcm::{Aes128Gcm, Aes256Gcm},
+    schemes::aead::aes_gcm::{Aes128Gcm, Aes256Gcm},
 };
 use std::hint::black_box;
 
