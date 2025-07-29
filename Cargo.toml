@@ -280,7 +280,7 @@ name = "readme"
 required-features = ["rsa"]
 
 [dev-dependencies]
-criterion = { version = "0.6.0", features = ["html_reports"] }
+criterion = { version = "0.7.0", features = ["html_reports"] }
 hex = "0.4.3"
 
 [[bench]]
