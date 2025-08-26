@@ -73,7 +73,7 @@ argon2 = { version = "0.5.3", optional = true, default-features = false }
 # 这些 crate 提供了一些通用的辅助功能。
 # --- Helper Crates ---
 # These crates provide general helper functionalities.
-thiserror = { version = "2.0.12", optional = true } # 用于方便地定义错误类型。 / For easily defining error types.
+thiserror = { version = "2.0.16", optional = true } # 用于方便地定义错误类型。 / For easily defining error types.
 pqcrypto-traits = { version = "0.3.5", optional = true, default-features = false } # 后量子密码学算法所需的 traits。 / Traits required for post-quantum cryptography algorithms.
 rand_core = { version = "0.9.3", default-features = false } # 随机数生成器所需的核心 traits。 / Core traits for random number generators.
 rand_core_elliptic_curve = { package = "rand_core", version = "0.6.4", optional = true, default-features = false }
