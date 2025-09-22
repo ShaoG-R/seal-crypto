@@ -80,7 +80,7 @@ rand_core_elliptic_curve = { package = "rand_core", version = "0.6.4", optional 
 zeroize = { version = "1.8.1", features = ["derive", "alloc"], default-features = false } # 用于从内存中安全地擦除敏感数据（如密钥）。/ For securely wiping sensitive data (like keys) from memory.
 secrecy = { version = "0.10.3", optional = true, default-feature = false }
 getrandom = { version = "0.3.3", optional = true, default-feature = false }
-serde = { version = "1.0.219", optional = true, default-features = false }
+serde = { version = "1.0.226", optional = true, default-features = false }
 
 # [features] 区域允许您定义条件编译的标志。
 # 这对于提供可选功能、支持不同环境（如 `std` vs `no_std`）或配置依赖项非常有用。
