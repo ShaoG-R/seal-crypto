@@ -51,7 +51,7 @@ features = ["full"]
 # --- Cryptography Backends ---
 # These are the actual cryptographic algorithm implementation libraries. They are optional and can be enabled via the [features] section below.
 base64 = { version = "0.22.1", optional = true, default-features = false }
-rsa = { version = "0.9.8", optional = true, default-features = false }
+rsa = { version = "0.9.9", optional = true, default-features = false }
 pqcrypto-kyber = { version = "0.8.1", optional = true, default-features = false }
 aes-gcm = { version = "0.10.3", optional = true, default-features = false, features = ["aes", "getrandom", "alloc"] }
 sha2 = { version = "0.10.9", optional = true, default-features = false } # RSA-PSS dependency / RSA-PSS 依赖
